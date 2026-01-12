@@ -13,12 +13,17 @@ import {
   Archive,
   Check,
   Laptop,
+  MessageSquare,
   Moon,
+  Notebook,
   RefreshCcw,
   RotateCcw,
   Settings,
   Sun,
   Trash2,
+  PanelLeft,
+  X,
+  MoreVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -63,6 +68,31 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+import { Notes } from "@/components/notes";
+import Logo from "@/lib/logo";
+
+import {
+  coerceStoredMessageContent,
+  stringifyMessageContent,
+} from "@/lib/message-content";
+import { cn } from "@/lib/utils";
 
 type Attachment = {
   name?: string;
@@ -120,7 +150,9 @@ async function apiJson<TResponse>(
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(
-      typeof data?.error === "string" ? data.error : "Request failed."
+      typeof (data as any)?.error === "string"
+        ? (data as any).error
+        : "Request failed."
     );
   }
 
@@ -164,12 +196,13 @@ function hydrateMessageFromStorage(message: any): Message | null {
   if (!message || typeof message !== "object") return null;
   if (typeof message.id !== "string") return null;
   if (typeof message.role !== "string") return null;
-  if (typeof message.content !== "string") return null;
+  const content = coerceStoredMessageContent(message.content);
+  if (content === null) return null;
 
   return {
     id: message.id,
     role: message.role,
-    content: message.content,
+    content,
     createdAt:
       typeof message.createdAt === "string"
         ? new Date(message.createdAt)
@@ -202,12 +235,25 @@ function ThemeToggleButton() {
   );
 }
 
+function formatWhen(updatedAt?: string) {
+  if (!updatedAt) return "";
+  const d = new Date(updatedAt);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function HomeClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const chatIdFromUrl = searchParams.get("chatId")?.trim() || null;
 
+  const [showNotes, setShowNotes] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -249,6 +295,8 @@ export function HomeClient() {
   const [modelsError, setModelsError] = useState("");
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [modelSearch, setModelSearch] = useState("");
+
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const suggestions = useMemo(
     () => [
@@ -404,23 +452,20 @@ export function HomeClient() {
     [loadSessions, sessionUser]
   );
 
-  const createChatSession = useCallback(
-    async (firstUserText: string) => {
-      const title = firstUserText.trim().slice(0, 80);
-      const data = await apiJson<{ chatId: string }>("/api/chat/sessions", {
-        method: "POST",
-        body: JSON.stringify({ title, preview: firstUserText }),
-      });
+  const createChatSession = useCallback(async (firstUserText: string) => {
+    const title = firstUserText.trim().slice(0, 80);
+    const data = await apiJson<{ chatId: string }>("/api/chat/sessions", {
+      method: "POST",
+      body: JSON.stringify({ title, preview: firstUserText }),
+    });
 
-      const chatId = data.chatId;
-      if (!chatId) {
-        throw new Error("Failed to create chat session.");
-      }
+    const chatId = data.chatId;
+    if (!chatId) {
+      throw new Error("Failed to create chat session.");
+    }
 
-      return chatId;
-    },
-    []
-  );
+    return chatId;
+  }, []);
 
   const generateAssistantMessage = useCallback(
     async (chatId: string) => {
@@ -435,9 +480,7 @@ export function HomeClient() {
         return;
       }
 
-      if (assistantAbortRef.current) {
-        assistantAbortRef.current.abort();
-      }
+      if (assistantAbortRef.current) assistantAbortRef.current.abort();
       const controller = new AbortController();
       assistantAbortRef.current = controller;
 
@@ -453,21 +496,23 @@ export function HomeClient() {
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
           throw new Error(
-            typeof data?.error === "string" ? data.error : "Request failed."
+            typeof (data as any)?.error === "string"
+              ? (data as any).error
+              : "Request failed."
           );
         }
 
-        const content =
-          typeof data?.message?.content === "string" ? data.message.content : "";
-        if (!content.trim()) {
-          throw new Error("Empty response from model.");
-        }
+        const content = coerceStoredMessageContent(
+          (data as any)?.message?.content
+        );
+        const contentText = stringifyMessageContent(content);
+        if (!contentText.trim()) throw new Error("Empty response from model.");
 
         const assistant: Message = {
           id: createId(),
           role: "assistant",
           createdAt: new Date(),
-          content,
+          content: content ?? "",
         };
 
         setMessages((current) => [...current, assistant]);
@@ -476,9 +521,8 @@ export function HomeClient() {
         if (error?.name === "AbortError") return;
         toast.error(error?.message ?? "Failed to generate response.");
       } finally {
-        if (assistantAbortRef.current === controller) {
+        if (assistantAbortRef.current === controller)
           assistantAbortRef.current = null;
-        }
         setIsGenerating(false);
       }
     },
@@ -496,6 +540,7 @@ export function HomeClient() {
       const existingChatId = activeChatIdRef.current ?? chatIdFromUrl;
       const isNewSession = !existingChatId;
       const chatId = existingChatId ?? (await createChatSession(content));
+
       const userMessage: Message = {
         id: createId(),
         role: "user",
@@ -518,7 +563,6 @@ export function HomeClient() {
       }
 
       setIsGenerating(true);
-
       pendingReplyTimeoutRef.current = setTimeout(() => {
         void generateAssistantMessage(chatId);
         pendingReplyTimeoutRef.current = null;
@@ -542,9 +586,7 @@ export function HomeClient() {
       event?.preventDefault?.();
       const text = input.trim();
       const files = options?.experimental_attachments;
-
       if (!text && (!files || files.length === 0)) return;
-
       setInput("");
       await sendUserMessage(text, files);
     },
@@ -638,6 +680,7 @@ export function HomeClient() {
       const params = new URLSearchParams(searchParams.toString());
       params.set("chatId", chatId);
       router.push(`/?${params.toString()}`);
+      setHistoryOpen(false);
     },
     [router, searchParams]
   );
@@ -721,19 +764,21 @@ export function HomeClient() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(
-          typeof data?.error === "string" ? data.error : "Failed to load models."
+          typeof (data as any)?.error === "string"
+            ? (data as any).error
+            : "Failed to load models."
         );
       }
 
-      const nextModels = Array.isArray(data.models)
-        ? (data.models as OpenRouterModel[])
+      const nextModels = Array.isArray((data as any).models)
+        ? ((data as any).models as OpenRouterModel[])
         : [];
       setModels(nextModels);
 
       if (!openRouterModel && nextModels[0]?.id) {
         await saveOpenRouterModel(nextModels[0].id);
       }
-    } catch (err) {
+    } catch (err: any) {
       const message =
         err instanceof Error ? err.message : "Unable to fetch models.";
       setModelsError(message);
@@ -772,9 +817,7 @@ export function HomeClient() {
         });
         toast.success("Chat deleted.");
         await loadSessions();
-        if (chatId === activeChatId) {
-          handleNewChat();
-        }
+        if (chatId === activeChatId) handleNewChat();
       } catch (error: any) {
         toast.error(error?.message ?? "Failed to delete chat.");
       }
@@ -800,34 +843,187 @@ export function HomeClient() {
     }
   }, [clearHistory, confirmAction, deleteChat, removeOpenRouterKey]);
 
-  return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden bg-zinc-50 dark:bg-black">
-      <main className="mx-auto flex w-full max-w-5xl flex-1 min-h-0 flex-col gap-4 overflow-hidden p-4 sm:p-6">
-        {isSessionLoading ? (
-          <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-            Loading...
-          </div>
-        ) : sessionUser ? (
-          <>
-            <header className="flex items-start justify-between gap-4">
-              <div className="space-y-1">
-                <h1 className="text-lg font-semibold tracking-tight text-foreground">
-                  Chat POC
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  Signed in as{" "}
-                  <span className="font-mono">
-                    {sessionUser.email ?? sessionUser.uid}
-                  </span>
-                </p>
-              </div>
+  const historyActions = (
+    <div className="flex flex-wrap items-center gap-1">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => setShowArchived((v) => !v)}
+      >
+        {showArchived ? "Hide archived" : "Show archived"}
+      </Button>
+      <Button type="button" variant="ghost" size="sm" onClick={loadSessions}>
+        Refresh
+      </Button>
+    </div>
+  );
 
+  const renderSessionItems = (opts?: { compact?: boolean }) => {
+    if (sessions.length === 0) {
+      return <p className="text-xs text-muted-foreground">No chats yet.</p>;
+    }
+
+    return sessions.map((session) => {
+      const isActive = session.id === activeChatId;
+      const label =
+        session.title || session.preview || `Chat ${session.id.slice(0, 8)}`;
+
+      return (
+        <div
+          key={session.id}
+          className={[
+            "group flex w-full items-start gap-2 rounded-lg border px-2 py-1.5 text-left text-xs transition-colors",
+            isActive ? "border-primary bg-primary/5" : "hover:bg-muted",
+          ].join(" ")}
+        >
+          <button
+            type="button"
+            className="min-w-0 flex-1 text-left"
+            onClick={() => openChat(session.id)}
+          >
+            <div className="line-clamp-2">{label}</div>
+            <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
+              {session.archived ? (
+                <span className="rounded border px-1 py-0.5">archived</span>
+              ) : null}
+              {session.updatedAt ? (
+                <span>{formatWhen(session.updatedAt)}</span>
+              ) : null}
+            </div>
+          </button>
+
+          <div
+            className={[
+              "flex shrink-0 gap-1 transition-opacity",
+              opts?.compact
+                ? "opacity-100"
+                : "opacity-0 group-hover:opacity-100",
+            ].join(" ")}
+          >
+            {session.archived ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Restore chat"
+                onClick={() => setArchived(session.id, false)}
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Archive chat"
+                onClick={() => setArchived(session.id, true)}
+              >
+                <Archive className="h-4 w-4" />
+              </Button>
+            )}
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Delete chat"
+              onClick={() =>
+                setConfirmAction({
+                  type: "delete-chat",
+                  chatId: session.id,
+                })
+              }
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      );
+    });
+  };
+
+  const CONTENT_H = "h-[calc(100dvh-49px)] md:h-[calc(100dvh-57px)]";
+
+  return (
+    <div className="flex h-dvh flex-col overflow-hidden bg-zinc-50 dark:bg-black">
+      <div className="sticky top-0 z-40 h-12 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:h-14">
+        <div className="mx-auto flex h-full w-full max-w-7xl items-center justify-between gap-3 px-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2">
+            {sessionUser ? (
+              <div className="md:hidden">
+                <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+                  <SheetTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      aria-label="History"
+                    >
+                      <PanelLeft className="h-4 w-4" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent
+                    side="left"
+                    className="w-[92vw] max-w-[22rem] p-0"
+                  >
+                    <div className="flex h-dvh flex-col">
+                      <SheetHeader className="border-b px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <SheetTitle className="text-base">History</SheetTitle>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {historyActions}
+                        </div>
+                      </SheetHeader>
+
+                      <div className="min-h-0 flex-1 px-3 py-3">
+                        <ScrollArea className="h-full">
+                          <div className="space-y-1 pr-2">
+                            {renderSessionItems({ compact: true })}
+                          </div>
+                        </ScrollArea>
+                      </div>
+
+                      <div className="border-t p-3">
+                        <Button
+                          className="w-full"
+                          type="button"
+                          onClick={handleNewChat}
+                        >
+                          New chat
+                        </Button>
+                      </div>
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+            ) : null}
+
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
+                <Logo className="h-5 w-5" />
+                <div className="truncate text-base font-semibold tracking-tight">
+                  Cat99
+                </div>
+              </div>
+              {sessionUser ? (
+                <div className="truncate text-[11px] text-muted-foreground">
+                  {sessionUser.email ?? sessionUser.uid}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          {sessionUser ? (
+            <div className="flex items-center gap-2">
+              <div className="hidden items-center gap-2 md:flex">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => setModelPickerOpen(true)}
                   disabled={models.length === 0 || isSettingsSaving}
+                  className="min-w-0 max-w-full shrink truncate md:max-w-[18rem]"
                 >
                   {openRouterModel ? openRouterModel : "Select Model"}
                 </Button>
@@ -839,9 +1035,27 @@ export function HomeClient() {
                   disabled={modelsLoading || isSettingsSaving}
                 >
                   <RefreshCcw
-                    className={modelsLoading ? "mr-2 h-4 w-4 animate-spin" : "mr-2 h-4 w-4"}
+                    className={
+                      modelsLoading
+                        ? "mr-2 h-4 w-4 animate-spin"
+                        : "mr-2 h-4 w-4"
+                    }
                   />
                   Select
+                </Button>
+
+                <Button
+                  onClick={() => setShowNotes((notes) => !notes)}
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  aria-label={showNotes ? "Show chat" : "Show notes"}
+                >
+                  {!showNotes ? (
+                    <Notebook className="h-4 w-4" />
+                  ) : (
+                    <MessageSquare className="h-4 w-4" />
+                  )}
                 </Button>
 
                 <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
@@ -931,266 +1145,311 @@ export function HomeClient() {
                   Logout
                 </Button>
               </div>
-            </header>
 
-            <section className="grid min-h-0 flex-1 grid-cols-1 gap-4 overflow-hidden md:grid-cols-[16rem_1fr]">
-              <aside className="hidden min-h-0 flex-col gap-2 rounded-2xl border bg-background p-3 shadow-sm md:flex">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-foreground">History</p>
-                  <div className="flex items-center gap-1">
+              <div className="md:hidden">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowArchived((v) => !v)}
+                      variant="outline"
+                      size="icon"
+                      aria-label="Menu"
                     >
-                      {showArchived ? "Hide archived" : "Show archived"}
+                      <MoreVertical className="h-4 w-4" />
                     </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={loadSessions}
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuItem
+                      onClick={() => setModelPickerOpen(true)}
+                      disabled={models.length === 0 || isSettingsSaving}
                     >
-                      Refresh
-                    </Button>
-                  </div>
-                </div>
-                <div className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-1">
-                  {sessions.length === 0 ? (
-                    <p className="text-xs text-muted-foreground">
-                      No chats yet.
-                    </p>
-                  ) : (
-                    sessions.map((session) => {
-                      const isActive = session.id === activeChatId;
-                      const label =
-                        session.title ||
-                        session.preview ||
-                        `Chat ${session.id.slice(0, 8)}`;
+                      Select model
+                    </DropdownMenuItem>
 
-                      return (
-                        <div
-                          key={session.id}
-                          className={[
-                            "group flex w-full items-start gap-2 rounded-lg border px-2 py-1.5 text-left text-xs transition-colors",
-                            isActive
-                              ? "border-primary bg-primary/5"
-                              : "hover:bg-muted",
-                          ].join(" ")}
-                        >
-                          <button
-                            type="button"
-                            className="min-w-0 flex-1 text-left"
-                            onClick={() => openChat(session.id)}
-                          >
-                            <div className="line-clamp-2">{label}</div>
-                            <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
-                              {session.archived ? (
-                                <span className="rounded border px-1 py-0.5">
-                                  archived
-                                </span>
-                              ) : null}
-                              {session.updatedAt ? (
-                                <span>
-                                  {new Date(session.updatedAt).toLocaleString()}
-                                </span>
-                              ) : null}
-                            </div>
-                          </button>
+                    <DropdownMenuItem
+                      onClick={fetchModels}
+                      disabled={modelsLoading || isSettingsSaving}
+                    >
+                      {modelsLoading ? "Fetching models..." : "Fetch models"}
+                    </DropdownMenuItem>
 
-                          <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                            {session.archived ? (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label="Restore chat"
-                                onClick={() => setArchived(session.id, false)}
-                              >
-                                <RotateCcw className="h-4 w-4" />
-                              </Button>
-                            ) : (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label="Archive chat"
-                                onClick={() => setArchived(session.id, true)}
-                              >
-                                <Archive className="h-4 w-4" />
-                              </Button>
-                            )}
+                    <DropdownMenuItem onClick={() => setShowNotes((v) => !v)}>
+                      {showNotes ? "Show chat" : "Show notes"}
+                    </DropdownMenuItem>
 
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon-sm"
-                              aria-label="Delete chat"
-                              onClick={() =>
-                                setConfirmAction({
-                                  type: "delete-chat",
-                                  chatId: session.id,
-                                })
-                              }
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </aside>
+                    <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                      Settings
+                    </DropdownMenuItem>
 
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border bg-background p-4 shadow-sm">
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <p className="text-sm text-muted-foreground">
-                    {activeChatId ? (
-                      <>
-                        Conversation{" "}
-                        <span className="font-mono">{activeChatId}</span>
-                      </>
-                    ) : (
-                      "New conversation"
-                    )}
-                  </p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      if (!activeChatId) return;
-                      setConfirmAction({
-                        type: "clear-chat",
-                        chatId: activeChatId,
-                      });
-                    }}
-                    disabled={!activeChatId}
-                  >
-                    Clear
-                  </Button>
-                </div>
+                    <DropdownMenuItem onClick={handleNewChat}>
+                      New chat
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout}>
+                      Logout
+                    </DropdownMenuItem>
 
-                <Chat
-                  className="min-h-0 flex-1"
-                  messages={messages}
-                  input={input}
-                  handleInputChange={handleInputChange}
-                  handleSubmit={handleSubmit}
-                  isGenerating={isGenerating}
-                  stop={stop}
-                  setMessages={setMessages}
-                  append={append}
-                  suggestions={suggestions}
-                  onRateResponse={(messageId, rating) => {
-                    toast.success(`Rated ${rating} on ${messageId}`);
-                  }}
-                  transcribeAudio={async (blob) => {
-                    return `Audio transcription is not implemented in this POC (received ${blob.size} bytes).`;
-                  }}
-                />
-              </div>
-            </section>
-          </>
-        ) : (
-          <div className="flex flex-1 items-center justify-center">
-            <Card className="w-full max-w-md">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <CardTitle>
-                      {authMode === "login" ? "Sign in" : "Create account"}
-                    </CardTitle>
-                    <CardDescription>
-                      Email + password (Firebase Auth).
-                    </CardDescription>
-                  </div>
-                  <ThemeToggleButton />
-                </div>
-              </CardHeader>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <div className="flex w-full items-center justify-between">
+                        <span>Theme</span>
+                        <ThemeToggleButton />
+                      </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-              <CardContent>
-                <form className="space-y-3" onSubmit={handleAuthSubmit}>
-                  {authMode === "register" ? (
-                    <div className="space-y-1">
-                      <label className="text-sm font-medium">
-                        Display name
-                      </label>
+                <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Settings</DialogTitle>
+                      <DialogDescription>
+                        Saved to your Firebase account.
+                      </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <Label htmlFor="openrouter-key-mobile">
+                          OpenRouter API key
+                        </Label>
+                        {openRouterStatus.hasKey ? (
+                          <span className="text-xs text-muted-foreground">
+                            saved
+                            {openRouterStatus.last4
+                              ? ` ••••${openRouterStatus.last4}`
+                              : ""}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            not set
+                          </span>
+                        )}
+                      </div>
+
                       <Input
-                        value={authDisplayName}
-                        onChange={(e) => setAuthDisplayName(e.target.value)}
-                        placeholder="Ayush"
-                        autoComplete="name"
+                        id="openrouter-key-mobile"
+                        type="password"
+                        placeholder="sk-or-..."
+                        value={openRouterKeyInput}
+                        onChange={(e) => setOpenRouterKeyInput(e.target.value)}
+                        disabled={isSettingsLoading || isSettingsSaving}
+                      />
+
+                      <Alert>
+                        <AlertDescription>
+                          Stored server-side. It is not displayed back in full.
+                        </AlertDescription>
+                      </Alert>
+                    </div>
+
+                    <DialogFooter>
+                      {openRouterStatus.hasKey ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setSettingsOpen(false);
+                            setConfirmAction({ type: "remove-openrouter-key" });
+                          }}
+                          disabled={isSettingsSaving}
+                        >
+                          Remove key
+                        </Button>
+                      ) : null}
+                      <Button
+                        type="button"
+                        onClick={saveOpenRouterKey}
+                        disabled={isSettingsLoading || isSettingsSaving}
+                      >
+                        {isSettingsSaving ? "Saving..." : "Save"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
+      <div className={cn("mx-auto w-full max-w-7xl px-3 sm:px-6", CONTENT_H)}>
+        <div className="h-full py-3 sm:py-4">
+          {isSessionLoading ? (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              Loading...
+            </div>
+          ) : sessionUser ? (
+            showNotes ? (
+              <div className="h-full min-h-0 overflow-hidden rounded-2xl border bg-background shadow-sm">
+                <Notes />
+              </div>
+            ) : (
+              <section className="grid h-full grid-cols-1 gap-3 overflow-hidden md:grid-cols-[18rem_1fr] md:gap-4">
+                <aside className="hidden h-full flex-col gap-2 overflow-hidden rounded-2xl border bg-background p-3 shadow-sm md:flex">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-foreground">
+                      History
+                    </p>
+                    {historyActions}
+                  </div>
+
+                  <ScrollArea className="min-h-0 flex-1">
+                    <div className="space-y-1 pr-2">{renderSessionItems()}</div>
+                  </ScrollArea>
+                </aside>
+
+                <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border bg-background shadow-sm">
+                  <div className="flex items-center justify-between gap-2 border-b px-3 py-2 sm:px-4">
+                    <p className="truncate text-xs text-muted-foreground">
+                      {activeChatId ? (
+                        <>
+                          Conversation{" "}
+                          <span className="font-mono">{activeChatId}</span>
+                        </>
+                      ) : (
+                        "New conversation"
+                      )}
+                    </p>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (!activeChatId) return;
+                        setConfirmAction({
+                          type: "clear-chat",
+                          chatId: activeChatId,
+                        });
+                      }}
+                      disabled={!activeChatId}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+
+                  <div className="min-h-0 flex-1">
+                    <Chat
+                      className="h-full px-2 pt-2"
+                      messages={messages}
+                      input={input}
+                      handleInputChange={handleInputChange}
+                      handleSubmit={handleSubmit}
+                      isGenerating={isGenerating}
+                      stop={stop}
+                      setMessages={setMessages}
+                      append={append}
+                      suggestions={suggestions}
+                      onRateResponse={(messageId, rating) => {
+                        toast.success(`Rated ${rating} on ${messageId}`);
+                      }}
+                    />
+                  </div>
+                </div>
+              </section>
+            )
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <Card className="w-full max-w-md">
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1">
+                      <CardTitle>
+                        {authMode === "login" ? "Sign in" : "Create account"}
+                      </CardTitle>
+                      <CardDescription>
+                        Email + password (Firebase Auth).
+                      </CardDescription>
+                    </div>
+                    <ThemeToggleButton />
+                  </div>
+                </CardHeader>
+
+                <CardContent>
+                  <form className="space-y-3" onSubmit={handleAuthSubmit}>
+                    {authMode === "register" ? (
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium">
+                          Display name
+                        </label>
+                        <Input
+                          value={authDisplayName}
+                          onChange={(e) => setAuthDisplayName(e.target.value)}
+                          placeholder="Ayush"
+                          autoComplete="name"
+                        />
+                      </div>
+                    ) : null}
+
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">Email</label>
+                      <Input
+                        type="email"
+                        value={authEmail}
+                        onChange={(e) => setAuthEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        autoComplete="email"
+                        required
                       />
                     </div>
-                  ) : null}
 
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">Email</label>
-                    <Input
-                      type="email"
-                      value={authEmail}
-                      onChange={(e) => setAuthEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      autoComplete="email"
-                      required
-                    />
-                  </div>
+                    <div className="space-y-1">
+                      <label className="text-sm font-medium">Password</label>
+                      <Input
+                        type="password"
+                        value={authPassword}
+                        onChange={(e) => setAuthPassword(e.target.value)}
+                        autoComplete={
+                          authMode === "login"
+                            ? "current-password"
+                            : "new-password"
+                        }
+                        required
+                      />
+                    </div>
 
-                  <div className="space-y-1">
-                    <label className="text-sm font-medium">Password</label>
-                    <Input
-                      type="password"
-                      value={authPassword}
-                      onChange={(e) => setAuthPassword(e.target.value)}
-                      autoComplete={
-                        authMode === "login"
-                          ? "current-password"
-                          : "new-password"
-                      }
-                      required
-                    />
-                  </div>
+                    <Button
+                      className="w-full"
+                      type="submit"
+                      disabled={isAuthSubmitting}
+                    >
+                      {isAuthSubmitting
+                        ? "Please wait..."
+                        : authMode === "login"
+                        ? "Sign in"
+                        : "Create account"}
+                    </Button>
+                  </form>
+                </CardContent>
 
-                  <Button
-                    className="w-full"
-                    type="submit"
-                    disabled={isAuthSubmitting}
+                <CardFooter className="justify-between">
+                  <button
+                    type="button"
+                    className="text-sm text-muted-foreground hover:text-foreground"
+                    onClick={() =>
+                      setAuthMode((m) => (m === "login" ? "register" : "login"))
+                    }
                   >
-                    {isAuthSubmitting
-                      ? "Please wait..."
-                      : authMode === "login"
-                      ? "Sign in"
-                      : "Create account"}
-                  </Button>
-                </form>
-              </CardContent>
-
-              <CardFooter className="justify-between">
-                <button
-                  type="button"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                  onClick={() =>
-                    setAuthMode((m) => (m === "login" ? "register" : "login"))
-                  }
-                >
-                  {authMode === "login"
-                    ? "Need an account?"
-                    : "Already have an account?"}
-                </button>
-                <button
-                  type="button"
-                  className="text-sm text-muted-foreground hover:text-foreground"
-                  onClick={loadSession}
-                >
-                  Refresh
-                </button>
-              </CardFooter>
-            </Card>
-          </div>
-        )}
-      </main>
+                    {authMode === "login"
+                      ? "Need an account?"
+                      : "Already have an account?"}
+                  </button>
+                  <button
+                    type="button"
+                    className="text-sm text-muted-foreground hover:text-foreground"
+                    onClick={loadSession}
+                  >
+                    Refresh
+                  </button>
+                </CardFooter>
+              </Card>
+            </div>
+          )}
+        </div>
+      </div>
 
       <CommandDialog
         open={modelPickerOpen}
@@ -1209,9 +1468,16 @@ export function HomeClient() {
         <CommandList>
           <CommandEmpty>
             {models.length === 0
-              ? "No models loaded. Click Select to fetch."
+              ? "No models loaded. Click Fetch models."
               : "No models found."}
           </CommandEmpty>
+
+          {modelsError ? (
+            <div className="px-3 py-2 text-xs text-destructive">
+              {modelsError}
+            </div>
+          ) : null}
+
           <CommandGroup heading="Models">
             {models.map((model) => (
               <CommandItem

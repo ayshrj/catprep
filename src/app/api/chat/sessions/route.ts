@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import { randomUUID } from "crypto"
 
 import { getAdminDb } from "@/lib/firebase-admin"
+import { MessageContent, previewMessageContent } from "@/lib/message-content"
 import { getAuthenticatedUserId } from "../../auth/utils"
 
 export const runtime = "nodejs"
@@ -18,7 +19,7 @@ type ChatSession = {
 type StoredMessage = {
   id: string
   role: "user" | "assistant"
-  content: string
+  content: MessageContent
   createdAt?: string
 }
 
@@ -50,10 +51,11 @@ function sessionsFromMemory(userId: string, includeArchived: boolean) {
     const isArchived = archivedSet.has(id)
     if (!includeArchived && isArchived) continue
     const last = messages.at(-1)
+    const preview = last ? previewMessageContent(last.content, 120) : ""
     result.push({
       id,
       title: null,
-      preview: last?.content?.slice(0, 120) ?? null,
+      preview: preview ? preview : null,
       archived: isArchived,
       createdAt: messages.at(0)?.createdAt,
       updatedAt: last?.createdAt,

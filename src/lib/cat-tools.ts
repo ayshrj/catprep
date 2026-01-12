@@ -30,6 +30,22 @@ export type CatScenarioCode =
   | "S18"
   | "unknown";
 
+export const CatCoachIntentLabels: Record<CatCoachIntent, string> = {
+  greeting: "Greeting",
+  plan_request: "Plan Request",
+  mock_review: "Mock Review",
+  formula_request: "Formula Request",
+  topic_question: "Topic Question",
+  gdpi_request: "GDPI Request",
+  other: "Other",
+};
+
+export const CatCoachResponseModeLabels: Record<CatCoachResponseMode, string> =
+  {
+    onboarding_questions: "Onboarding Questions",
+    normal_coaching: "Normal Coaching",
+  };
+
 export type CatIntakeResult = {
   intent: CatCoachIntent;
   responseMode: CatCoachResponseMode;
@@ -321,116 +337,222 @@ function detectScenario(
 
   const hit = (re: RegExp) => re.test(lower);
 
-  // Strong explicit triggers first
-  if (hit(/from scratch|beginner|no experience|how do i start|start prep/)) {
-    return {
-      code: "S1",
-      confidence: "high",
-      reason: "User indicates beginner/from-scratch.",
-    };
+  type ScenarioCandidate = {
+    code: CatScenarioCode;
+    confidence: "low" | "med" | "high";
+    reason: string;
+    score: number;
+  };
+
+  const candidates: ScenarioCandidate[] = [];
+
+  const addCandidate = (
+    code: CatScenarioCode,
+    confidence: ScenarioCandidate["confidence"],
+    reason: string,
+    score: number
+  ) => {
+    candidates.push({ code, confidence, reason, score });
+  };
+
+  const findTimeLeft = () => {
+    const patterns = [
+      /(?:only|just|about|around|approx|approximately|nearly)?\s*(\d{1,2})\s*(weeks?|months?)\s*(?:left|remaining)\b/g,
+      /(?:cat|exam)\s*(?:in|after)\s*(\d{1,2})\s*(weeks?|months?)\b/g,
+      /last\s*(\d{1,2})\s*(weeks?|months?)\b/g,
+    ];
+
+    const matches: Array<{
+      value: number;
+      unit: "weeks" | "months";
+      raw: string;
+    }> = [];
+
+    for (const pattern of patterns) {
+      for (const match of lower.matchAll(pattern)) {
+        const value = Number(match[1]);
+        const unit = match[2].startsWith("week") ? "weeks" : "months";
+        if (!Number.isFinite(value) || value <= 0) continue;
+        matches.push({ value, unit, raw: match[0] });
+      }
+    }
+
+    if (matches.length === 0) return null;
+
+    const toWeeks = (m: { value: number; unit: "weeks" | "months" }) =>
+      m.unit === "weeks" ? m.value : m.value * 4;
+
+    matches.sort((a, b) => toWeeks(a) - toWeeks(b));
+    return matches[0];
+  };
+
+  const timeLeft = findTimeLeft();
+  if (timeLeft) {
+    const { value, unit } = timeLeft;
+    const weeks = unit === "weeks" ? value : value * 4;
+    if (weeks <= 8) {
+      addCandidate(
+        "S18",
+        "high",
+        `User indicates last ~8 weeks window (${value} ${unit} left).`,
+        95
+      );
+    } else if (weeks <= 16) {
+      addCandidate(
+        "S2",
+        "med",
+        `User indicates low time remaining (${value} ${unit} left).`,
+        85
+      );
+    }
   }
+
   if (
     hit(
-      /only\s*(\d+)\s*(months?|weeks?)\s*left|cat in \d+\s*(months?|weeks?)|last\s*\d+\s*(months?|weeks?)/
+      /from scratch|beginner|no experience|how do i start|how should i start|start prep|starting from zero|starting from basics|first time/i
     )
   ) {
-    // map to time-low or last-8-weeks
-    if (hit(/last\s*(8|7|6)\s*weeks?|last\s*2\s*months?/)) {
-      return {
-        code: "S18",
-        confidence: "med",
-        reason: "User indicates last ~8 weeks window.",
-      };
-    }
-    return {
-      code: "S2",
-      confidence: "med",
-      reason: "User indicates low time remaining.",
-    };
+    addCandidate("S1", "high", "User indicates beginner/from-scratch.", 90);
   }
+
   if (
-    hit(/busy|workload|overtime|no time|can'?t study weekdays|only weekends/)
+    hit(
+      /busy|workload|overtime|no time|can'?t study weekdays|only weekends|long hours|shift work|working professional/i
+    )
   ) {
-    return {
-      code: "S3",
-      confidence: "high",
-      reason: "User indicates heavy work / low weekday time.",
-    };
+    addCandidate(
+      "S3",
+      "high",
+      "User indicates heavy work / low weekday time.",
+      80
+    );
   }
-  if (hit(/plateau|stuck|not improving|same score|no improvement/)) {
-    return {
-      code: "S5",
-      confidence: "high",
-      reason: "User explicitly mentions plateau/stuck.",
-    };
+
+  if (
+    hit(
+      /improving slowly|slow improvement|progress slow|marks improving slowly|getting better but slow|improving but slow/i
+    )
+  ) {
+    addCandidate(
+      "S4",
+      "med",
+      "User indicates improvement but slow progress.",
+      50
+    );
   }
-  if (hit(/panic|anxiety in mocks|chaos|random strategy|messy mock/)) {
-    return {
-      code: "S14",
-      confidence: "high",
-      reason: "User mentions panic/chaos in mocks.",
-    };
+
+  const studyingALot = hit(
+    /studying (a lot|lot|hard|too much)|studying for hours|hours daily|daily for \d+ hours|grinding|putting in a lot/i
+  );
+  const notSeeingResults = hit(
+    /no score|score not improving|marks not improving|no results|not getting results|no improvement|score stuck/i
+  );
+
+  if (studyingALot && notSeeingResults) {
+    addCandidate(
+      "S15",
+      "high",
+      "User studies a lot but scores are not improving.",
+      78
+    );
+  }
+
+  if (hit(/plateau|stuck|same score|no improvement|not improving/i)) {
+    addCandidate(
+      "S5",
+      "high",
+      "User explicitly mentions plateau/stuck scores.",
+      72
+    );
+  }
+
+  if (
+    hit(/panic|anxiety in mocks|chaos|random strategy|messy mock|mock panic/i)
+  ) {
+    addCandidate("S14", "high", "User mentions panic/chaos in mocks.", 70);
+  }
+
+  if (
+    hit(
+      /forget(ting)?\s*(topics|stuff|formulas?|concepts?|things|chapters?)|weak revision|revision weak|revision poor|can'?t retain|not retaining|low retention|forget after|no revision/i
+    )
+  ) {
+    addCandidate(
+      "S16",
+      "high",
+      "User indicates weak revision/forgetting topics.",
+      68
+    );
   }
 
   // Section-specific weakness scenarios
-  if (hit(/cutoff|sectional cutoff|not clearing/)) {
-    return {
-      code: "S6",
-      confidence: "high",
-      reason: "User mentions cutoff risk.",
-    };
+  if (hit(/cutoff|sectional cutoff|not clearing cutoff|cutoff risk/i)) {
+    addCandidate("S6", "high", "User mentions cutoff risk.", 76);
   }
-  if (hit(/qa weak|quant weak|cannot solve quant|quants weak/)) {
-    return {
-      code: "S7",
-      confidence: "med",
-      reason: "User indicates QA weakness.",
-    };
+  if (
+    hit(
+      /qa weak|quant weak|quants weak|quantitative weak|qa basics weak|qa fundamentals weak|cannot solve quant/i
+    )
+  ) {
+    addCandidate("S7", "med", "User indicates QA weakness.", 58);
   }
-  if (hit(/negative marks|too many wrong|accuracy low in qa|guessing/)) {
-    return {
-      code: "S8",
-      confidence: "med",
-      reason: "User indicates negative marks / guessing.",
-    };
+  if (
+    hit(
+      /negative marks|too many wrong|accuracy low in qa|guessing|negative marking|accuracy low/i
+    )
+  ) {
+    addCandidate(
+      "S8",
+      "med",
+      "User indicates negative marks / guessing / low accuracy.",
+      57
+    );
   }
-  if (hit(/slow in qa|time runs out in qa|takes too long/)) {
-    return {
-      code: "S9",
-      confidence: "med",
-      reason: "User indicates QA speed issue.",
-    };
+  if (
+    hit(
+      /slow in qa|time runs out in qa|takes too long|qa speed|qa time management/i
+    )
+  ) {
+    addCandidate("S9", "med", "User indicates QA speed issue.", 56);
   }
-  if (hit(/rc accuracy low|cannot understand rc|inference wrong/)) {
-    return {
-      code: "S10",
-      confidence: "med",
-      reason: "User indicates RC accuracy issue.",
-    };
+  if (
+    hit(
+      /rc accuracy low|cannot understand rc|rc comprehension|inference wrong|rc score low|rc accuracy/i
+    )
+  ) {
+    addCandidate("S10", "med", "User indicates RC accuracy issue.", 55);
   }
-  if (hit(/para jumble|va weak|odd sentence|summary weak/)) {
-    return {
-      code: "S11",
-      confidence: "med",
-      reason: "User indicates VA weakness.",
-    };
+  if (
+    hit(
+      /para jumble|va weak|odd sentence|summary weak|para summary|sentence insertion|verbal ability weak/i
+    )
+  ) {
+    addCandidate("S11", "med", "User indicates VA weakness.", 54);
   }
-  if (hit(/cannot start dilr|lrdi scary|blank in dilr/)) {
-    return {
-      code: "S12",
-      confidence: "med",
-      reason: "User indicates DILR start problem.",
-    };
+  if (
+    hit(
+      /cannot start dilr|lrdi scary|blank in dilr|dilr basics weak|dilr start/i
+    )
+  ) {
+    addCandidate("S12", "med", "User indicates DILR start problem.", 53);
   }
-  if (hit(/stuck in a set|wasting time in dilr|time sink set/)) {
-    return {
-      code: "S13",
-      confidence: "med",
-      reason: "User indicates DILR time sink.",
-    };
+  if (
+    hit(
+      /stuck in a set|wasting time in dilr|time sink set|dilr time sink|dilr stuck/i
+    )
+  ) {
+    addCandidate("S13", "med", "User indicates DILR time sink.", 52);
   }
 
-  // If mock scores present + one section is very low, gently flag cutoff-ish
+  if (
+    hit(
+      /uneven strengths|imbalanced|one section weak|one section strong|section imbalance/i
+    )
+  ) {
+    addCandidate("S17", "low", "User indicates uneven section strengths.", 45);
+  }
+
+  // If mock scores present + one section is very low, gently flag uneven strengths
   if (
     scores &&
     (scores.VARC !== null || scores.DILR !== null || scores.QA !== null)
@@ -442,13 +564,29 @@ function detectScenario(
       const min = Math.min(...vals);
       const max = Math.max(...vals);
       if (max - min >= 15) {
-        return {
-          code: "S17",
-          confidence: "low",
-          reason: "Uneven sectional scores detected (big gap).",
-        };
+        addCandidate(
+          "S17",
+          "low",
+          "Uneven sectional scores detected (big gap).",
+          44
+        );
       }
     }
+  }
+
+  if (candidates.length > 0) {
+    const ranked = candidates
+      .map((candidate, index) => ({ ...candidate, index }))
+      .sort(
+        (a, b) =>
+          b.score - a.score || a.index - b.index || a.code.localeCompare(b.code)
+      );
+    const winner = ranked[0];
+    return {
+      code: winner.code,
+      confidence: winner.confidence,
+      reason: winner.reason,
+    };
   }
 
   return {
@@ -472,96 +610,86 @@ const FORMULA_DB: FormulaEntry[] = [
   {
     tag: "QA → Arithmetic → Percentages",
     mustKnow: [
-      "New = Old × (1 ± p/100)",
-      "Successive change: net% = a + b + (ab/100) (use signs)",
-      "If A is x% more than B ⇒ A = B(1+x/100); B = A/(1+x/100)",
+      "$$\\text{New}=\\text{Old}\\left(1\\pm\\frac{p}{100}\\right)$$",
+      "$$\\text{Net\\%}=a+b+\\frac{ab}{100}\\ \\ (\\text{use signs})$$",
+      "$$A=B\\left(1+\\frac{x}{100}\\right),\\quad B=\\frac{A}{1+\\frac{x}{100}}$$",
     ],
     shortcuts: [
-      "Use fraction anchors: 1/3=33.33%, 1/6=16.67%, 1/8=12.5%, 1/11≈9.09%",
-      "Approx: 19% = 20% − 1% (fast mental)",
+      "$$\\frac{1}{8}=12.5\\%,\\ \\frac{1}{6}\\approx16.67\\%,\\ \\frac{1}{11}\\approx9.09\\%$$",
+      "Mental: 19% = 20% - 1% (fast)",
     ],
     traps: [
-      "Percent change base confusion (always decide base: Old or New)",
-      "Two discounts are not additive (use successive formula)",
+      "Base confusion (Old vs New). Decide base before calculating.",
+      "Two discounts are not additive (use successive change).",
     ],
     practiceTypes: [
-      "Successive % change (salary, price)",
-      "Discount + profit combos",
-      "Reverse percentages (original price)",
+      "Reverse percentage",
+      "Successive changes",
+      "Discount + profit chains",
     ],
   },
   {
     tag: "QA → Arithmetic → Time & Work",
     mustKnow: [
-      "Rate = 1/time; Combined rate = sum of rates",
-      "A in a, B in b ⇒ together time = ab/(a+b)",
-      "Work proportional to (men × days × hours × efficiency)",
+      "$$\\text{Rate}=\\frac{1}{\\text{Time}},\\quad \\text{Combined rate}=\\sum \\text{rates}$$",
+      "$$T_{\\text{together}}=\\frac{ab}{a+b}$$",
+      "$$\\text{Work}\\propto (\\text{men})\\cdot(\\text{days})\\cdot(\\text{hours})\\cdot(\\text{efficiency})$$",
     ],
     shortcuts: [
-      "Use LCM as total work for multi-worker problems",
-      "Convert 'A is k times as efficient' ⇒ time inverse",
+      "Use LCM as total work for multi-worker problems.",
+      "If A is k times efficient, time ratio is inverse (A:B = 1:k).",
     ],
     traps: [
-      "Mixing 'work done' vs 'remaining work'",
-      "Not treating 'leak/outlet' as negative rate",
+      "Mixing work done vs remaining work.",
+      "Not treating leak/outlet as negative rate.",
     ],
-    practiceTypes: [
-      "2-person + 3-person combined work",
-      "Efficiency ratios",
-      "Alternate day work",
-    ],
+    practiceTypes: ["Combined work", "Efficiency ratios", "Alternate day work"],
   },
   {
     tag: "QA → Arithmetic → Time–Speed–Distance",
     mustKnow: [
-      "Distance = speed × time",
-      "Relative speed: opposite = v1+v2; same direction = |v1−v2|",
-      "Average speed (equal distance) = 2v1v2/(v1+v2)",
+      "$$D=S\\cdot T$$",
+      "$$v_{\\text{rel}}=\\begin{cases}v_1+v_2 & \\text{opposite}\\\\|v_1-v_2| & \\text{same direction}\\end{cases}$$",
+      "$$v_{\\text{avg}}=\\frac{2v_1v_2}{v_1+v_2}\\ \\ (\\text{equal distance})$$",
+      "$$1\\ \\text{m/s}=3.6\\ \\text{km/h}$$",
     ],
     shortcuts: [
-      "Trains: time to cross pole = length/speed; platform = (train+platform)/speed",
-      "Boats: downstream = u+v, upstream = u−v (u=boat in still water, v=current)",
+      "Trains: pole time = length/speed; platform time = (train+platform)/speed.",
+      "Boats: downstream = u+v, upstream = u-v.",
     ],
-    traps: [
-      "Unit mismatch (km/h vs m/s; 1 m/s = 3.6 km/h)",
-      "Wrong relative speed sign",
-    ],
-    practiceTypes: [
-      "Trains crossing problems",
-      "Boats & streams",
-      "Circular track meet/catch",
-    ],
+    traps: ["Unit mismatch", "Wrong relative speed sign"],
+    practiceTypes: ["Trains", "Boats & streams", "Circular track meet/catch"],
   },
 
   // QA Algebra
   {
     tag: "QA → Algebra → Quadratic",
     mustKnow: [
-      "ax^2+bx+c=0 ⇒ sum roots = −b/a, product = c/a",
-      "Discriminant D=b^2−4ac (real roots if D≥0)",
+      "$$D=b^2-4ac$$",
+      "$$\\alpha+\\beta=-\\frac{b}{a},\\quad \\alpha\\beta=\\frac{c}{a}$$",
     ],
     shortcuts: [
-      "If options given, plug options into equation quickly",
-      "Use Vieta to compute expressions in roots without solving",
+      "If options exist, plug-in options quickly.",
+      "Use Vieta to simplify expressions in roots without solving.",
     ],
-    traps: ["Forgetting a≠1 scaling in sum/product"],
+    traps: ["Forgetting scaling when a \\neq 1."],
     practiceTypes: [
-      "Roots-based expression",
-      "Parameter-based quadratic",
-      "Inequality using D",
+      "Roots expression",
+      "Parameter quadratic",
+      "D-based inequality",
     ],
   },
   {
     tag: "QA → Algebra → Sequences & Series",
     mustKnow: [
-      "AP: Tn=a+(n−1)d; Sn=n/2(2a+(n−1)d)",
-      "GP: Tn=ar^(n−1); Sn=a(r^n−1)/(r−1), r≠1",
+      "$$\\text{AP: } T_n=a+(n-1)d,\\quad S_n=\\frac{n}{2}\\left(2a+(n-1)d\\right)$$",
+      "$$\\text{GP: } T_n=ar^{n-1},\\quad S_n=a\\frac{r^n-1}{r-1}\\ (r\\ne 1)$$",
     ],
     shortcuts: [
-      "Use difference tables for pattern spotting",
-      "For sums, check if telescoping possible",
+      "Use difference tables for patterns.",
+      "Check telescoping when possible.",
     ],
-    traps: ["Mixing Tn and Sn", "Sign errors in r<0"],
+    traps: ["Mixing T_n and S_n", "Sign errors when r<0"],
     practiceTypes: [
       "AP/GP word problems",
       "Sum constraints",
@@ -573,110 +701,91 @@ const FORMULA_DB: FormulaEntry[] = [
   {
     tag: "QA → Geometry → Triangles",
     mustKnow: [
-      "Pythagoras: a^2+b^2=c^2 (right triangle)",
-      "Area = 1/2 × base × height",
-      "Special triangles: 45-45-90 (1:1:√2), 30-60-90 (1:√3:2)",
+      "$$a^2+b^2=c^2$$",
+      "$$\\text{Area}=\\frac{1}{2}bh$$",
+      "Special triangles: $45-45-90\\ (1:1:\\sqrt{2}),\\ 30-60-90\\ (1:\\sqrt{3}:2)$",
     ],
     shortcuts: [
-      "Use common triples: 3-4-5, 5-12-13, 8-15-17",
-      "Similarity ⇒ ratios of sides = ratios of heights = ratios of medians (in similar triangles)",
+      "Use triples: 3-4-5, 5-12-13, 8-15-17.",
+      "Similarity: side ratios map to heights/medians in similar triangles.",
     ],
-    traps: ["Confusing angle bisector ratio vs median"],
-    practiceTypes: [
-      "Similarity",
-      "Right triangles",
-      "Max area / min perimeter style",
-    ],
+    traps: ["Confusing angle bisector rule vs median."],
+    practiceTypes: ["Similarity", "Right triangles", "Max/min geometry"],
   },
   {
     tag: "QA → Geometry → Circles",
     mustKnow: [
-      "Angle in semicircle = 90°",
-      "Tangent ⟂ radius at point of contact",
-      "Cyclic quadrilateral: opposite angles sum 180°",
+      "Angle in semicircle = $90^{\\circ}$",
+      "Tangent is perpendicular to radius at contact point",
+      "Cyclic quadrilateral: opposite angles sum to $180^{\\circ}$",
     ],
     shortcuts: [
-      "If tangents from external point: lengths equal",
-      "Use chord/arc symmetry for equal angles",
+      "Tangents from external point have equal lengths.",
+      "Use equal chords \\(\\Rightarrow\\) equal angles (and vice versa).",
     ],
-    traps: ["Mixing arc angle vs central angle"],
-    practiceTypes: [
-      "Tangents",
-      "Cyclic quadrilaterals",
-      "Chord-angle problems",
-    ],
+    traps: ["Mixing central angle vs inscribed angle logic."],
+    practiceTypes: ["Tangents", "Cyclic quads", "Chord-angle"],
   },
 
   // Number system
   {
     tag: "QA → Number System → Remainders / Cyclicity",
     mustKnow: [
-      "(a±b) mod m, (a×b) mod m, a^k mod m cycles",
-      "Last digit cycles length usually 4 (for bases 2,3,7,8); 2 for 4,9; 1 for 0,1,5,6",
+      "Use modular rules: $(a\\pm b)\\bmod m$, $(a\\cdot b)\\bmod m$",
+      "Last digit cycles: length 4 for 2,3,7,8; length 2 for 4,9; length 1 for 0,1,5,6",
     ],
     shortcuts: [
-      "Compute exponent mod cycle length",
-      "Use mod 9 (digit sum) for quick sanity checks",
+      "Reduce exponent modulo cycle length.",
+      "Use mod 9 digit sum as quick sanity check (when applicable).",
     ],
-    traps: ["Wrong cycle length", "Forgetting mod with subtraction (negative)"],
-    practiceTypes: [
-      "Last digit",
-      "Large power remainder",
-      "Pattern-based remainder",
-    ],
+    traps: ["Wrong cycle length", "Negative remainder handling mistakes"],
+    practiceTypes: ["Last digit", "Large power remainder", "Pattern remainder"],
   },
   {
     tag: "QA → Number System → Factorials / Trailing Zeros",
     mustKnow: [
-      "Trailing zeros in n! = count of 5s = ⌊n/5⌋+⌊n/25⌋+⌊n/125⌋+…",
-      "Highest power of prime p in n! uses repeated division sum",
+      "$$Z(n!)=\\left\\lfloor\\frac{n}{5}\\right\\rfloor+\\left\\lfloor\\frac{n}{25}\\right\\rfloor+\\left\\lfloor\\frac{n}{125}\\right\\rfloor+\\cdots$$",
+      "Highest power of prime p in $n!$ uses repeated division sum.",
     ],
-    shortcuts: [
-      "Count 2s/5s separately in product-type trailing zero problems",
-    ],
-    traps: ["Forgetting higher powers 25,125..."],
-    practiceTypes: [
-      "Trailing zeros",
-      "Highest power",
-      "Factorial remainder (basic)",
-    ],
+    shortcuts: ["In products, count 2s and 5s separately."],
+    traps: ["Forgetting 25, 125, ... contributions."],
+    practiceTypes: ["Trailing zeros", "Highest power", "Factorial prime power"],
   },
 
   // Modern math
   {
     tag: "QA → Modern Math → P&C",
     mustKnow: [
-      "nPr = n!/(n−r)! ; nCr = n!/(r!(n−r)!)",
-      "Arrangements with repetition: n^r",
-      "Permutations of multiset: n!/ (a!b!c!)",
+      "$${}^nP_r=\\frac{n!}{(n-r)!},\\quad {}^nC_r=\\frac{n!}{r!(n-r)!}$$",
+      "$$\\text{Repetition: } n^r$$",
+      "$$\\text{Multiset permutations: } \\frac{n!}{a!b!c!\\cdots}$$",
     ],
     shortcuts: [
-      "Use complement counting (all − bad)",
-      "Use symmetry: nCr = nC(n−r)",
+      "Use complement counting.",
+      "$$\\binom{n}{r}=\\binom{n}{n-r}$$",
     ],
-    traps: ["Order vs selection confusion"],
-    practiceTypes: [
-      "Arrangements",
-      "Grouping/committees",
-      "Digit/letter counting",
-    ],
+    traps: ["Order vs selection confusion."],
+    practiceTypes: ["Arrangements", "Committees", "Digit/letter counting"],
   },
   {
     tag: "QA → Modern Math → Probability",
     mustKnow: [
-      "P(A∪B)=P(A)+P(B)−P(A∩B)",
-      "At least one = 1 − none",
-      "Independent ⇒ P(A∩B)=P(A)P(B)",
+      "$$P(A\\cup B)=P(A)+P(B)-P(A\\cap B)$$",
+      "$$P(\\ge 1)=1-P(0)$$",
+      "$$\\text{Independence: } P(A\\cap B)=P(A)\\cdot P(B)$$",
     ],
     shortcuts: [
-      "Use complement for 'at least one' always",
-      "If choices are few, use casework systematically",
+      "Use complement for 'at least one'.",
+      "Do systematic casework when small.",
     ],
-    traps: ["Double counting overlap", "Assuming independence wrongly"],
+    traps: [
+      "Assuming independence without justification.",
+      "Double-counting overlap.",
+    ],
     practiceTypes: [
       "At least one",
       "Conditional probability (basic)",
-      "Balls/cards classic",
+      "Balls/cards",
     ],
   },
 
@@ -684,17 +793,17 @@ const FORMULA_DB: FormulaEntry[] = [
   {
     tag: "DILR → Strategy → Set selection",
     mustKnow: [
-      "First 2–3 mins: scan all sets; pick 2 easiest first",
-      "Drop rule: if no progress by 8–10 mins, leave it",
-      "Target: 2 solid sets consistently, then push to 3",
+      "Scan 2–3 mins: rank sets; attempt easiest 2 first.",
+      "Drop if no progress by 8–10 mins.",
+      "Target: 2 solid sets consistently, then push to 3.",
     ],
     shortcuts: [
-      "Prefer sets with clean tables / fewer variables",
-      "Avoid sets with too many cases unless it’s your strength",
+      "Prefer sets with clean tables and fewer variables.",
+      "Avoid heavy casework unless it’s your strength.",
     ],
-    traps: ["Marrying a set", "Starting hardest set first"],
+    traps: ["Marrying a set", "Starting with the hardest set first"],
     practiceTypes: [
-      "Timed set scans",
+      "Timed scans",
       "2-set strategy drills",
       "Reattempt old sets",
     ],
@@ -704,15 +813,15 @@ const FORMULA_DB: FormulaEntry[] = [
   {
     tag: "VARC → RC",
     mustKnow: [
-      "Eliminate out-of-scope options",
-      "Beware extreme words (always/never) unless passage supports",
-      "Main idea ≠ detail; inference must be supported, not guessed",
+      "Eliminate out-of-scope options.",
+      "Beware extreme words (always/never) unless passage supports.",
+      "Inference must be supported by passage logic (no outside knowledge).",
     ],
     shortcuts: [
-      "Read paragraph roles: intro → argument → caveat → conclusion",
-      "Option elimination beats 'finding perfect answer'",
+      "Track structure: intro → claim → evidence → caveat → conclusion.",
+      "Win by elimination, not by hunting 'perfect' phrasing.",
     ],
-    traps: ["Using outside knowledge", "Over-inference"],
+    traps: ["Outside knowledge", "Over-inference"],
     practiceTypes: [
       "2 RC/day + review",
       "Inference-only drills",

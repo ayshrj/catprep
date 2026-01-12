@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { PROMPT_CAT } from "@/lib/cat";
 import { CAT_COACH_TOOLS, executeCatTool } from "@/lib/cat-tools";
 import { getAdminDb } from "@/lib/firebase-admin";
+import { parseAssistantJsonOrThrow } from "@/lib/llm-response-parser";
+import { MessageContent, stringifyMessageContent } from "@/lib/message-content";
 import { getAuthenticatedUserId } from "../../auth/utils";
 
 export const runtime = "nodejs";
@@ -10,7 +12,7 @@ export const runtime = "nodejs";
 type StoredMessage = {
   id: string;
   role: "user" | "assistant" | (string & {});
-  content: string;
+  content: MessageContent;
   createdAt?: string;
 };
 
@@ -28,20 +30,20 @@ type OpenRouterChatMessage = {
 const TOOLING_INSTRUCTIONS = `You have tool access.
 
 Rules:
-- Always call tool \`cat_intake\` first (forced by backend).
-- If \`cat_intake.intent\` is "mock_review" and scores are present:
-  - Call \`cat_mock_diagnose\` using extracted scores + any notes text.
+- Always call tool "cat_intake" first (forced by backend).
+- If "cat_intake.intent" is "mock_review" and scores are present:
+  - Call "cat_mock_diagnose" using extracted scores + any notes text.
 - If user asks for "formula/shortcut/trick/revision sheet" OR asks a concept-heavy question:
-  - Call \`cat_formula_lookup\` with the topic tag (preferred) or a query (fallback).
-- Use \`cat_extract_mock_scores\` when user provides scores in free text.
-- Use \`cat_detect_topic\` when user asks about a topic/question and you need section/tag hints.
+  - Call "cat_formula_lookup" with the topic tag (preferred) or a query (fallback).
+- Use "cat_extract_mock_scores" when user provides scores in free text.
+- Use "cat_detect_topic" when user asks about a topic/question and you need section/tag hints.
 - Follow tool results strictly.
 
-Response rules:
-- Answer user’s question directly first.
-- Ask onboarding questions ONLY when user explicitly asked for a plan AND \`cat_intake.shouldAskQuickQuestions\` is true.
-- If \`cat_intake.responseMode\` is \`onboarding_questions\`: ask only \`quickQuestions\`. No long plan.
-- Do not dump giant tables unless user asks.
+Response rules (STRICT):
+- Your FINAL assistant message MUST be EXACTLY ONE valid JSON object (no markdown/code fences).
+- It MUST match the JSON schema described in the system prompt (PROMPT_CAT).
+- Include tool-derived fields in the JSON (intent/responseMode/scenario/section/topicTag/etc).
+- If responseMode is "onboarding_questions": ask ONLY quickQuestions (inside JSON). No long plan.
 `;
 
 function normalizeChatId(raw: string) {
@@ -95,7 +97,6 @@ async function readChatMessages(userId: string, chatId: string) {
 }
 
 function buildContextMessages(allMessages: StoredMessage[]) {
-  // Keep context bounded to avoid blowing up token usage.
   const maxMessages = 24;
   const recent = allMessages.slice(-maxMessages);
 
@@ -106,8 +107,8 @@ function buildContextMessages(allMessages: StoredMessage[]) {
 
   for (const message of recent) {
     if (message.role !== "user" && message.role !== "assistant") continue;
-    const content = typeof message.content === "string" ? message.content : "";
-    if (!content.trim()) continue;
+    const content = stringifyMessageContent(message.content).trim();
+    if (!content) continue;
     const role: "user" | "assistant" =
       message.role === "assistant" ? "assistant" : "user";
     openRouterMessages.push({ role, content });
@@ -137,6 +138,7 @@ function parseToolArgs(raw: unknown) {
   }
 }
 
+
 async function callOpenRouterChatCompletions({
   apiKey,
   model,
@@ -144,6 +146,7 @@ async function callOpenRouterChatCompletions({
   messages,
   tools,
   toolChoice,
+  jsonMode,
 }: {
   apiKey: string;
   model: string;
@@ -151,7 +154,21 @@ async function callOpenRouterChatCompletions({
   messages: OpenRouterChatMessage[];
   tools?: unknown;
   toolChoice?: unknown;
+  jsonMode?: boolean;
 }) {
+  const body: any = {
+    model,
+    messages,
+    temperature: 0.3,
+    ...(tools ? { tools } : {}),
+    ...(toolChoice ? { tool_choice: toolChoice } : {}),
+  };
+
+  // Best-effort JSON mode (some providers/models support this; if not, we fallback)
+  if (jsonMode) {
+    body.response_format = { type: "json_object" };
+  }
+
   const response = await fetch(
     "https://openrouter.ai/api/v1/chat/completions",
     {
@@ -162,13 +179,7 @@ async function callOpenRouterChatCompletions({
         "HTTP-Referer": origin,
         "X-Title": "CAT Coach",
       },
-      body: JSON.stringify({
-        model,
-        messages,
-        temperature: 0.3,
-        ...(tools ? { tools } : {}),
-        ...(toolChoice ? { tool_choice: toolChoice } : {}),
-      }),
+      body: JSON.stringify(body),
     }
   );
 
@@ -218,24 +229,45 @@ async function generateCatCoachReply({
         messages: history,
         tools: CAT_COACH_TOOLS,
         toolChoice,
+        jsonMode: true,
       });
     } catch (error: any) {
       const msg = String(error?.message ?? "");
       const lowered = msg.toLowerCase();
+
       const looksLikeToolSupportIssue =
         lowered.includes("tool") ||
         lowered.includes("tool_calls") ||
         lowered.includes("function calling") ||
         lowered.includes("tools are not supported");
 
-      if (!looksLikeToolSupportIssue) throw error;
+      const looksLikeJsonModeIssue =
+        lowered.includes("response_format") ||
+        lowered.includes("json_object") ||
+        lowered.includes("json mode");
 
-      data = await callOpenRouterChatCompletions({
-        apiKey,
-        model,
-        origin,
-        messages: history,
-      });
+      // If tools or json-mode not supported, retry without those features.
+      if (looksLikeToolSupportIssue) {
+        data = await callOpenRouterChatCompletions({
+          apiKey,
+          model,
+          origin,
+          messages: history,
+          jsonMode: true,
+        });
+      } else if (looksLikeJsonModeIssue) {
+        data = await callOpenRouterChatCompletions({
+          apiKey,
+          model,
+          origin,
+          messages: history,
+          tools: CAT_COACH_TOOLS,
+          toolChoice,
+          jsonMode: false,
+        });
+      } else {
+        throw error;
+      }
     }
 
     const message = data?.choices?.[0]?.message ?? null;
@@ -365,10 +397,24 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // ✅ Parse + validate JSON response from model
+  let parsed: any;
+  try {
+    parsed = parseAssistantJsonOrThrow(content);
+  } catch (e: any) {
+    return NextResponse.json(
+      {
+        error: String(e?.message ?? "Model did not return valid JSON."),
+        raw: content,
+      },
+      { status: 500 }
+    );
+  }
+
   return NextResponse.json({
     message: {
       role: "assistant",
-      content,
+      content: parsed,
       model: settings.model,
     },
   });

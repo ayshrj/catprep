@@ -1,5 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { getAdminDb } from "@/lib/firebase-admin"
+import {
+  MessageContent,
+  coerceStoredMessageContent,
+  previewMessageContent,
+  sanitizeForFirestore,
+  restoreFromFirestore,
+} from "@/lib/message-content"
 import { getAuthenticatedUserId } from "../../auth/utils"
 
 export const runtime = "nodejs"
@@ -13,7 +20,7 @@ type StoredAttachment = {
 type StoredMessage = {
   id: string
   role: "user" | "assistant"
-  content: string
+  content: MessageContent
   createdAt?: string
   experimental_attachments?: StoredAttachment[]
 }
@@ -53,7 +60,9 @@ function getMemorySession(userId: string, sessionId: string) {
 function sanitizeMessage(message: StoredMessage, now: string): StoredMessage {
   const id = typeof message.id === "string" ? message.id.trim() : ""
   const role = message.role === "assistant" ? "assistant" : "user"
-  const content = typeof message.content === "string" ? message.content : ""
+  const content = sanitizeForFirestore(
+    coerceStoredMessageContent(message.content) ?? ""
+  ) as MessageContent
 
   const attachments = Array.isArray(message.experimental_attachments)
     ? message.experimental_attachments
@@ -90,7 +99,10 @@ function sanitizeMessage(message: StoredMessage, now: string): StoredMessage {
 async function readMessages(userId: string, sessionId: string) {
   const db = getAdminDb()
   if (!db) {
-    return getMemorySession(userId, sessionId)
+    return getMemorySession(userId, sessionId).map((message) => ({
+      ...message,
+      content: restoreFromFirestore(message.content) as MessageContent,
+    }))
   }
 
   const sessionRef = db
@@ -104,7 +116,13 @@ async function readMessages(userId: string, sessionId: string) {
     .orderBy("createdAt", "asc")
     .get()
 
-  return snapshot.docs.map((doc) => doc.data() as StoredMessage)
+  return snapshot.docs.map((doc) => {
+    const data = doc.data() as StoredMessage
+    return {
+      ...data,
+      content: restoreFromFirestore(data.content) as MessageContent,
+    }
+  })
 }
 
 async function appendMessages(
@@ -140,10 +158,9 @@ async function appendMessages(
   await sessionRef.set({ updatedAt: now, createdAt: now }, { merge: true })
 
   const latestMessage = messages.at(-1)
-  const preview =
-    latestMessage && typeof latestMessage.content === "string"
-      ? latestMessage.content.trim().slice(0, 200)
-      : ""
+  const preview = latestMessage
+    ? previewMessageContent(latestMessage.content, 200)
+    : ""
 
   if (preview) {
     await sessionRef.set({ preview }, { merge: true })
