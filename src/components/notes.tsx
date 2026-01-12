@@ -110,11 +110,11 @@ export function MarkdownRenderer({
           li: withHighlightedClass("li", "my-1.5"),
           td: withHighlightedClass(
             "td",
-            "border border-foreground/20 px-4 py-2 text-left [&[align=center]]:text-center [&[align=right]]:text-right"
+            "border border-foreground/20 px-4 py-2 text-left [[align=center]]:text-center [[align=right]]:text-right"
           ),
           th: withHighlightedClass(
             "th",
-            "border border-foreground/20 px-4 py-2 text-left font-bold [&[align=center]]:text-center [&[align=right]]:text-right"
+            "border border-foreground/20 px-4 py-2 text-left font-bold [[align=center]]:text-center [[align=right]]:text-right"
           ),
         }}
       >
@@ -209,19 +209,43 @@ const COMPONENTS = {
   ol: withClass("ol", "list-decimal space-y-2 pl-6"),
   ul: withClass("ul", "list-disc space-y-2 pl-6"),
   li: withClass("li", "my-1.5"),
-  table: withClass(
-    "table",
-    "w-full border-collapse overflow-y-auto rounded-md border border-foreground/20"
+  table: ({ node, className, children, ...props }: any) => (
+    <div className="my-4 w-full overflow-hidden rounded-lg border border-foreground/20">
+      <table className={cn("w-full border-collapse", className)} {...props}>
+        {children}
+      </table>
+    </div>
   ),
-  th: withClass(
-    "th",
-    "border border-foreground/20 px-4 py-2 text-left font-bold [&[align=center]]:text-center [&[align=right]]:text-right"
+
+  th: ({ node, className, ...props }: any) => (
+    <th
+      className={cn(
+        "border border-foreground/20 px-4 py-2 text-left font-bold",
+        "first:rounded-tl-lg last:rounded-tr-lg",
+        "[[align=center]]:text-center [[align=right]]:text-right",
+        className
+      )}
+      {...props}
+    />
   ),
-  td: withClass(
-    "td",
-    "border border-foreground/20 px-4 py-2 text-left [&[align=center]]:text-center [&[align=right]]:text-right"
+
+  td: ({ node, className, ...props }: any) => (
+    <td
+      className={cn(
+        "border border-foreground/20 px-4 py-2 text-left",
+        "[[align=center]]:text-center [[align=right]]:text-right",
+        className
+      )}
+      {...props}
+    />
   ),
-  tr: withClass("tr", "m-0 border-t p-0 even:bg-muted"),
+
+  tr: ({ node, className, ...props }: any) => (
+    <tr
+      className={cn("m-0 border-t p-0 even:bg-muted", className)}
+      {...props}
+    />
+  ),
   p: withClass("p", "whitespace-pre-wrap"),
   hr: withClass("hr", "border-foreground/20"),
 };
