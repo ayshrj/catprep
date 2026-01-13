@@ -12,9 +12,7 @@ export function InsertHorizontalRule() {
   return (
     <SelectItem
       value="horizontal-rule"
-      onPointerUp={() =>
-        activeEditor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)
-      }
+      onPointerUp={() => activeEditor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)}
       className=""
     >
       <div className="flex items-center gap-1">

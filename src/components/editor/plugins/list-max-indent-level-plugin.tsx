@@ -7,7 +7,6 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { useEffect } from "react";
 import { $getListDepth, $isListItemNode, $isListNode } from "@lexical/list";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import type { ElementNode, RangeSelection } from "lexical";
@@ -18,20 +17,16 @@ import {
   COMMAND_PRIORITY_CRITICAL,
   INDENT_CONTENT_COMMAND,
 } from "lexical";
+import { useEffect } from "react";
 
 function getElementNodesInSelection(selection: RangeSelection): Set<ElementNode> {
   const nodesInSelection = selection.getNodes();
 
   if (nodesInSelection.length === 0) {
-    return new Set([
-      selection.anchor.getNode().getParentOrThrow(),
-      selection.focus.getNode().getParentOrThrow(),
-    ]);
+    return new Set([selection.anchor.getNode().getParentOrThrow(), selection.focus.getNode().getParentOrThrow()]);
   }
 
-  return new Set(
-    nodesInSelection.map((n) => ($isElementNode(n) ? n : n.getParentOrThrow())),
-  );
+  return new Set(nodesInSelection.map(n => ($isElementNode(n) ? n : n.getParentOrThrow())));
 }
 
 function $shouldPreventIndent(maxDepth: number): boolean {
@@ -52,9 +47,7 @@ function $shouldPreventIndent(maxDepth: number): boolean {
       const parent = elementNode.getParent();
 
       if (!$isListNode(parent)) {
-        throw new Error(
-          "ListMaxIndentLevelPlugin: A ListItemNode must have a ListNode for a parent.",
-        );
+        throw new Error("ListMaxIndentLevelPlugin: A ListItemNode must have a ListNode for a parent.");
       }
 
       totalDepth = Math.max($getListDepth(parent) + 1, totalDepth);
@@ -71,7 +64,7 @@ export function ListMaxIndentLevelPlugin({ maxDepth = 7 }: { maxDepth?: number }
     return editor.registerCommand(
       INDENT_CONTENT_COMMAND,
       () => $shouldPreventIndent(maxDepth),
-      COMMAND_PRIORITY_CRITICAL,
+      COMMAND_PRIORITY_CRITICAL
     );
   }, [editor, maxDepth]);
   return null;

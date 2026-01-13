@@ -1,7 +1,8 @@
 import type { SerializedEditorState } from "lexical";
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { getAdminDb } from "@/lib/firebase-admin";
+
 import { getAuthenticatedUserId } from "../../auth/utils";
 
 export const runtime = "nodejs";
@@ -35,12 +36,7 @@ async function fetchFromFirestore(userId: string, key: string) {
   if (!db) return null;
 
   try {
-    const doc = await db
-      .collection("users")
-      .doc(userId)
-      .collection("editor_states")
-      .doc(key)
-      .get();
+    const doc = await db.collection("users").doc(userId).collection("editor_states").doc(key).get();
 
     if (!doc.exists) {
       return null;
@@ -58,27 +54,18 @@ async function fetchFromFirestore(userId: string, key: string) {
   }
 }
 
-async function persistToFirestore(
-  userId: string,
-  key: string,
-  payload: SerializedEditorState
-) {
+async function persistToFirestore(userId: string, key: string, payload: SerializedEditorState) {
   const db = getAdminDb();
   if (!db) return false;
 
   try {
-    await db
-      .collection("users")
-      .doc(userId)
-      .collection("editor_states")
-      .doc(key)
-      .set(
-        {
-          payload,
-          updatedAt: new Date().toISOString(),
-        },
-        { merge: true }
-      );
+    await db.collection("users").doc(userId).collection("editor_states").doc(key).set(
+      {
+        payload,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
 
     return true;
   } catch (error) {
@@ -96,10 +83,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const key = normalizeKey(searchParams.get("key"));
   if (!key) {
-    return NextResponse.json(
-      { error: "Provide a `key` query parameter." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Provide a `key` query parameter." }, { status: 400 });
   }
 
   const serialized = await fetchFromFirestore(userId, key);
@@ -118,25 +102,15 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json().catch(() => ({}));
-  const rawKey =
-    typeof body.key === "string" ? normalizeKey(body.key) : null;
-  const payload =
-    body.payload && typeof body.payload === "object"
-      ? (body.payload as SerializedEditorState)
-      : null;
+  const rawKey = typeof body.key === "string" ? normalizeKey(body.key) : null;
+  const payload = body.payload && typeof body.payload === "object" ? (body.payload as SerializedEditorState) : null;
 
   if (!rawKey) {
-    return NextResponse.json(
-      { error: "Provide a valid `key` in the request body." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Provide a valid `key` in the request body." }, { status: 400 });
   }
 
   if (!payload) {
-    return NextResponse.json(
-      { error: "Provide a `payload` in the request body." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Provide a `payload` in the request body." }, { status: 400 });
   }
 
   const saved = await persistToFirestore(userId, rawKey, payload);

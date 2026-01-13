@@ -7,15 +7,14 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { JSX, useEffect } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $insertNodeToNearestRoot } from "@lexical/utils";
 import { COMMAND_PRIORITY_EDITOR, createCommand, LexicalCommand } from "lexical";
+import { JSX, useEffect } from "react";
 
 import { $createTweetNode, TweetNode } from "@/components/editor/nodes/embeds/tweet-node";
 
-export const INSERT_TWEET_COMMAND: LexicalCommand<string> =
-  createCommand("INSERT_TWEET_COMMAND");
+export const INSERT_TWEET_COMMAND: LexicalCommand<string> = createCommand("INSERT_TWEET_COMMAND");
 
 export function TwitterPlugin(): JSX.Element | null {
   const [editor] = useLexicalComposerContext();
@@ -27,13 +26,13 @@ export function TwitterPlugin(): JSX.Element | null {
 
     return editor.registerCommand<string>(
       INSERT_TWEET_COMMAND,
-      (payload) => {
+      payload => {
         const tweetNode = $createTweetNode(payload);
         $insertNodeToNearestRoot(tweetNode);
 
         return true;
       },
-      COMMAND_PRIORITY_EDITOR,
+      COMMAND_PRIORITY_EDITOR
     );
   }, [editor]);
 

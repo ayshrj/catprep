@@ -1,32 +1,30 @@
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { useTheme } from "next-themes";
-import { useRouter, useSearchParams } from "next/navigation";
+import type { SerializedEditorState } from "lexical";
 import {
   Archive,
   Check,
   Laptop,
   Moon,
+  MoreVertical,
+  PanelLeft,
   RefreshCcw,
   RotateCcw,
   Sun,
   Trash2,
-  PanelLeft,
   X,
-  MoreVertical,
 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useTheme } from "next-themes";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { SerializedEditorState } from "lexical";
 
-import { Chat } from "@/components/ui/chat";
-import { type Message } from "@/components/ui/chat-message";
+import { APP_CONTENT_HEIGHT, AppContent } from "@/components/app-content";
+import { AppNavbar } from "@/components/app-navbar";
+import { AppNavigationSelect } from "@/components/app-navigation-select";
+import { AppSidebar } from "@/components/app-sidebar";
+import { Notes } from "@/components/notes";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,27 +35,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Chat } from "@/components/ui/chat";
+import { type Message } from "@/components/ui/chat-message";
 import {
   CommandDialog,
   CommandEmpty,
@@ -67,12 +48,13 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,32 +63,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Notes } from "@/components/notes";
-import { AppNavbar } from "@/components/app-navbar";
-import { AppSidebar } from "@/components/app-sidebar";
-import { AppContent, APP_CONTENT_HEIGHT } from "@/components/app-content";
-
-import {
-  coerceStoredMessageContent,
-  stringifyMessageContent,
-} from "@/lib/message-content";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
+import { CAT_KB_PARTS } from "@/lib/cat";
+import { coerceStoredMessageContent, stringifyMessageContent } from "@/lib/message-content";
 import { uploadImageToCloudinary } from "@/lib/upload-image";
 import { cn } from "@/lib/utils";
+import { isLlmCatCoachResponse, type LlmCatCoachResponse } from "@/types/llm-response";
+
 import { ModelIcon } from "./constant/model";
-import { AppNavigationSelect } from "@/components/app-navigation-select";
-import {
-  isLlmCatCoachResponse,
-  type LlmCatCoachResponse,
-} from "@/types/llm-response";
-import { CAT_KB_PARTS } from "@/lib/cat";
 
 type Attachment = {
   name?: string;
@@ -148,10 +117,7 @@ function createId() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-async function apiJson<TResponse>(
-  input: RequestInfo,
-  init?: RequestInit
-): Promise<TResponse> {
+async function apiJson<TResponse>(input: RequestInfo, init?: RequestInit): Promise<TResponse> {
   const response = await fetch(input, {
     credentials: "include",
     ...init,
@@ -163,11 +129,7 @@ async function apiJson<TResponse>(
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(
-      typeof (data as any)?.error === "string"
-        ? (data as any).error
-        : "Request failed."
-    );
+    throw new Error(typeof (data as any)?.error === "string" ? (data as any).error : "Request failed.");
   }
 
   return data as TResponse;
@@ -255,9 +217,7 @@ function serializeMessageForStorage(message: Message) {
     role: message.role === "assistant" ? "assistant" : "user",
     content: message.content,
     createdAt: message.createdAt?.toISOString() ?? new Date().toISOString(),
-    ...(message.experimental_attachments
-      ? { experimental_attachments: message.experimental_attachments }
-      : {}),
+    ...(message.experimental_attachments ? { experimental_attachments: message.experimental_attachments } : {}),
   };
 }
 
@@ -272,10 +232,7 @@ function hydrateMessageFromStorage(message: any): Message | null {
     id: message.id,
     role: message.role,
     content,
-    createdAt:
-      typeof message.createdAt === "string"
-        ? new Date(message.createdAt)
-        : undefined,
+    createdAt: typeof message.createdAt === "string" ? new Date(message.createdAt) : undefined,
     experimental_attachments: Array.isArray(message.experimental_attachments)
       ? message.experimental_attachments
       : undefined,
@@ -286,19 +243,12 @@ function ThemeToggleButton() {
   const { theme, setTheme } = useTheme();
 
   const current = theme ?? "system";
-  const next =
-    current === "system" ? "light" : current === "light" ? "dark" : "system";
+  const next = current === "system" ? "light" : current === "light" ? "dark" : "system";
 
   const Icon = current === "dark" ? Moon : current === "light" ? Sun : Laptop;
 
   return (
-    <Button
-      type="button"
-      variant="outline"
-      size="icon"
-      aria-label={`Theme: ${current}`}
-      onClick={() => setTheme(next)}
-    >
+    <Button type="button" variant="outline" size="icon" aria-label={`Theme: ${current}`} onClick={() => setTheme(next)}>
       <Icon className="h-4 w-4" />
     </Button>
   );
@@ -322,14 +272,9 @@ export function HomeClient() {
 
   const chatIdFromUrl = searchParams.get("chatId")?.trim() || null;
 
-  const initialMode =
-    searchParams.get("view") === "notes"
-      ? ("notes" as const)
-      : ("chat" as const);
+  const initialMode = searchParams.get("view") === "notes" ? ("notes" as const) : ("chat" as const);
   const [homeMode, setHomeMode] = useState<"chat" | "notes">(initialMode);
-  const [navigationValue, setNavigationValue] = useState<
-    "chat" | "notes" | "saved"
-  >(initialMode);
+  const [navigationValue, setNavigationValue] = useState<"chat" | "notes" | "saved">(initialMode);
   const handleNavigationChange = useCallback(
     (target: "chat" | "notes" | "saved") => {
       setNavigationValue(target);
@@ -355,9 +300,7 @@ export function HomeClient() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const pendingReplyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
+  const pendingReplyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const assistantAbortRef = useRef<AbortController | null>(null);
 
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -373,9 +316,7 @@ export function HomeClient() {
   const [authDisplayName, setAuthDisplayName] = useState("");
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
 
-  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(
-    null
-  );
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const confirmOpen = confirmAction !== null;
 
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -396,9 +337,7 @@ export function HomeClient() {
   const [modelSearch, setModelSearch] = useState("");
 
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [starterDialog, setStarterDialog] = useState<
-    "rescue" | "mock" | "rc" | null
-  >(null);
+  const [starterDialog, setStarterDialog] = useState<"rescue" | "mock" | "rc" | null>(null);
   const [starterIntake, setStarterIntake] = useState({
     attempt: "",
     weekdayHours: "",
@@ -419,26 +358,17 @@ export function HomeClient() {
   });
   const [onboardingKeyError, setOnboardingKeyError] = useState("");
   const [isSavingActionPlan, setIsSavingActionPlan] = useState(false);
-  const [actionChecklist, setActionChecklist] = useState<Record<string, boolean>>(
-    {}
-  );
+  const [actionChecklist, setActionChecklist] = useState<Record<string, boolean>>({});
 
   const suggestions = useMemo(
-    () => [
-      "Give me a 14-day rescue plan.",
-      "Diagnose my last mock.",
-      "Fix RC accuracy.",
-    ],
+    () => ["Give me a 14-day rescue plan.", "Diagnose my last mock.", "Fix RC accuracy."],
     []
   );
 
   const needsOpenRouterKey = Boolean(sessionUser && !openRouterStatus.hasKey);
   const needsOpenRouterModel = Boolean(sessionUser && !openRouterModel.trim());
   const showOnboarding =
-    Boolean(sessionUser) &&
-    !isSessionLoading &&
-    hasLoadedSettings &&
-    (needsOpenRouterKey || needsOpenRouterModel);
+    Boolean(sessionUser) && !isSessionLoading && hasLoadedSettings && (needsOpenRouterKey || needsOpenRouterModel);
   const showChatControls = homeMode === "chat";
   const showNotesNavigation = homeMode === "notes";
 
@@ -457,41 +387,40 @@ export function HomeClient() {
   }, [starterIntake]);
 
   const buildQuickIntakeBlock = useCallback(() => {
-    return buildQuickIntakeLines().map((line) => `- ${line}`).join("\n");
+    return buildQuickIntakeLines()
+      .map(line => `- ${line}`)
+      .join("\n");
   }, [buildQuickIntakeLines]);
 
-  const buildLexicalPayload = useCallback(
-    (lines: string[]): SerializedEditorState => {
-      return {
-        root: {
-          type: "root",
+  const buildLexicalPayload = useCallback((lines: string[]): SerializedEditorState => {
+    return {
+      root: {
+        type: "root",
+        version: 1,
+        format: "",
+        indent: 0,
+        direction: "ltr",
+        children: lines.map(line => ({
+          type: "paragraph",
           version: 1,
           format: "",
           indent: 0,
           direction: "ltr",
-          children: lines.map((line) => ({
-            type: "paragraph",
-            version: 1,
-            format: "",
-            indent: 0,
-            direction: "ltr",
-            children: [
-              {
-                type: "text",
-                version: 1,
-                text: line,
-                detail: 0,
-                format: 0,
-                mode: "normal",
-                style: "",
-              },
-            ],
-          })),
-        },
-      };
-    },
-    []
-  );
+          children: [
+            {
+              type: "text",
+              version: 1,
+              text: line,
+              detail: 0,
+              format: 0,
+              mode: "normal",
+              style: "",
+            },
+          ],
+        })),
+      },
+    };
+  }, []);
 
   const latestCoachResponse = useMemo<LlmCatCoachResponse | null>(() => {
     for (let i = messages.length - 1; i >= 0; i -= 1) {
@@ -506,14 +435,14 @@ export function HomeClient() {
   const actionItems = useMemo(() => {
     if (!latestCoachResponse) return [];
     const today = latestCoachResponse.nextActions.today
-      .filter((item) => item?.trim())
+      .filter(item => item?.trim())
       .map((item, index) => ({
         id: `today-${index}`,
         label: item,
         bucket: "Today",
       }));
     const thisWeek = latestCoachResponse.nextActions.thisWeek
-      .filter((item) => item?.trim())
+      .filter(item => item?.trim())
       .map((item, index) => ({
         id: `week-${index}`,
         label: item,
@@ -522,17 +451,12 @@ export function HomeClient() {
     return [...today, ...thisWeek];
   }, [latestCoachResponse]);
 
-  const actionSignature = useMemo(
-    () => actionItems.map((item) => `${item.id}:${item.label}`).join("|"),
-    [actionItems]
-  );
+  const actionSignature = useMemo(() => actionItems.map(item => `${item.id}:${item.label}`).join("|"), [actionItems]);
 
   const loadSession = useCallback(async () => {
     setIsSessionLoading(true);
     try {
-      const data = await apiJson<{ user: SessionUser | null }>(
-        "/api/auth/session"
-      );
+      const data = await apiJson<{ user: SessionUser | null }>("/api/auth/session");
       setSessionUser(data.user);
     } catch (error) {
       console.error(error);
@@ -546,10 +470,9 @@ export function HomeClient() {
     if (!sessionUser) return;
     if (!activeChatId) return;
     try {
-      const data = await apiJson<{ messages: any[] }>(
-        `/api/chat/history?chatId=${encodeURIComponent(activeChatId)}`,
-        { method: "GET" }
-      );
+      const data = await apiJson<{ messages: any[] }>(`/api/chat/history?chatId=${encodeURIComponent(activeChatId)}`, {
+        method: "GET",
+      });
       const hydrated = (data.messages ?? [])
         .map(hydrateMessageFromStorage)
         .filter((message): message is Message => message !== null);
@@ -663,15 +586,12 @@ export function HomeClient() {
     async (chatId: string, items: Message[]) => {
       if (!sessionUser) return;
       try {
-        await apiJson<{ ok: true }>(
-          `/api/chat/history?chatId=${encodeURIComponent(chatId)}`,
-          {
-            method: "POST",
-            body: JSON.stringify({
-              messages: items.map(serializeMessageForStorage),
-            }),
-          }
-        );
+        await apiJson<{ ok: true }>(`/api/chat/history?chatId=${encodeURIComponent(chatId)}`, {
+          method: "POST",
+          body: JSON.stringify({
+            messages: items.map(serializeMessageForStorage),
+          }),
+        });
         await loadSessions();
       } catch (error: any) {
         console.error(error);
@@ -724,16 +644,10 @@ export function HomeClient() {
 
         const data = await response.json().catch(() => ({}));
         if (!response.ok) {
-          throw new Error(
-            typeof (data as any)?.error === "string"
-              ? (data as any).error
-              : "Request failed."
-          );
+          throw new Error(typeof (data as any)?.error === "string" ? (data as any).error : "Request failed.");
         }
 
-        const content = coerceStoredMessageContent(
-          (data as any)?.message?.content
-        );
+        const content = coerceStoredMessageContent((data as any)?.message?.content);
         const contentText = stringifyMessageContent(content);
         if (!contentText.trim()) throw new Error("Empty response from model.");
 
@@ -744,14 +658,13 @@ export function HomeClient() {
           content: content ?? "",
         };
 
-        setMessages((current) => [...current, assistant]);
+        setMessages(current => [...current, assistant]);
         await persistMessages(chatId, [assistant]);
       } catch (error: any) {
         if (error?.name === "AbortError") return;
         toast.error(error?.message ?? "Failed to generate response.");
       } finally {
-        if (assistantAbortRef.current === controller)
-          assistantAbortRef.current = null;
+        if (assistantAbortRef.current === controller) assistantAbortRef.current = null;
         setIsGenerating(false);
       }
     },
@@ -785,11 +698,11 @@ export function HomeClient() {
         role: "user",
         createdAt: new Date(),
         content: nextContent,
-        experimental_attachments:
-          attachments.length > 0 ? (attachments as any) : undefined,
+
+        experimental_attachments: attachments.length > 0 ? (attachments as any) : undefined,
       };
 
-      setMessages((current) => [...current, userMessage]);
+      setMessages(current => [...current, userMessage]);
       await persistMessages(chatId, [userMessage]);
 
       if (isNewSession) {
@@ -807,21 +720,11 @@ export function HomeClient() {
         pendingReplyTimeoutRef.current = null;
       }, 50);
     },
-    [
-      chatIdFromUrl,
-      createChatSession,
-      generateAssistantMessage,
-      persistMessages,
-      router,
-      searchParams,
-    ]
+    [chatIdFromUrl, createChatSession, generateAssistantMessage, persistMessages, router, searchParams]
   );
 
   const handleSubmit = useCallback(
-    async (
-      event?: { preventDefault?: () => void },
-      options?: { experimental_attachments?: FileList }
-    ) => {
+    async (event?: { preventDefault?: () => void }, options?: { experimental_attachments?: FileList }) => {
       event?.preventDefault?.();
       const text = input.trim();
       const files = options?.experimental_attachments;
@@ -847,13 +750,13 @@ export function HomeClient() {
       return;
     }
 
-    const todayItems = actionItems.filter((item) => item.bucket === "Today");
-    const weekItems = actionItems.filter((item) => item.bucket === "This Week");
+    const todayItems = actionItems.filter(item => item.bucket === "Today");
+    const weekItems = actionItems.filter(item => item.bucket === "This Week");
     const lines: string[] = [];
 
     if (todayItems.length > 0) {
       lines.push("Today:");
-      todayItems.forEach((item) => {
+      todayItems.forEach(item => {
         const checked = actionChecklist[item.id];
         lines.push(`${checked ? "[x]" : "[ ]"} ${item.label}`);
       });
@@ -862,7 +765,7 @@ export function HomeClient() {
 
     if (weekItems.length > 0) {
       lines.push("This Week:");
-      weekItems.forEach((item) => {
+      weekItems.forEach(item => {
         const checked = actionChecklist[item.id];
         lines.push(`${checked ? "[x]" : "[ ]"} ${item.label}`);
       });
@@ -892,15 +795,12 @@ export function HomeClient() {
     } finally {
       setIsSavingActionPlan(false);
     }
-  }, [
-    actionChecklist,
-    actionItems,
-    buildLexicalPayload,
-    latestCoachResponse,
-  ]);
+  }, [actionChecklist, actionItems, buildLexicalPayload, latestCoachResponse]);
 
-  const handleInputChange: React.ChangeEventHandler<HTMLTextAreaElement> =
-    useCallback((event) => setInput(event.target.value), []);
+  const handleInputChange: React.ChangeEventHandler<HTMLTextAreaElement> = useCallback(
+    event => setInput(event.target.value),
+    []
+  );
 
   const handleSuggestionSelect = useCallback((suggestion: string) => {
     if (suggestion === "Give me a 14-day rescue plan.") {
@@ -947,9 +847,7 @@ export function HomeClient() {
       lines.push(`Accuracy: ${mockForm.accuracy}%`);
     }
     if (mockForm.timeLeftValue.trim()) {
-      lines.push(
-        `Time left: ${mockForm.timeLeftValue} ${mockForm.timeLeftUnit} left`
-      );
+      lines.push(`Time left: ${mockForm.timeLeftValue} ${mockForm.timeLeftUnit} left`);
     }
     if (mockForm.mistakes.trim()) {
       lines.push(`What went wrong: ${mockForm.mistakes.trim()}`);
@@ -966,8 +864,7 @@ export function HomeClient() {
       event.preventDefault();
       setIsAuthSubmitting(true);
       try {
-        const endpoint =
-          authMode === "login" ? "/api/auth/login" : "/api/auth/register";
+        const endpoint = authMode === "login" ? "/api/auth/login" : "/api/auth/register";
 
         const payload =
           authMode === "login"
@@ -1010,10 +907,7 @@ export function HomeClient() {
   const clearHistory = useCallback(
     async (chatId: string) => {
       setMessages([]);
-      await apiJson<{ ok: true }>(
-        `/api/chat/history?chatId=${encodeURIComponent(chatId)}`,
-        { method: "DELETE" }
-      );
+      await apiJson<{ ok: true }>(`/api/chat/history?chatId=${encodeURIComponent(chatId)}`, { method: "DELETE" });
       toast.success("Cleared chat history.");
       await loadSessions();
     },
@@ -1137,24 +1031,17 @@ export function HomeClient() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(
-          typeof (data as any)?.error === "string"
-            ? (data as any).error
-            : "Failed to load models."
-        );
+        throw new Error(typeof (data as any)?.error === "string" ? (data as any).error : "Failed to load models.");
       }
 
-      const nextModels = Array.isArray((data as any).models)
-        ? ((data as any).models as OpenRouterModel[])
-        : [];
+      const nextModels = Array.isArray((data as any).models) ? ((data as any).models as OpenRouterModel[]) : [];
       setModels(nextModels);
 
       if (!openRouterModel && nextModels[0]?.id) {
         await saveOpenRouterModel(nextModels[0].id);
       }
     } catch (err: any) {
-      const message =
-        err instanceof Error ? err.message : "Unable to fetch models.";
+      const message = err instanceof Error ? err.message : "Unable to fetch models.";
       setModelsError(message);
       toast.error(message);
     } finally {
@@ -1167,13 +1054,7 @@ export function HomeClient() {
     if (!openRouterStatus.hasKey) return;
     if (models.length > 0 || modelsLoading) return;
     fetchModels();
-  }, [
-    fetchModels,
-    models.length,
-    modelsLoading,
-    openRouterStatus.hasKey,
-    showOnboarding,
-  ]);
+  }, [fetchModels, models.length, modelsLoading, openRouterStatus.hasKey, showOnboarding]);
 
   const setArchived = useCallback(
     async (chatId: string, archived: boolean) => {
@@ -1232,12 +1113,7 @@ export function HomeClient() {
 
   const historyActions = (
     <div className="flex flex-wrap items-center gap-1">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={() => setShowArchived((v) => !v)}
-      >
+      <Button type="button" variant="ghost" size="sm" onClick={() => setShowArchived(v => !v)}>
         {showArchived ? "Hide archived" : "Show archived"}
       </Button>
       <Button type="button" variant="ghost" size="sm" onClick={loadSessions}>
@@ -1251,10 +1127,9 @@ export function HomeClient() {
       return <p className="text-xs text-muted-foreground">No chats yet.</p>;
     }
 
-    return sessions.map((session) => {
+    return sessions.map(session => {
       const isActive = session.id === activeChatId;
-      const label =
-        session.title || session.preview || `Chat ${session.id.slice(0, 8)}`;
+      const label = session.title || session.preview || `Chat ${session.id.slice(0, 8)}`;
 
       return (
         <div
@@ -1264,28 +1139,18 @@ export function HomeClient() {
             isActive ? "border-primary bg-primary/5" : "hover:bg-muted",
           ].join(" ")}
         >
-          <button
-            type="button"
-            className="min-w-0 flex-1 text-left"
-            onClick={() => openChat(session.id)}
-          >
+          <button type="button" className="min-w-0 flex-1 text-left" onClick={() => openChat(session.id)}>
             <div className="line-clamp-2">{label}</div>
             <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
-              {session.archived ? (
-                <span className="rounded border px-1 py-0.5">archived</span>
-              ) : null}
-              {session.updatedAt ? (
-                <span>{formatWhen(session.updatedAt)}</span>
-              ) : null}
+              {session.archived ? <span className="rounded border px-1 py-0.5">archived</span> : null}
+              {session.updatedAt ? <span>{formatWhen(session.updatedAt)}</span> : null}
             </div>
           </button>
 
           <div
             className={[
               "flex shrink-0 gap-1 transition-opacity",
-              opts?.compact
-                ? "opacity-100"
-                : "opacity-0 group-hover:opacity-100",
+              opts?.compact ? "opacity-100" : "opacity-0 group-hover:opacity-100",
             ].join(" ")}
           >
             {session.archived ? (
@@ -1345,7 +1210,7 @@ export function HomeClient() {
     <div className="flex h-dvh flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/30">
       <AppNavbar
         title="Cat99"
-        subtitle={sessionUser ? sessionUser.email ?? sessionUser.uid : undefined}
+        subtitle={sessionUser ? (sessionUser.email ?? sessionUser.uid) : undefined}
         leading={
           sessionUser && (showChatControls || showNotesNavigation) ? (
             <div className="md:hidden">
@@ -1362,9 +1227,7 @@ export function HomeClient() {
                 </SheetTrigger>
                 <SheetContent side="left" className="w-[92vw] max-w-[22rem] p-0">
                   <SheetHeader className="sr-only">
-                    <SheetTitle>
-                      {showNotesNavigation ? "Chapters" : "History"}
-                    </SheetTitle>
+                    <SheetTitle>{showNotesNavigation ? "Chapters" : "History"}</SheetTitle>
                   </SheetHeader>
                   {showNotesNavigation ? (
                     <AppSidebar
@@ -1374,19 +1237,17 @@ export function HomeClient() {
                     >
                       <ScrollArea className="h-full">
                         <div className="space-y-4 p-4">
-                          {CAT_KB_PARTS.map((part) => (
+                          {CAT_KB_PARTS.map(part => (
                             <div key={part.id} className="space-y-2">
                               <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                 {part.title}
                               </p>
                               <div className="space-y-1">
-                                {part.sections.map((section) => (
+                                {part.sections.map(section => (
                                   <button
                                     key={section.id}
                                     type="button"
-                                    onClick={() =>
-                                      handleNotesSectionClick(section.id)
-                                    }
+                                    onClick={() => handleNotesSectionClick(section.id)}
                                     className="w-full rounded-lg px-2 py-1 text-left text-xs text-muted-foreground transition hover:bg-muted/70 hover:text-foreground"
                                   >
                                     {section.title}
@@ -1405,19 +1266,13 @@ export function HomeClient() {
                       className="h-full w-full rounded-none border-0 shadow-none"
                       contentClassName="p-0"
                       footer={
-                        <Button
-                          className="w-full"
-                          type="button"
-                          onClick={handleNewChat}
-                        >
+                        <Button className="w-full" type="button" onClick={handleNewChat}>
                           New chat
                         </Button>
                       }
                     >
                       <ScrollArea className="h-full">
-                        <div className="space-y-1 p-3 pr-2">
-                          {renderSessionItems({ compact: true })}
-                        </div>
+                        <div className="space-y-1 p-3 pr-2">{renderSessionItems({ compact: true })}</div>
                       </ScrollArea>
                     </AppSidebar>
                   )}
@@ -1451,61 +1306,33 @@ export function HomeClient() {
                       onClick={fetchModels}
                       disabled={modelsLoading || isSettingsSaving}
                     >
-                      <RefreshCcw
-                        className={
-                          modelsLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"
-                        }
-                      />
+                      <RefreshCcw className={modelsLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
                     </Button>
                   </>
                 ) : null}
 
-                <AppNavigationSelect
-                  value={navigationValue}
-                  onChange={handleNavigationChange}
-                />
+                <AppNavigationSelect value={navigationValue} onChange={handleNavigationChange} />
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      aria-label="Menu"
-                    >
+                    <Button type="button" variant="outline" size="icon" aria-label="Menu">
                       <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Pages</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => handleNavigationChange("chat")}>
-                    Chat
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleNavigationChange("notes")}
-                  >
-                    Notes
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleNavigationChange("saved")}
-                  >
-                    Rough notes
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
-                    Settings
-                  </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleNewChat}>
-                      New chat
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>
-                      Logout
-                    </DropdownMenuItem>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Pages</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <DropdownMenuItem onClick={() => handleNavigationChange("chat")}>Chat</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleNavigationChange("notes")}>Notes</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleNavigationChange("saved")}>Rough notes</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setSettingsOpen(true)}>Settings</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleNewChat}>New chat</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={e => e.preventDefault()}>
                       <div className="flex w-full items-center justify-between">
                         <span>Theme</span>
                         <ThemeToggleButton />
@@ -1518,31 +1345,16 @@ export function HomeClient() {
               <div className="md:hidden">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      aria-label="Menu"
-                    >
+                    <Button type="button" variant="outline" size="icon" aria-label="Menu">
                       <MoreVertical className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
                     <DropdownMenuLabel>Pages</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => handleNavigationChange("chat")}>
-                      Chat
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleNavigationChange("notes")}
-                    >
-                      Notes
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleNavigationChange("saved")}
-                    >
-                      Rough notes
-                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleNavigationChange("chat")}>Chat</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleNavigationChange("notes")}>Notes</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleNavigationChange("saved")}>Rough notes</DropdownMenuItem>
                     <DropdownMenuSeparator />
 
                     {showChatControls ? (
@@ -1556,10 +1368,7 @@ export function HomeClient() {
                           Select model
                         </DropdownMenuItem>
 
-                        <DropdownMenuItem
-                          onClick={fetchModels}
-                          disabled={modelsLoading || isSettingsSaving}
-                        >
+                        <DropdownMenuItem onClick={fetchModels} disabled={modelsLoading || isSettingsSaving}>
                           {modelsLoading ? "Fetching models..." : "Fetch models"}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -1568,19 +1377,13 @@ export function HomeClient() {
 
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
-                      Settings
-                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSettingsOpen(true)}>Settings</DropdownMenuItem>
 
-                    <DropdownMenuItem onClick={handleNewChat}>
-                      New chat
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>
-                      Logout
-                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleNewChat}>New chat</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
 
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <DropdownMenuItem onSelect={e => e.preventDefault()}>
                       <div className="flex w-full items-center justify-between">
                         <span>Theme</span>
                         <ThemeToggleButton />
@@ -1597,9 +1400,7 @@ export function HomeClient() {
       <AppContent className={APP_CONTENT_HEIGHT}>
         <div className="h-full py-3 sm:py-4">
           {isSessionLoading ? (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              Loading...
-            </div>
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Loading...</div>
           ) : sessionUser ? (
             homeMode === "notes" ? (
               <div className="h-full min-h-0 overflow-hidden rounded-2xl border bg-background shadow-sm">
@@ -1614,9 +1415,7 @@ export function HomeClient() {
                   contentClassName="p-0"
                 >
                   <ScrollArea className="h-full">
-                    <div className="space-y-1 p-3 pr-2">
-                      {renderSessionItems()}
-                    </div>
+                    <div className="space-y-1 p-3 pr-2">{renderSessionItems()}</div>
                   </ScrollArea>
                 </AppSidebar>
 
@@ -1625,8 +1424,7 @@ export function HomeClient() {
                     <p className="truncate text-xs text-muted-foreground">
                       {activeChatId ? (
                         <>
-                          Conversation{" "}
-                          <span className="font-mono">{activeChatId}</span>
+                          Conversation <span className="font-mono">{activeChatId}</span>
                         </>
                       ) : (
                         "New conversation"
@@ -1656,53 +1454,33 @@ export function HomeClient() {
                         <div className="border-b bg-muted/20 px-3 py-3">
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <div>
-                              <p className="text-xs font-semibold text-foreground">
-                                Action board
-                              </p>
+                              <p className="text-xs font-semibold text-foreground">Action board</p>
                               <p className="text-[11px] text-muted-foreground">
-                                Track today and this week, then save to rough
-                                notes.
+                                Track today and this week, then save to rough notes.
                               </p>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={saveActionPlan}
-                              disabled={isSavingActionPlan}
-                            >
-                              {isSavingActionPlan
-                                ? "Saving..."
-                                : "Save to rough notes"}
+                            <Button size="sm" variant="outline" onClick={saveActionPlan} disabled={isSavingActionPlan}>
+                              {isSavingActionPlan ? "Saving..." : "Save to rough notes"}
                             </Button>
                           </div>
                           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                            {["Today", "This Week"].map((bucket) => {
-                              const items = actionItems.filter(
-                                (item) => item.bucket === bucket
-                              );
+                            {["Today", "This Week"].map(bucket => {
+                              const items = actionItems.filter(item => item.bucket === bucket);
                               if (items.length === 0) return null;
                               return (
-                                <div
-                                  key={bucket}
-                                  className="rounded-xl border bg-background p-3"
-                                >
+                                <div key={bucket} className="rounded-xl border bg-background p-3">
                                   <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                                     {bucket}
                                   </p>
                                   <div className="mt-2 space-y-2">
-                                    {items.map((item) => (
-                                      <label
-                                        key={item.id}
-                                        className="flex items-start gap-2 text-xs text-foreground"
-                                      >
+                                    {items.map(item => (
+                                      <label key={item.id} className="flex items-start gap-2 text-xs text-foreground">
                                         <input
                                           type="checkbox"
                                           className="mt-0.5 h-4 w-4 rounded border"
-                                          checked={Boolean(
-                                            actionChecklist[item.id]
-                                          )}
-                                          onChange={(event) => {
-                                            setActionChecklist((current) => ({
+                                          checked={Boolean(actionChecklist[item.id])}
+                                          onChange={event => {
+                                            setActionChecklist(current => ({
                                               ...current,
                                               [item.id]: event.target.checked,
                                             }));
@@ -1747,12 +1525,8 @@ export function HomeClient() {
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1">
-                      <CardTitle>
-                        {authMode === "login" ? "Sign in" : "Create account"}
-                      </CardTitle>
-                      <CardDescription>
-                        Email + password.
-                      </CardDescription>
+                      <CardTitle>{authMode === "login" ? "Sign in" : "Create account"}</CardTitle>
+                      <CardDescription>Email + password.</CardDescription>
                     </div>
                     <ThemeToggleButton />
                   </div>
@@ -1762,12 +1536,10 @@ export function HomeClient() {
                   <form className="space-y-3" onSubmit={handleAuthSubmit}>
                     {authMode === "register" ? (
                       <div className="space-y-1">
-                        <label className="text-sm font-medium">
-                          Display name
-                        </label>
+                        <label className="text-sm font-medium">Display name</label>
                         <Input
                           value={authDisplayName}
-                          onChange={(e) => setAuthDisplayName(e.target.value)}
+                          onChange={e => setAuthDisplayName(e.target.value)}
                           placeholder="Ayush"
                           autoComplete="name"
                         />
@@ -1779,7 +1551,7 @@ export function HomeClient() {
                       <Input
                         type="email"
                         value={authEmail}
-                        onChange={(e) => setAuthEmail(e.target.value)}
+                        onChange={e => setAuthEmail(e.target.value)}
                         placeholder="you@example.com"
                         autoComplete="email"
                         required
@@ -1791,26 +1563,14 @@ export function HomeClient() {
                       <Input
                         type="password"
                         value={authPassword}
-                        onChange={(e) => setAuthPassword(e.target.value)}
-                        autoComplete={
-                          authMode === "login"
-                            ? "current-password"
-                            : "new-password"
-                        }
+                        onChange={e => setAuthPassword(e.target.value)}
+                        autoComplete={authMode === "login" ? "current-password" : "new-password"}
                         required
                       />
                     </div>
 
-                    <Button
-                      className="w-full"
-                      type="submit"
-                      disabled={isAuthSubmitting}
-                    >
-                      {isAuthSubmitting
-                        ? "Please wait..."
-                        : authMode === "login"
-                        ? "Sign in"
-                        : "Create account"}
+                    <Button className="w-full" type="submit" disabled={isAuthSubmitting}>
+                      {isAuthSubmitting ? "Please wait..." : authMode === "login" ? "Sign in" : "Create account"}
                     </Button>
                   </form>
                 </CardContent>
@@ -1819,13 +1579,9 @@ export function HomeClient() {
                   <button
                     type="button"
                     className="text-sm text-muted-foreground hover:text-foreground"
-                    onClick={() =>
-                      setAuthMode((m) => (m === "login" ? "register" : "login"))
-                    }
+                    onClick={() => setAuthMode(m => (m === "login" ? "register" : "login"))}
                   >
-                    {authMode === "login"
-                      ? "Need an account?"
-                      : "Already have an account?"}
+                    {authMode === "login" ? "Need an account?" : "Already have an account?"}
                   </button>
                   <button
                     type="button"
@@ -1843,7 +1599,7 @@ export function HomeClient() {
 
       <Dialog
         open={starterDialog !== null}
-        onOpenChange={(open) => {
+        onOpenChange={open => {
           if (!open) setStarterDialog(null);
         }}
       >
@@ -1853,8 +1609,8 @@ export function HomeClient() {
               {starterDialog === "mock"
                 ? "Mock diagnostic helper"
                 : starterDialog === "rc"
-                ? "Fix RC accuracy"
-                : "14-day rescue plan"}
+                  ? "Fix RC accuracy"
+                  : "14-day rescue plan"}
             </DialogTitle>
             <DialogDescription>
               {starterDialog === "mock"
@@ -1871,8 +1627,8 @@ export function HomeClient() {
                   <Input
                     inputMode="numeric"
                     value={mockForm.overall}
-                    onChange={(event) =>
-                      setMockForm((prev) => ({
+                    onChange={event =>
+                      setMockForm(prev => ({
                         ...prev,
                         overall: event.target.value,
                       }))
@@ -1885,8 +1641,8 @@ export function HomeClient() {
                   <Input
                     inputMode="numeric"
                     value={mockForm.varc}
-                    onChange={(event) =>
-                      setMockForm((prev) => ({
+                    onChange={event =>
+                      setMockForm(prev => ({
                         ...prev,
                         varc: event.target.value,
                       }))
@@ -1899,8 +1655,8 @@ export function HomeClient() {
                   <Input
                     inputMode="numeric"
                     value={mockForm.dilr}
-                    onChange={(event) =>
-                      setMockForm((prev) => ({
+                    onChange={event =>
+                      setMockForm(prev => ({
                         ...prev,
                         dilr: event.target.value,
                       }))
@@ -1913,8 +1669,8 @@ export function HomeClient() {
                   <Input
                     inputMode="numeric"
                     value={mockForm.qa}
-                    onChange={(event) =>
-                      setMockForm((prev) => ({
+                    onChange={event =>
+                      setMockForm(prev => ({
                         ...prev,
                         qa: event.target.value,
                       }))
@@ -1927,8 +1683,8 @@ export function HomeClient() {
                   <Input
                     inputMode="numeric"
                     value={mockForm.attempts}
-                    onChange={(event) =>
-                      setMockForm((prev) => ({
+                    onChange={event =>
+                      setMockForm(prev => ({
                         ...prev,
                         attempts: event.target.value,
                       }))
@@ -1941,8 +1697,8 @@ export function HomeClient() {
                   <Input
                     inputMode="numeric"
                     value={mockForm.accuracy}
-                    onChange={(event) =>
-                      setMockForm((prev) => ({
+                    onChange={event =>
+                      setMockForm(prev => ({
                         ...prev,
                         accuracy: event.target.value,
                       }))
@@ -1958,8 +1714,8 @@ export function HomeClient() {
                   <Input
                     inputMode="numeric"
                     value={mockForm.timeLeftValue}
-                    onChange={(event) =>
-                      setMockForm((prev) => ({
+                    onChange={event =>
+                      setMockForm(prev => ({
                         ...prev,
                         timeLeftValue: event.target.value,
                       }))
@@ -1971,8 +1727,8 @@ export function HomeClient() {
                   <Label>Unit</Label>
                   <Select
                     value={mockForm.timeLeftUnit}
-                    onValueChange={(value) =>
-                      setMockForm((prev) => ({
+                    onValueChange={value =>
+                      setMockForm(prev => ({
                         ...prev,
                         timeLeftUnit: value,
                       }))
@@ -1993,8 +1749,8 @@ export function HomeClient() {
                 <Label>What went wrong</Label>
                 <Textarea
                   value={mockForm.mistakes}
-                  onChange={(event) =>
-                    setMockForm((prev) => ({
+                  onChange={event =>
+                    setMockForm(prev => ({
                       ...prev,
                       mistakes: event.target.value,
                     }))
@@ -2005,16 +1761,14 @@ export function HomeClient() {
               </div>
 
               <div className="rounded-xl border bg-muted/20 p-3">
-                <p className="text-xs font-semibold text-muted-foreground">
-                  Quick intake (optional)
-                </p>
+                <p className="text-xs font-semibold text-muted-foreground">Quick intake (optional)</p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <div className="space-y-1">
                     <Label>CAT attempt</Label>
                     <Input
                       value={starterIntake.attempt}
-                      onChange={(event) =>
-                        setStarterIntake((prev) => ({
+                      onChange={event =>
+                        setStarterIntake(prev => ({
                           ...prev,
                           attempt: event.target.value,
                         }))
@@ -2026,8 +1780,8 @@ export function HomeClient() {
                     <Label>Current level by section</Label>
                     <Input
                       value={starterIntake.levels}
-                      onChange={(event) =>
-                        setStarterIntake((prev) => ({
+                      onChange={event =>
+                        setStarterIntake(prev => ({
                           ...prev,
                           levels: event.target.value,
                         }))
@@ -2039,8 +1793,8 @@ export function HomeClient() {
                     <Label>Weekday study hours</Label>
                     <Input
                       value={starterIntake.weekdayHours}
-                      onChange={(event) =>
-                        setStarterIntake((prev) => ({
+                      onChange={event =>
+                        setStarterIntake(prev => ({
                           ...prev,
                           weekdayHours: event.target.value,
                         }))
@@ -2052,8 +1806,8 @@ export function HomeClient() {
                     <Label>Weekend study hours</Label>
                     <Input
                       value={starterIntake.weekendHours}
-                      onChange={(event) =>
-                        setStarterIntake((prev) => ({
+                      onChange={event =>
+                        setStarterIntake(prev => ({
                           ...prev,
                           weekendHours: event.target.value,
                         }))
@@ -2065,8 +1819,8 @@ export function HomeClient() {
                     <Label>Mock series / resources</Label>
                     <Input
                       value={starterIntake.resources}
-                      onChange={(event) =>
-                        setStarterIntake((prev) => ({
+                      onChange={event =>
+                        setStarterIntake(prev => ({
                           ...prev,
                           resources: event.target.value,
                         }))
@@ -2078,11 +1832,7 @@ export function HomeClient() {
               </div>
 
               <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setStarterDialog(null)}
-                >
+                <Button type="button" variant="outline" onClick={() => setStarterDialog(null)}>
                   Cancel
                 </Button>
                 <Button type="button" onClick={handleMockSubmit}>
@@ -2097,8 +1847,8 @@ export function HomeClient() {
                   <Label>CAT attempt</Label>
                   <Input
                     value={starterIntake.attempt}
-                    onChange={(event) =>
-                      setStarterIntake((prev) => ({
+                    onChange={event =>
+                      setStarterIntake(prev => ({
                         ...prev,
                         attempt: event.target.value,
                       }))
@@ -2110,8 +1860,8 @@ export function HomeClient() {
                   <Label>Current level by section</Label>
                   <Input
                     value={starterIntake.levels}
-                    onChange={(event) =>
-                      setStarterIntake((prev) => ({
+                    onChange={event =>
+                      setStarterIntake(prev => ({
                         ...prev,
                         levels: event.target.value,
                       }))
@@ -2123,8 +1873,8 @@ export function HomeClient() {
                   <Label>Weekday study hours</Label>
                   <Input
                     value={starterIntake.weekdayHours}
-                    onChange={(event) =>
-                      setStarterIntake((prev) => ({
+                    onChange={event =>
+                      setStarterIntake(prev => ({
                         ...prev,
                         weekdayHours: event.target.value,
                       }))
@@ -2136,8 +1886,8 @@ export function HomeClient() {
                   <Label>Weekend study hours</Label>
                   <Input
                     value={starterIntake.weekendHours}
-                    onChange={(event) =>
-                      setStarterIntake((prev) => ({
+                    onChange={event =>
+                      setStarterIntake(prev => ({
                         ...prev,
                         weekendHours: event.target.value,
                       }))
@@ -2149,8 +1899,8 @@ export function HomeClient() {
                   <Label>Mock series / resources</Label>
                   <Input
                     value={starterIntake.resources}
-                    onChange={(event) =>
-                      setStarterIntake((prev) => ({
+                    onChange={event =>
+                      setStarterIntake(prev => ({
                         ...prev,
                         resources: event.target.value,
                       }))
@@ -2161,19 +1911,10 @@ export function HomeClient() {
               </div>
 
               <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setStarterDialog(null)}
-                >
+                <Button type="button" variant="outline" onClick={() => setStarterDialog(null)}>
                   Cancel
                 </Button>
-                <Button
-                  type="button"
-                  onClick={
-                    starterDialog === "rc" ? handleRcSubmit : handleRescueSubmit
-                  }
-                >
+                <Button type="button" onClick={starterDialog === "rc" ? handleRcSubmit : handleRescueSubmit}>
                   Send to coach
                 </Button>
               </DialogFooter>
@@ -2186,9 +1927,7 @@ export function HomeClient() {
         <DialogContent showCloseButton={false} className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Welcome to Cat99</DialogTitle>
-            <DialogDescription>
-              Finish these steps once so you never hit key/model errors.
-            </DialogDescription>
+            <DialogDescription>Finish these steps once so you never hit key/model errors.</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
@@ -2203,11 +1942,8 @@ export function HomeClient() {
                   label: "Pick a model (recommended preselected)",
                   done: Boolean(openRouterModel.trim()),
                 },
-              ].map((step) => (
-                <div
-                  key={step.label}
-                  className="flex items-center gap-2 text-sm"
-                >
+              ].map(step => (
+                <div key={step.label} className="flex items-center gap-2 text-sm">
                   <span
                     className={cn(
                       "flex h-5 w-5 items-center justify-center rounded-full border text-xs",
@@ -2218,13 +1954,7 @@ export function HomeClient() {
                   >
                     {step.done ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
                   </span>
-                  <span
-                    className={cn(
-                      step.done ? "text-foreground" : "text-muted-foreground"
-                    )}
-                  >
-                    {step.label}
-                  </span>
+                  <span className={cn(step.done ? "text-foreground" : "text-muted-foreground")}>{step.label}</span>
                 </div>
               ))}
             </div>
@@ -2234,7 +1964,8 @@ export function HomeClient() {
                 <Label htmlFor="onboarding-key">OpenRouter API key</Label>
                 {openRouterStatus.hasKey ? (
                   <span className="text-xs text-muted-foreground">
-                    saved{openRouterStatus.last4 ? ` ••••${openRouterStatus.last4}` : ""}
+                    saved
+                    {openRouterStatus.last4 ? ` ••••${openRouterStatus.last4}` : ""}
                   </span>
                 ) : null}
               </div>
@@ -2243,15 +1974,11 @@ export function HomeClient() {
                 type="password"
                 placeholder="sk-or-..."
                 value={openRouterKeyInput}
-                onChange={(event) => setOpenRouterKeyInput(event.target.value)}
+                onChange={event => setOpenRouterKeyInput(event.target.value)}
                 className="mt-2"
                 disabled={openRouterStatus.hasKey || isSettingsSaving}
               />
-              {onboardingKeyError ? (
-                <p className="mt-1 text-xs text-destructive">
-                  {onboardingKeyError}
-                </p>
-              ) : null}
+              {onboardingKeyError ? <p className="mt-1 text-xs text-destructive">{onboardingKeyError}</p> : null}
               <Button
                 size="sm"
                 className="mt-3"
@@ -2277,18 +2004,14 @@ export function HomeClient() {
               <div className="mt-2 space-y-2">
                 <Select
                   value={openRouterModel}
-                  onValueChange={(value) => void saveOpenRouterModel(value)}
+                  onValueChange={value => void saveOpenRouterModel(value)}
                   disabled={!openRouterStatus.hasKey || models.length === 0}
                 >
                   <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        models.length === 0 ? "No models loaded" : "Select model"
-                      }
-                    />
+                    <SelectValue placeholder={models.length === 0 ? "No models loaded" : "Select model"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {models.map((model) => (
+                    {models.map(model => (
                       <SelectItem key={model.id} value={model.id}>
                         {model.name || model.id}
                       </SelectItem>
@@ -2296,17 +2019,11 @@ export function HomeClient() {
                   </SelectContent>
                 </Select>
                 {models[0]?.id && !openRouterModel.trim() ? (
-                  <p className="text-xs text-muted-foreground">
-                    Recommended: {models[0].name || models[0].id}
-                  </p>
+                  <p className="text-xs text-muted-foreground">Recommended: {models[0].name || models[0].id}</p>
                 ) : null}
-                {modelsError ? (
-                  <p className="text-xs text-destructive">{modelsError}</p>
-                ) : null}
+                {modelsError ? <p className="text-xs text-destructive">{modelsError}</p> : null}
                 {needsOpenRouterModel && models.length > 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    Pick a model to start chatting.
-                  </p>
+                  <p className="text-xs text-muted-foreground">Pick a model to start chatting.</p>
                 ) : null}
               </div>
             </div>
@@ -2339,14 +2056,12 @@ export function HomeClient() {
               type="password"
               placeholder="sk-or-..."
               value={openRouterKeyInput}
-              onChange={(e) => setOpenRouterKeyInput(e.target.value)}
+              onChange={e => setOpenRouterKeyInput(e.target.value)}
               disabled={isSettingsLoading || isSettingsSaving}
             />
 
             <Alert>
-              <AlertDescription>
-                Stored server-side. It is not displayed back in full.
-              </AlertDescription>
+              <AlertDescription>Stored server-side. It is not displayed back in full.</AlertDescription>
             </Alert>
           </div>
 
@@ -2364,11 +2079,7 @@ export function HomeClient() {
                 Remove key
               </Button>
             ) : null}
-            <Button
-              type="button"
-              onClick={saveOpenRouterKey}
-              disabled={isSettingsLoading || isSettingsSaving}
-            >
+            <Button type="button" onClick={saveOpenRouterKey} disabled={isSettingsLoading || isSettingsSaving}>
               {isSettingsSaving ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
@@ -2377,33 +2088,23 @@ export function HomeClient() {
 
       <CommandDialog
         open={modelPickerOpen}
-        onOpenChange={(open) => {
+        onOpenChange={open => {
           setModelPickerOpen(open);
           if (!open) setModelSearch("");
         }}
         title="OpenRouter model"
         description="Search and select a model."
       >
-        <CommandInput
-          placeholder="Search models..."
-          value={modelSearch}
-          onValueChange={setModelSearch}
-        />
+        <CommandInput placeholder="Search models..." value={modelSearch} onValueChange={setModelSearch} />
         <CommandList>
           <CommandEmpty>
-            {models.length === 0
-              ? "No models loaded. Click Fetch models."
-              : "No models found."}
+            {models.length === 0 ? "No models loaded. Click Fetch models." : "No models found."}
           </CommandEmpty>
 
-          {modelsError ? (
-            <div className="px-3 py-2 text-xs text-destructive">
-              {modelsError}
-            </div>
-          ) : null}
+          {modelsError ? <div className="px-3 py-2 text-xs text-destructive">{modelsError}</div> : null}
 
           <CommandGroup heading="Models">
-            {models.map((model) => {
+            {models.map(model => {
               return (
                 <CommandItem
                   key={model.id}
@@ -2413,23 +2114,13 @@ export function HomeClient() {
                     setModelPickerOpen(false);
                   }}
                 >
-                  <Check
-                    className={
-                      model.id === openRouterModel
-                        ? "h-4 w-4"
-                        : "h-4 w-4 opacity-0"
-                    }
-                  />
+                  <Check className={model.id === openRouterModel ? "h-4 w-4" : "h-4 w-4 opacity-0"} />
                   <div className="ml-2 flex items-center gap-2 justify-between w-full">
                     <div className="min-w-0">
-                      <div className="truncate font-medium">
-                        {model.name || model.id}
-                      </div>
+                      <div className="truncate font-medium">{model.name || model.id}</div>
                       <div className="truncate text-xs text-muted-foreground">
                         {model.id}
-                        {model.contextLength
-                          ? ` • ${model.contextLength.toLocaleString()} ctx`
-                          : ""}
+                        {model.contextLength ? ` • ${model.contextLength.toLocaleString()} ctx` : ""}
                       </div>
                     </div>
                     <ModelIcon model={model.id} />
@@ -2443,7 +2134,7 @@ export function HomeClient() {
 
       <AlertDialog
         open={confirmOpen}
-        onOpenChange={(open) => {
+        onOpenChange={open => {
           if (!open) setConfirmAction(null);
         }}
       >
@@ -2453,21 +2144,19 @@ export function HomeClient() {
               {confirmAction?.type === "delete-chat"
                 ? "Delete chat?"
                 : confirmAction?.type === "clear-chat"
-                ? "Clear chat history?"
-                : "Remove OpenRouter key?"}
+                  ? "Clear chat history?"
+                  : "Remove OpenRouter key?"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction?.type === "delete-chat"
                 ? "This deletes the chat session and all messages permanently."
                 : confirmAction?.type === "clear-chat"
-                ? "This deletes all messages in this chat permanently."
-                : "This removes the stored key from your account."}
+                  ? "This deletes all messages in this chat permanently."
+                  : "This removes the stored key from your account."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSettingsSaving}>
-              Cancel
-            </AlertDialogCancel>
+            <AlertDialogCancel disabled={isSettingsSaving}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-white hover:bg-destructive/90"
               onClick={onConfirm}
@@ -2476,8 +2165,8 @@ export function HomeClient() {
               {confirmAction?.type === "delete-chat"
                 ? "Delete"
                 : confirmAction?.type === "clear-chat"
-                ? "Clear"
-                : "Remove"}
+                  ? "Clear"
+                  : "Remove"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,16 +1,16 @@
 "use client";
 
-import React from "react";
-import Markdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import type { Components } from "react-markdown";
-
 import "katex/dist/katex.min.css";
 
-import { cn } from "@/lib/utils";
+import React from "react";
+import type { Components } from "react-markdown";
+import Markdown from "react-markdown";
+import rehypeKatex from "rehype-katex";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+
 import { CopyButton } from "@/components/ui/copy-button";
+import { cn } from "@/lib/utils";
 
 interface MarkdownRendererProps {
   children: string;
@@ -19,11 +19,7 @@ interface MarkdownRendererProps {
 export function MarkdownRenderer({ children }: MarkdownRendererProps) {
   return (
     <div className="space-y-3 [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden">
-      <Markdown
-        remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
-        components={COMPONENTS}
-      >
+      <Markdown remarkPlugins={[remarkGfm, remarkMath]} rehypePlugins={[rehypeKatex]} components={COMPONENTS}>
         {children}
       </Markdown>
     </div>
@@ -39,13 +35,11 @@ interface CodeBlockProps extends React.HTMLAttributes<HTMLPreElement> {
 const CodeBlock = ({
   children,
   className,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   language,
   ...restProps
 }: CodeBlockProps) => {
-  const code =
-    typeof children === "string"
-      ? children
-      : childrenTakeAllStringContents(children);
+  const code = typeof children === "string" ? children : childrenTakeAllStringContents(children);
 
   const preClass = cn(
     "overflow-x-scroll rounded-md border bg-background/50 p-4 font-mono text-sm [scrollbar-width:none]",
@@ -80,15 +74,14 @@ function childrenTakeAllStringContents(element: any): string {
 }
 
 // Make TS happy: always return a React component (not void), and merge className safely.
-function withClass(
-  tag: keyof React.JSX.IntrinsicElements,
-  classes: string
-): React.FC<any> {
-  const Component: React.FC<any> = ({ node, className, ...props }) =>
-    React.createElement(tag, {
-      ...props,
-      className: cn(classes, className),
-    });
+function withClass(tag: keyof React.JSX.IntrinsicElements, classes: string): React.FC<any> {
+  const Component: React.FC<any> =
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    ({ node, className, ...props }) =>
+      React.createElement(tag, {
+        ...props,
+        className: cn(classes, className),
+      });
 
   Component.displayName = `MD.${String(tag)}`;
   return Component;
@@ -106,6 +99,7 @@ const COMPONENTS: Components = {
   blockquote: withClass("blockquote", "border-l-2 border-primary pl-4"),
 
   // Important: use `inline` to distinguish inline code vs fenced code blocks.
+
   code: ({ inline, children, className, ...rest }: any) => {
     const match = /language-(\w+)/.exec(className || "");
     if (!inline && match) {
@@ -117,29 +111,21 @@ const COMPONENTS: Components = {
     }
 
     return (
-      <code
-        className={cn(
-          "font-mono rounded-md bg-background/50 px-1 py-0.5",
-          className
-        )}
-        {...rest}
-      >
+      <code className={cn("font-mono rounded-md bg-background/50 px-1 py-0.5", className)} {...rest}>
         {children}
       </code>
     );
   },
 
   // unwrap pre because CodeBlock already renders <pre>
+
   pre: ({ children }: any) => <>{children}</>,
 
   ol: withClass("ol", "list-decimal space-y-2 pl-6"),
   ul: withClass("ul", "list-disc space-y-2 pl-6"),
   li: withClass("li", "my-1.5"),
 
-  table: withClass(
-    "table",
-    "w-full border-collapse overflow-y-auto rounded-md border border-foreground/20"
-  ),
+  table: withClass("table", "w-full border-collapse overflow-y-auto rounded-md border border-foreground/20"),
   th: withClass(
     "th",
     "border border-foreground/20 px-4 py-2 text-left font-bold [&[align=center]]:text-center [&[align=right]]:text-right"

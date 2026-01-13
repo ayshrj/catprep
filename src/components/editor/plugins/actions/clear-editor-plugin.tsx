@@ -36,9 +36,7 @@ export function ClearEditorActionPlugin() {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Clear Editor</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to clear the editor?
-          </DialogDescription>
+          <DialogDescription>Are you sure you want to clear the editor?</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild>

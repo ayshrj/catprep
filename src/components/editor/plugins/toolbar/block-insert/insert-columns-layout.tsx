@@ -13,7 +13,7 @@ export function InsertColumnsLayout() {
     <SelectItem
       value="columns"
       onPointerUp={() =>
-        showModal("Insert Columns Layout", (onClose) => (
+        showModal("Insert Columns Layout", onClose => (
           <InsertLayoutDialog activeEditor={activeEditor} onClose={onClose} />
         ))
       }

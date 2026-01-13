@@ -41,7 +41,7 @@ export function useReport(): (arg0: string) => ReturnType<typeof setTimeout> {
   }, [cleanup]);
 
   return useCallback(
-    (content) => {
+    content => {
       console.log(content);
       const element = getElement();
       if (timer.current !== null) {
@@ -51,6 +51,6 @@ export function useReport(): (arg0: string) => ReturnType<typeof setTimeout> {
       timer.current = setTimeout(cleanup, 1000);
       return timer.current;
     },
-    [cleanup],
+    [cleanup]
   );
 }

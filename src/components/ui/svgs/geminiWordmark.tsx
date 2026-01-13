@@ -2,15 +2,7 @@ import type { SVGProps } from "react";
 
 const GeminiWordmark = (props: SVGProps<SVGSVGElement>) => (
   <svg {...props} viewBox="0 0 344 127" fill="none">
-    <mask
-      id="a"
-      width="344"
-      height="127"
-      x="0"
-      y="0"
-      maskUnits="userSpaceOnUse"
-      style={{ maskType: "alpha" }}
-    >
+    <mask id="a" width="344" height="127" x="0" y="0" maskUnits="userSpaceOnUse" style={{ maskType: "alpha" }}>
       <path
         fill="#fff"
         fillRule="evenodd"
@@ -22,14 +14,7 @@ const GeminiWordmark = (props: SVGProps<SVGSVGElement>) => (
       <path fill="url(#b)" d="M-158.25-455.443h832.09v685.324h-832.09z" />
     </g>
     <defs>
-      <linearGradient
-        id="b"
-        x1="-57.405"
-        x2="354.97"
-        y1="130.441"
-        y2="30.369"
-        gradientUnits="userSpaceOnUse"
-      >
+      <linearGradient id="b" x1="-57.405" x2="354.97" y1="130.441" y2="30.369" gradientUnits="userSpaceOnUse">
         <stop stopColor="#439DDF" />
         <stop offset=".524" stopColor="#4F87ED" />
         <stop offset=".781" stopColor="#9476C5" />

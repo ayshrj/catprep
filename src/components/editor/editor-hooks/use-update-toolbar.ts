@@ -1,11 +1,6 @@
-import { useEffect } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import {
-  $getSelection,
-  BaseSelection,
-  COMMAND_PRIORITY_CRITICAL,
-  SELECTION_CHANGE_COMMAND,
-} from "lexical";
+import { $getSelection, BaseSelection, COMMAND_PRIORITY_CRITICAL, SELECTION_CHANGE_COMMAND } from "lexical";
+import { useEffect } from "react";
 
 import { useToolbarContext } from "@/components/editor/context/toolbar-context";
 
@@ -23,7 +18,7 @@ export function useUpdateToolbarHandler(callback: (selection: BaseSelection) => 
         }
         return false;
       },
-      COMMAND_PRIORITY_CRITICAL,
+      COMMAND_PRIORITY_CRITICAL
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor, callback]);

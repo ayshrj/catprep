@@ -1,7 +1,8 @@
-import { NextResponse, type NextRequest } from "next/server";
 import type { UploadApiOptions } from "cloudinary";
+import { type NextRequest, NextResponse } from "next/server";
 
 import cloudinary from "@/lib/cloudinary";
+
 import { getAuthenticatedUserId } from "../auth/utils";
 
 export const runtime = "nodejs";
@@ -33,15 +34,7 @@ function isOcrSubscriptionError(error: any) {
   return message.toLowerCase().includes("ocr");
 }
 
-async function uploadToCloudinary({
-  dataUri,
-  folder,
-  withOcr,
-}: {
-  dataUri: string;
-  folder: string;
-  withOcr: boolean;
-}) {
+async function uploadToCloudinary({ dataUri, folder, withOcr }: { dataUri: string; folder: string; withOcr: boolean }) {
   const uploadOptions: UploadApiOptions & { ocr?: string } = {
     folder,
     resource_type: "image",
@@ -63,10 +56,7 @@ export async function POST(request: NextRequest) {
     const fileEntry = formData.get("file");
     const folderEntry = formData.get("folder");
     const ocrEntry = formData.get("ocr");
-    const folder =
-      typeof folderEntry === "string" && folderEntry.trim()
-        ? folderEntry.trim()
-        : "cat99/notes";
+    const folder = typeof folderEntry === "string" && folderEntry.trim() ? folderEntry.trim() : "cat99/notes";
     const ocrEnabled = process.env.CLOUDINARY_OCR_ENABLED === "true";
     const withOcrRequested = ocrEntry === "1" || ocrEntry === "true";
     let withOcr = ocrEnabled && withOcrRequested;
@@ -107,9 +97,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Cloudinary upload failed", error);
-    return NextResponse.json(
-      { error: "Unable to upload file right now." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Unable to upload file right now." }, { status: 500 });
   }
 }

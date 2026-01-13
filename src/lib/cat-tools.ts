@@ -40,11 +40,10 @@ export const CatCoachIntentLabels: Record<CatCoachIntent, string> = {
   other: "Other",
 };
 
-export const CatCoachResponseModeLabels: Record<CatCoachResponseMode, string> =
-  {
-    onboarding_questions: "Onboarding Questions",
-    normal_coaching: "Normal Coaching",
-  };
+export const CatCoachResponseModeLabels: Record<CatCoachResponseMode, string> = {
+  onboarding_questions: "Onboarding Questions",
+  normal_coaching: "Normal Coaching",
+};
 
 export type CatIntakeResult = {
   intent: CatCoachIntent;
@@ -102,23 +101,11 @@ function isShortAckOrGreeting(message: string) {
 
 function detectSection(text: string): CatIntakeResult["detectedSection"] {
   const lower = text.toLowerCase();
-  if (
-    /(varc|rc|reading comprehension|para-?jumbles?|para-?summary|odd sentence|summary question)/.test(
-      lower
-    )
-  )
+  if (/(varc|rc|reading comprehension|para-?jumbles?|para-?summary|odd sentence|summary question)/.test(lower))
     return "VARC";
-  if (
-    /(dilr|lrdi|logical reasoning|data interpretation|set selection|puzzle|arrangement|caselet)/.test(
-      lower
-    )
-  )
+  if (/(dilr|lrdi|logical reasoning|data interpretation|set selection|puzzle|arrangement|caselet)/.test(lower))
     return "DILR";
-  if (
-    /(qa|quant|quants|arithmetic|algebra|geometry|mensuration|number system|pnc|probability)/.test(
-      lower
-    )
-  )
+  if (/(qa|quant|quants|arithmetic|algebra|geometry|mensuration|number system|pnc|probability)/.test(lower))
     return "QA";
   return null;
 }
@@ -129,34 +116,13 @@ function detectTopicTag(text: string): string | null {
 
   const rules: Array<[RegExp, string]> = [
     // QA Arithmetic
-    [
-      /\bpercent(age|ages)?\b|percentage change|successive discount/i,
-      "QA → Arithmetic → Percentages",
-    ],
-    [
-      /profit|loss|discount|marked price|mp\b|sp\b|cp\b/i,
-      "QA → Arithmetic → Profit–Loss–Discount",
-    ],
-    [
-      /\bsi\b|simple interest|\bci\b|compound interest|effective rate/i,
-      "QA → Arithmetic → SI/CI",
-    ],
-    [
-      /ratio|proportion|variation|directly proportional|inversely/i,
-      "QA → Arithmetic → Ratio–Proportion",
-    ],
-    [
-      /\baverage\b|weighted average|mean\b|alligation average/i,
-      "QA → Arithmetic → Averages",
-    ],
-    [
-      /mixture|alligation|dilution|concentration|ppm/i,
-      "QA → Arithmetic → Mixtures–Alligation",
-    ],
-    [
-      /time\s*&?\s*work|work rate|efficiency|men-days|work done/i,
-      "QA → Arithmetic → Time & Work",
-    ],
+    [/\bpercent(age|ages)?\b|percentage change|successive discount/i, "QA → Arithmetic → Percentages"],
+    [/profit|loss|discount|marked price|mp\b|sp\b|cp\b/i, "QA → Arithmetic → Profit–Loss–Discount"],
+    [/\bsi\b|simple interest|\bci\b|compound interest|effective rate/i, "QA → Arithmetic → SI/CI"],
+    [/ratio|proportion|variation|directly proportional|inversely/i, "QA → Arithmetic → Ratio–Proportion"],
+    [/\baverage\b|weighted average|mean\b|alligation average/i, "QA → Arithmetic → Averages"],
+    [/mixture|alligation|dilution|concentration|ppm/i, "QA → Arithmetic → Mixtures–Alligation"],
+    [/time\s*&?\s*work|work rate|efficiency|men-days|work done/i, "QA → Arithmetic → Time & Work"],
     [/pipes?|cistern|inlet|outlet|tank/i, "QA → Arithmetic → Pipes–Cisterns"],
     [
       /time\s*speed\s*distance|relative speed|train|boat|stream|current|race track/i,
@@ -164,82 +130,37 @@ function detectTopicTag(text: string): string | null {
     ],
 
     // QA Algebra
-    [
-      /linear equation|simultaneous|system of equations/i,
-      "QA → Algebra → Linear / Simultaneous",
-    ],
-    [
-      /inequalit|minimum|maxim(um|ize)|optimi(s|z)e|am-gm|cauchy/i,
-      "QA → Algebra → Inequalities / Optimization",
-    ],
+    [/linear equation|simultaneous|system of equations/i, "QA → Algebra → Linear / Simultaneous"],
+    [/inequalit|minimum|maxim(um|ize)|optimi(s|z)e|am-gm|cauchy/i, "QA → Algebra → Inequalities / Optimization"],
     [/quadratic|discriminant|roots|vieta/i, "QA → Algebra → Quadratic"],
-    [
-      /polynomial|factor(ization)?|identity|algebraic identity/i,
-      "QA → Algebra → Polynomials / Identities",
-    ],
-    [
-      /logarithm|log rules|indices|exponents|surds|roots/i,
-      "QA → Algebra → Logs / Indices / Surds",
-    ],
+    [/polynomial|factor(ization)?|identity|algebraic identity/i, "QA → Algebra → Polynomials / Identities"],
+    [/logarithm|log rules|indices|exponents|surds|roots/i, "QA → Algebra → Logs / Indices / Surds"],
     [/modulus|\|x\||absolute value/i, "QA → Algebra → Modulus"],
-    [
-      /sequence|series|ap\b|gp\b|hp\b|sum of n terms/i,
-      "QA → Algebra → Sequences & Series",
-    ],
+    [/sequence|series|ap\b|gp\b|hp\b|sum of n terms/i, "QA → Algebra → Sequences & Series"],
     [/function|graph|domain|range/i, "QA → Algebra → Functions / Graphs"],
 
     // QA Geometry / Mensuration
-    [
-      /lines?\s*&?\s*angles?|parallel|transversal/i,
-      "QA → Geometry → Lines & Angles",
-    ],
-    [
-      /triangle|pythagoras|similarity|congruence|sine|cosine|tan/i,
-      "QA → Geometry → Triangles",
-    ],
+    [/lines?\s*&?\s*angles?|parallel|transversal/i, "QA → Geometry → Lines & Angles"],
+    [/triangle|pythagoras|similarity|congruence|sine|cosine|tan/i, "QA → Geometry → Triangles"],
     [/circle|tangent|chord|arc|sector|cyclic/i, "QA → Geometry → Circles"],
-    [
-      /quadrilateral|polygon|parallelogram|trapez|rhombus/i,
-      "QA → Geometry → Quadrilaterals / Polygons",
-    ],
+    [/quadrilateral|polygon|parallelogram|trapez|rhombus/i, "QA → Geometry → Quadrilaterals / Polygons"],
     [
       /coordinate geometry|distance formula|section formula|slope|equation of line/i,
       "QA → Geometry → Coordinate Geometry",
     ],
-    [
-      /mensuration|surface area|volume|tsa|csa|sphere|cone|cylinder|frustum/i,
-      "QA → Mensuration",
-    ],
+    [/mensuration|surface area|volume|tsa|csa|sphere|cone|cylinder|frustum/i, "QA → Mensuration"],
 
     // QA Number system / Modern math
-    [
-      /divisibility|prime|hcf|lcm|gcd|coprime/i,
-      "QA → Number System → Divisibility / Primes / HCF-LCM",
-    ],
-    [
-      /remainder|mod\b|modulo|cyclicity|last digit|unit digit/i,
-      "QA → Number System → Remainders / Cyclicity",
-    ],
-    [
-      /factorial|trailing zeros|highest power|exponent of prime/i,
-      "QA → Number System → Factorials / Trailing Zeros",
-    ],
-    [
-      /permutation|combination|arrangements|selections|\bpnc\b/i,
-      "QA → Modern Math → P&C",
-    ],
+    [/divisibility|prime|hcf|lcm|gcd|coprime/i, "QA → Number System → Divisibility / Primes / HCF-LCM"],
+    [/remainder|mod\b|modulo|cyclicity|last digit|unit digit/i, "QA → Number System → Remainders / Cyclicity"],
+    [/factorial|trailing zeros|highest power|exponent of prime/i, "QA → Number System → Factorials / Trailing Zeros"],
+    [/permutation|combination|arrangements|selections|\bpnc\b/i, "QA → Modern Math → P&C"],
     [/probability|expected value|bayes/i, "QA → Modern Math → Probability"],
     [/set(s)?\b|venn|union|intersection/i, "QA → Modern Math → Sets / Venn"],
-    [
-      /mean|median|mode|standard deviation|variance/i,
-      "QA → Modern Math → Statistics",
-    ],
+    [/mean|median|mode|standard deviation|variance/i, "QA → Modern Math → Statistics"],
 
     // VARC
-    [
-      /reading comprehension|\brc\b|inference|tone|main idea|author/i,
-      "VARC → RC",
-    ],
+    [/reading comprehension|\brc\b|inference|tone|main idea|author/i, "VARC → RC"],
     [/para-?jumble|jumbled|sequence of sentences/i, "VARC → VA → Para-jumbles"],
     [/para-?summary|summary question/i, "VARC → VA → Summary"],
     [/odd sentence|odd one out/i, "VARC → VA → Odd sentence out"],
@@ -247,20 +168,11 @@ function detectTopicTag(text: string): string | null {
     // DILR
     [/table|bar graph|line graph|pie chart|caselet|data set/i, "DILR → DI"],
     [/arrangement|seating|circular|linear|grid/i, "DILR → LR → Arrangements"],
-    [
-      /tournament|matches|points table|ranking/i,
-      "DILR → LR → Games/Tournaments",
-    ],
-    [
-      /grouping|selection|distribution|assignment/i,
-      "DILR → LR → Grouping/Distribution",
-    ],
+    [/tournament|matches|points table|ranking/i, "DILR → LR → Games/Tournaments"],
+    [/grouping|selection|distribution|assignment/i, "DILR → LR → Grouping/Distribution"],
     [/venn|sets|overlap/i, "DILR → LR → Venn/Set logic"],
     [/route|network|paths|map/i, "DILR → LR → Routes/Networks"],
-    [
-      /set selection|which set|scan sets|time sink/i,
-      "DILR → Strategy → Set selection",
-    ],
+    [/set selection|which set|scan sets|time sink/i, "DILR → Strategy → Set selection"],
   ];
 
   for (const [re, tag] of rules) {
@@ -269,15 +181,9 @@ function detectTopicTag(text: string): string | null {
   return null;
 }
 
-export function extractMockScores(
-  text: string
-): CatIntakeResult["extractedMockScores"] {
+export function extractMockScores(text: string): CatIntakeResult["extractedMockScores"] {
   const lower = text.toLowerCase();
-  if (
-    !/(varc|dilr|lrdi|qa|quant|overall|mock|score|attempts|accuracy)/.test(
-      lower
-    )
-  ) {
+  if (!/(varc|dilr|lrdi|qa|quant|overall|mock|score|attempts|accuracy)/.test(lower)) {
     return null;
   }
 
@@ -290,38 +196,23 @@ export function extractMockScores(
   };
 
   // Handle many styles: "VARC 24", "VARC:24", "VARC-24", "VARC=24"
-  const overall =
-    readNum(/overall\s*[:=\-]?\s*(\d{1,3})/i) ??
-    readNum(/total\s*[:=\-]?\s*(\d{1,3})/i);
+  const overall = readNum(/overall\s*[:=\-]?\s*(\d{1,3})/i) ?? readNum(/total\s*[:=\-]?\s*(\d{1,3})/i);
 
-  const VARC =
-    readNum(/varc\s*[:=\-]?\s*(\d{1,3})/i) ??
-    readNum(/verbal\s*[:=\-]?\s*(\d{1,3})/i);
+  const VARC = readNum(/varc\s*[:=\-]?\s*(\d{1,3})/i) ?? readNum(/verbal\s*[:=\-]?\s*(\d{1,3})/i);
 
   const DILR =
     readNum(/dilr\s*[:=\-]?\s*(\d{1,3})/i) ??
     readNum(/lrdi\s*[:=\-]?\s*(\d{1,3})/i) ??
     readNum(/logical\s*reasoning\s*[:=\-]?\s*(\d{1,3})/i);
 
-  const QA =
-    readNum(/\bqa\b\s*[:=\-]?\s*(\d{1,3})/i) ??
-    readNum(/quant(s)?\s*[:=\-]?\s*(\d{1,3})/i, 2);
+  const QA = readNum(/\bqa\b\s*[:=\-]?\s*(\d{1,3})/i) ?? readNum(/quant(s)?\s*[:=\-]?\s*(\d{1,3})/i, 2);
 
-  const attempts =
-    readNum(/attempts?\s*[:=\-]?\s*(\d{1,3})/i) ??
-    readNum(/attempt(ed)?\s*[:=\-]?\s*(\d{1,3})/i, 2);
+  const attempts = readNum(/attempts?\s*[:=\-]?\s*(\d{1,3})/i) ?? readNum(/attempt(ed)?\s*[:=\-]?\s*(\d{1,3})/i, 2);
 
-  const accuracyPercent =
-    readNum(/accuracy\s*[:=\-]?\s*(\d{1,3})\s*%/i) ??
-    readNum(/acc\s*[:=\-]?\s*(\d{1,3})\s*%/i);
+  const accuracyPercent = readNum(/accuracy\s*[:=\-]?\s*(\d{1,3})\s*%/i) ?? readNum(/acc\s*[:=\-]?\s*(\d{1,3})\s*%/i);
 
   const hasAny =
-    overall !== null ||
-    VARC !== null ||
-    DILR !== null ||
-    QA !== null ||
-    attempts !== null ||
-    accuracyPercent !== null;
+    overall !== null || VARC !== null || DILR !== null || QA !== null || attempts !== null || accuracyPercent !== null;
 
   if (!hasAny) return null;
 
@@ -379,8 +270,7 @@ function detectScenario(
 
     if (matches.length === 0) return null;
 
-    const toWeeks = (m: { value: number; unit: "weeks" | "months" }) =>
-      m.unit === "weeks" ? m.value : m.value * 4;
+    const toWeeks = (m: { value: number; unit: "weeks" | "months" }) => (m.unit === "weeks" ? m.value : m.value * 4);
 
     matches.sort((a, b) => toWeeks(a) - toWeeks(b));
     return matches[0];
@@ -391,19 +281,9 @@ function detectScenario(
     const { value, unit } = timeLeft;
     const weeks = unit === "weeks" ? value : value * 4;
     if (weeks <= 8) {
-      addCandidate(
-        "S18",
-        "high",
-        `User indicates last ~8 weeks window (${value} ${unit} left).`,
-        95
-      );
+      addCandidate("S18", "high", `User indicates last ~8 weeks window (${value} ${unit} left).`, 95);
     } else if (weeks <= 16) {
-      addCandidate(
-        "S2",
-        "med",
-        `User indicates low time remaining (${value} ${unit} left).`,
-        85
-      );
+      addCandidate("S2", "med", `User indicates low time remaining (${value} ${unit} left).`, 85);
     }
   }
 
@@ -420,12 +300,7 @@ function detectScenario(
       /busy|workload|overtime|no time|can'?t study weekdays|only weekends|long hours|shift work|working professional/i
     )
   ) {
-    addCandidate(
-      "S3",
-      "high",
-      "User indicates heavy work / low weekday time.",
-      80
-    );
+    addCandidate("S3", "high", "User indicates heavy work / low weekday time.", 80);
   }
 
   if (
@@ -433,12 +308,7 @@ function detectScenario(
       /improving slowly|slow improvement|progress slow|marks improving slowly|getting better but slow|improving but slow/i
     )
   ) {
-    addCandidate(
-      "S4",
-      "med",
-      "User indicates improvement but slow progress.",
-      50
-    );
+    addCandidate("S4", "med", "User indicates improvement but slow progress.", 50);
   }
 
   const studyingALot = hit(
@@ -449,26 +319,14 @@ function detectScenario(
   );
 
   if (studyingALot && notSeeingResults) {
-    addCandidate(
-      "S15",
-      "high",
-      "User studies a lot but scores are not improving.",
-      78
-    );
+    addCandidate("S15", "high", "User studies a lot but scores are not improving.", 78);
   }
 
   if (hit(/plateau|stuck|same score|no improvement|not improving/i)) {
-    addCandidate(
-      "S5",
-      "high",
-      "User explicitly mentions plateau/stuck scores.",
-      72
-    );
+    addCandidate("S5", "high", "User explicitly mentions plateau/stuck scores.", 72);
   }
 
-  if (
-    hit(/panic|anxiety in mocks|chaos|random strategy|messy mock|mock panic/i)
-  ) {
+  if (hit(/panic|anxiety in mocks|chaos|random strategy|messy mock|mock panic/i)) {
     addCandidate("S14", "high", "User mentions panic/chaos in mocks.", 70);
   }
 
@@ -477,99 +335,47 @@ function detectScenario(
       /forget(ting)?\s*(topics|stuff|formulas?|concepts?|things|chapters?)|weak revision|revision weak|revision poor|can'?t retain|not retaining|low retention|forget after|no revision/i
     )
   ) {
-    addCandidate(
-      "S16",
-      "high",
-      "User indicates weak revision/forgetting topics.",
-      68
-    );
+    addCandidate("S16", "high", "User indicates weak revision/forgetting topics.", 68);
   }
 
   // Section-specific weakness scenarios
   if (hit(/cutoff|sectional cutoff|not clearing cutoff|cutoff risk/i)) {
     addCandidate("S6", "high", "User mentions cutoff risk.", 76);
   }
-  if (
-    hit(
-      /qa weak|quant weak|quants weak|quantitative weak|qa basics weak|qa fundamentals weak|cannot solve quant/i
-    )
-  ) {
+  if (hit(/qa weak|quant weak|quants weak|quantitative weak|qa basics weak|qa fundamentals weak|cannot solve quant/i)) {
     addCandidate("S7", "med", "User indicates QA weakness.", 58);
   }
-  if (
-    hit(
-      /negative marks|too many wrong|accuracy low in qa|guessing|negative marking|accuracy low/i
-    )
-  ) {
-    addCandidate(
-      "S8",
-      "med",
-      "User indicates negative marks / guessing / low accuracy.",
-      57
-    );
+  if (hit(/negative marks|too many wrong|accuracy low in qa|guessing|negative marking|accuracy low/i)) {
+    addCandidate("S8", "med", "User indicates negative marks / guessing / low accuracy.", 57);
   }
-  if (
-    hit(
-      /slow in qa|time runs out in qa|takes too long|qa speed|qa time management/i
-    )
-  ) {
+  if (hit(/slow in qa|time runs out in qa|takes too long|qa speed|qa time management/i)) {
     addCandidate("S9", "med", "User indicates QA speed issue.", 56);
   }
-  if (
-    hit(
-      /rc accuracy low|cannot understand rc|rc comprehension|inference wrong|rc score low|rc accuracy/i
-    )
-  ) {
+  if (hit(/rc accuracy low|cannot understand rc|rc comprehension|inference wrong|rc score low|rc accuracy/i)) {
     addCandidate("S10", "med", "User indicates RC accuracy issue.", 55);
   }
-  if (
-    hit(
-      /para jumble|va weak|odd sentence|summary weak|para summary|sentence insertion|verbal ability weak/i
-    )
-  ) {
+  if (hit(/para jumble|va weak|odd sentence|summary weak|para summary|sentence insertion|verbal ability weak/i)) {
     addCandidate("S11", "med", "User indicates VA weakness.", 54);
   }
-  if (
-    hit(
-      /cannot start dilr|lrdi scary|blank in dilr|dilr basics weak|dilr start/i
-    )
-  ) {
+  if (hit(/cannot start dilr|lrdi scary|blank in dilr|dilr basics weak|dilr start/i)) {
     addCandidate("S12", "med", "User indicates DILR start problem.", 53);
   }
-  if (
-    hit(
-      /stuck in a set|wasting time in dilr|time sink set|dilr time sink|dilr stuck/i
-    )
-  ) {
+  if (hit(/stuck in a set|wasting time in dilr|time sink set|dilr time sink|dilr stuck/i)) {
     addCandidate("S13", "med", "User indicates DILR time sink.", 52);
   }
 
-  if (
-    hit(
-      /uneven strengths|imbalanced|one section weak|one section strong|section imbalance/i
-    )
-  ) {
+  if (hit(/uneven strengths|imbalanced|one section weak|one section strong|section imbalance/i)) {
     addCandidate("S17", "low", "User indicates uneven section strengths.", 45);
   }
 
   // If mock scores present + one section is very low, gently flag uneven strengths
-  if (
-    scores &&
-    (scores.VARC !== null || scores.DILR !== null || scores.QA !== null)
-  ) {
-    const vals = [scores.VARC, scores.DILR, scores.QA].filter(
-      (v): v is number => typeof v === "number"
-    );
+  if (scores && (scores.VARC !== null || scores.DILR !== null || scores.QA !== null)) {
+    const vals = [scores.VARC, scores.DILR, scores.QA].filter((v): v is number => typeof v === "number");
     if (vals.length >= 2) {
       const min = Math.min(...vals);
       const max = Math.max(...vals);
       if (max - min >= 15) {
-        addCandidate(
-          "S17",
-          "low",
-          "Uneven sectional scores detected (big gap).",
-          44
-        );
+        addCandidate("S17", "low", "Uneven sectional scores detected (big gap).", 44);
       }
     }
   }
@@ -577,10 +383,7 @@ function detectScenario(
   if (candidates.length > 0) {
     const ranked = candidates
       .map((candidate, index) => ({ ...candidate, index }))
-      .sort(
-        (a, b) =>
-          b.score - a.score || a.index - b.index || a.code.localeCompare(b.code)
-      );
+      .sort((a, b) => b.score - a.score || a.index - b.index || a.code.localeCompare(b.code));
     const winner = ranked[0];
     return {
       code: winner.code,
@@ -622,11 +425,7 @@ const FORMULA_DB: FormulaEntry[] = [
       "Base confusion (Old vs New). Decide base before calculating.",
       "Two discounts are not additive (use successive change).",
     ],
-    practiceTypes: [
-      "Reverse percentage",
-      "Successive changes",
-      "Discount + profit chains",
-    ],
+    practiceTypes: ["Reverse percentage", "Successive changes", "Discount + profit chains"],
   },
   {
     tag: "QA → Arithmetic → Time & Work",
@@ -639,10 +438,7 @@ const FORMULA_DB: FormulaEntry[] = [
       "Use LCM as total work for multi-worker problems.",
       "If A is k times efficient, time ratio is inverse (A:B = 1:k).",
     ],
-    traps: [
-      "Mixing work done vs remaining work.",
-      "Not treating leak/outlet as negative rate.",
-    ],
+    traps: ["Mixing work done vs remaining work.", "Not treating leak/outlet as negative rate."],
     practiceTypes: ["Combined work", "Efficiency ratios", "Alternate day work"],
   },
   {
@@ -664,20 +460,13 @@ const FORMULA_DB: FormulaEntry[] = [
   // QA Algebra
   {
     tag: "QA → Algebra → Quadratic",
-    mustKnow: [
-      "$$D=b^2-4ac$$",
-      "$$\\alpha+\\beta=-\\frac{b}{a},\\quad \\alpha\\beta=\\frac{c}{a}$$",
-    ],
+    mustKnow: ["$$D=b^2-4ac$$", "$$\\alpha+\\beta=-\\frac{b}{a},\\quad \\alpha\\beta=\\frac{c}{a}$$"],
     shortcuts: [
       "If options exist, plug-in options quickly.",
       "Use Vieta to simplify expressions in roots without solving.",
     ],
     traps: ["Forgetting scaling when a \\neq 1."],
-    practiceTypes: [
-      "Roots expression",
-      "Parameter quadratic",
-      "D-based inequality",
-    ],
+    practiceTypes: ["Roots expression", "Parameter quadratic", "D-based inequality"],
   },
   {
     tag: "QA → Algebra → Sequences & Series",
@@ -685,16 +474,9 @@ const FORMULA_DB: FormulaEntry[] = [
       "$$\\text{AP: } T_n=a+(n-1)d,\\quad S_n=\\frac{n}{2}\\left(2a+(n-1)d\\right)$$",
       "$$\\text{GP: } T_n=ar^{n-1},\\quad S_n=a\\frac{r^n-1}{r-1}\\ (r\\ne 1)$$",
     ],
-    shortcuts: [
-      "Use difference tables for patterns.",
-      "Check telescoping when possible.",
-    ],
+    shortcuts: ["Use difference tables for patterns.", "Check telescoping when possible."],
     traps: ["Mixing T_n and S_n", "Sign errors when r<0"],
-    practiceTypes: [
-      "AP/GP word problems",
-      "Sum constraints",
-      "Nth term puzzles",
-    ],
+    practiceTypes: ["AP/GP word problems", "Sum constraints", "Nth term puzzles"],
   },
 
   // Geometry
@@ -734,10 +516,7 @@ const FORMULA_DB: FormulaEntry[] = [
       "Use modular rules: $(a\\pm b)\\bmod m$, $(a\\cdot b)\\bmod m$",
       "Last digit cycles: length 4 for 2,3,7,8; length 2 for 4,9; length 1 for 0,1,5,6",
     ],
-    shortcuts: [
-      "Reduce exponent modulo cycle length.",
-      "Use mod 9 digit sum as quick sanity check (when applicable).",
-    ],
+    shortcuts: ["Reduce exponent modulo cycle length.", "Use mod 9 digit sum as quick sanity check (when applicable)."],
     traps: ["Wrong cycle length", "Negative remainder handling mistakes"],
     practiceTypes: ["Last digit", "Large power remainder", "Pattern remainder"],
   },
@@ -760,10 +539,7 @@ const FORMULA_DB: FormulaEntry[] = [
       "$$\\text{Repetition: } n^r$$",
       "$$\\text{Multiset permutations: } \\frac{n!}{a!b!c!\\cdots}$$",
     ],
-    shortcuts: [
-      "Use complement counting.",
-      "$$\\binom{n}{r}=\\binom{n}{n-r}$$",
-    ],
+    shortcuts: ["Use complement counting.", "$$\\binom{n}{r}=\\binom{n}{n-r}$$"],
     traps: ["Order vs selection confusion."],
     practiceTypes: ["Arrangements", "Committees", "Digit/letter counting"],
   },
@@ -774,19 +550,9 @@ const FORMULA_DB: FormulaEntry[] = [
       "$$P(\\ge 1)=1-P(0)$$",
       "$$\\text{Independence: } P(A\\cap B)=P(A)\\cdot P(B)$$",
     ],
-    shortcuts: [
-      "Use complement for 'at least one'.",
-      "Do systematic casework when small.",
-    ],
-    traps: [
-      "Assuming independence without justification.",
-      "Double-counting overlap.",
-    ],
-    practiceTypes: [
-      "At least one",
-      "Conditional probability (basic)",
-      "Balls/cards",
-    ],
+    shortcuts: ["Use complement for 'at least one'.", "Do systematic casework when small."],
+    traps: ["Assuming independence without justification.", "Double-counting overlap."],
+    practiceTypes: ["At least one", "Conditional probability (basic)", "Balls/cards"],
   },
 
   // DILR Strategy (not formulas, but playbook)
@@ -802,11 +568,7 @@ const FORMULA_DB: FormulaEntry[] = [
       "Avoid heavy casework unless it’s your strength.",
     ],
     traps: ["Marrying a set", "Starting with the hardest set first"],
-    practiceTypes: [
-      "Timed scans",
-      "2-set strategy drills",
-      "Reattempt old sets",
-    ],
+    practiceTypes: ["Timed scans", "2-set strategy drills", "Reattempt old sets"],
   },
 
   // VARC core heuristics
@@ -822,35 +584,31 @@ const FORMULA_DB: FormulaEntry[] = [
       "Win by elimination, not by hunting 'perfect' phrasing.",
     ],
     traps: ["Outside knowledge", "Over-inference"],
-    practiceTypes: [
-      "2 RC/day + review",
-      "Inference-only drills",
-      "Main idea drills",
-    ],
+    practiceTypes: ["2 RC/day + review", "Inference-only drills", "Main idea drills"],
   },
 ];
 
 function formulaLookup(query: string): FormulaEntry[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
-  const scored = FORMULA_DB.map((e) => {
+  const scored = FORMULA_DB.map(e => {
     const key = e.tag.toLowerCase();
     let score = 0;
     if (key === q) score += 10;
     if (key.includes(q)) score += 6;
     const parts = q
       .split(/[→>|/,-]/)
-      .map((x) => x.trim())
+      .map(x => x.trim())
       .filter(Boolean);
     for (const p of parts) {
       if (p && key.includes(p)) score += 2;
     }
     return { e, score };
   })
-    .filter((x) => x.score > 0)
+    .filter(x => x.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 4)
-    .map((x) => x.e);
+    .map(x => x.e);
 
   return scored;
 }
@@ -870,25 +628,13 @@ export function intakeCatCoach(message: string): CatIntakeResult {
     intent = "greeting";
   } else if (/(gd|pi|wat|interview|personal interview)/.test(lower)) {
     intent = "gdpi_request";
-  } else if (
-    /(formula|formulas|shortcut|shortcuts|trick|cheat sheet|revision sheet)/.test(
-      lower
-    )
-  ) {
+  } else if (/(formula|formulas|shortcut|shortcuts|trick|cheat sheet|revision sheet)/.test(lower)) {
     intent = "formula_request";
   } else if (extractedMockScores) {
     intent = "mock_review";
-  } else if (
-    /(plan|schedule|routine|timetable|strategy|how do i start|start prep|prepare|roadmap)/.test(
-      lower
-    )
-  ) {
+  } else if (/(plan|schedule|routine|timetable|strategy|how do i start|start prep|prepare|roadmap)/.test(lower)) {
     intent = "plan_request";
-  } else if (
-    detectedSection ||
-    detectedTopicTag ||
-    /\bqa\b|\bvarc\b|\bdilr\b|\blrdi\b/i.test(lower)
-  ) {
+  } else if (detectedSection || detectedTopicTag || /\bqa\b|\bvarc\b|\bdilr\b|\blrdi\b/i.test(lower)) {
     intent = "topic_question";
   }
 
@@ -897,21 +643,15 @@ export function intakeCatCoach(message: string): CatIntakeResult {
   // Ask onboarding questions only if user wants a plan and gives zero usable constraints.
   const likelyMissingCriticalInfo =
     intent === "plan_request" &&
-    !/(hours?|hrs?|weekday|weekend|resources?|books?|coaching|mock|score|job|working|months?|weeks?)/.test(
-      lower
-    );
+    !/(hours?|hrs?|weekday|weekend|resources?|books?|coaching|mock|score|job|working|months?|weeks?)/.test(lower);
 
   const shouldAskQuickQuestions = Boolean(likelyMissingCriticalInfo);
-  const responseMode: CatCoachResponseMode = shouldAskQuickQuestions
-    ? "onboarding_questions"
-    : "normal_coaching";
+  const responseMode: CatCoachResponseMode = shouldAskQuickQuestions ? "onboarding_questions" : "normal_coaching";
 
   const notes: string[] = [];
   if (greeting) notes.push("Detected greeting/ack only.");
-  if (shouldAskQuickQuestions)
-    notes.push("Plan asked with missing constraints: ask quick questions.");
-  if (detectedScenario.code !== "unknown")
-    notes.push(`Scenario detected: ${detectedScenario.code}`);
+  if (shouldAskQuickQuestions) notes.push("Plan asked with missing constraints: ask quick questions.");
+  if (detectedScenario.code !== "unknown") notes.push(`Scenario detected: ${detectedScenario.code}`);
 
   return {
     intent,
@@ -948,14 +688,13 @@ export function catMockDiagnoseTool(args: {
   accuracyPercent?: number | null;
   notesText?: string;
 }) {
-  const { overall, VARC, DILR, QA, attempts, accuracyPercent, notesText } =
-    args;
+  const { overall, VARC, DILR, QA, attempts, accuracyPercent, notesText } = args;
 
   const sectionScores = [
     { k: "VARC", v: typeof VARC === "number" ? VARC : null },
     { k: "DILR", v: typeof DILR === "number" ? DILR : null },
     { k: "QA", v: typeof QA === "number" ? QA : null },
-  ].filter((x) => x.v !== null) as Array<{
+  ].filter(x => x.v !== null) as Array<{
     k: "VARC" | "DILR" | "QA";
     v: number;
   }>;
@@ -967,46 +706,25 @@ export function catMockDiagnoseTool(args: {
 
   const rootCauses: string[] = [];
   if (typeof accuracyPercent === "number" && accuracyPercent < 65) {
-    rootCauses.push(
-      "Accuracy low → guessing / weak elimination / weak fundamentals."
-    );
+    rootCauses.push("Accuracy low → guessing / weak elimination / weak fundamentals.");
   }
   if (typeof attempts === "number" && attempts < 40) {
-    rootCauses.push(
-      "Low attempts → speed + selection problem (or too cautious)."
-    );
+    rootCauses.push("Low attempts → speed + selection problem (or too cautious).");
   }
-  if (weakest === "DILR")
-    rootCauses.push("DILR weak → set selection + representation likely.");
-  if (weakest === "VARC")
-    rootCauses.push("VARC weak → RC process + elimination likely.");
-  if (weakest === "QA")
-    rootCauses.push("QA weak → fundamentals + speed/2-pass likely.");
+  if (weakest === "DILR") rootCauses.push("DILR weak → set selection + representation likely.");
+  if (weakest === "VARC") rootCauses.push("VARC weak → RC process + elimination likely.");
+  if (weakest === "QA") rootCauses.push("QA weak → fundamentals + speed/2-pass likely.");
   if (notesText && /panic|chaos|random|strategy changes/i.test(notesText)) {
-    rootCauses.push(
-      "Mock instability → strategy not fixed (freeze for 5 mocks)."
-    );
+    rootCauses.push("Mock instability → strategy not fixed (freeze for 5 mocks).");
   }
 
   const plan14: string[] = [];
-  plan14.push(
-    "Do 2 full mocks/week + deep analysis (WRONG / GUESSED / TIME-SINK / SKIPPED-BUT-DOABLE)."
-  );
-  plan14.push(
-    "Daily: 1 DILR set + 1 RC passage + 15 QA questions (mix easy+medium)."
-  );
-  if (weakest === "DILR")
-    plan14.push(
-      "DILR focus: scan sets 2–3 mins + pick 2 easiest; drop if stuck at 8–10 mins."
-    );
+  plan14.push("Do 2 full mocks/week + deep analysis (WRONG / GUESSED / TIME-SINK / SKIPPED-BUT-DOABLE).");
+  plan14.push("Daily: 1 DILR set + 1 RC passage + 15 QA questions (mix easy+medium).");
+  if (weakest === "DILR") plan14.push("DILR focus: scan sets 2–3 mins + pick 2 easiest; drop if stuck at 8–10 mins.");
   if (weakest === "VARC")
-    plan14.push(
-      "VARC focus: 2 RC/day, track inference mistakes, extreme/out-of-scope elimination drills."
-    );
-  if (weakest === "QA")
-    plan14.push(
-      "QA focus: 2-pass practice; accuracy-first; redo slow questions for speed."
-    );
+    plan14.push("VARC focus: 2 RC/day, track inference mistakes, extreme/out-of-scope elimination drills.");
+  if (weakest === "QA") plan14.push("QA focus: 2-pass practice; accuracy-first; redo slow questions for speed.");
 
   return {
     snapshot: {
@@ -1060,8 +778,7 @@ export const CAT_COACH_TOOLS: OpenAiToolDefinition[] = [
     type: "function",
     function: {
       name: "cat_detect_topic",
-      description:
-        "Heuristically detect CAT section and a likely topic tag from a user message.",
+      description: "Heuristically detect CAT section and a likely topic tag from a user message.",
       parameters: {
         type: "object",
         additionalProperties: false,
@@ -1096,8 +813,7 @@ export const CAT_COACH_TOOLS: OpenAiToolDefinition[] = [
     type: "function",
     function: {
       name: "cat_mock_diagnose",
-      description:
-        "Given mock scores and optional notes, return likely root causes + a 14-day fix plan skeleton.",
+      description: "Given mock scores and optional notes, return likely root causes + a 14-day fix plan skeleton.",
       parameters: {
         type: "object",
         additionalProperties: false,
@@ -1118,26 +834,22 @@ export const CAT_COACH_TOOLS: OpenAiToolDefinition[] = [
 
 export async function executeCatTool(name: string, args: unknown) {
   if (name === "cat_intake") {
-    const message =
-      typeof (args as any)?.message === "string" ? (args as any).message : "";
+    const message = typeof (args as any)?.message === "string" ? (args as any).message : "";
     return intakeCatCoach(message);
   }
 
   if (name === "cat_extract_mock_scores") {
-    const text =
-      typeof (args as any)?.text === "string" ? (args as any).text : "";
+    const text = typeof (args as any)?.text === "string" ? (args as any).text : "";
     return extractMockScores(text);
   }
 
   if (name === "cat_detect_topic") {
-    const text =
-      typeof (args as any)?.text === "string" ? (args as any).text : "";
+    const text = typeof (args as any)?.text === "string" ? (args as any).text : "";
     return { section: detectSection(text), topicTag: detectTopicTag(text) };
   }
 
   if (name === "cat_formula_lookup") {
-    const query =
-      typeof (args as any)?.query === "string" ? (args as any).query : "";
+    const query = typeof (args as any)?.query === "string" ? (args as any).query : "";
     return catFormulaLookupTool(query);
   }
 
@@ -1149,8 +861,7 @@ export async function executeCatTool(name: string, args: unknown) {
       DILR: typeof a.DILR === "number" ? a.DILR : null,
       QA: typeof a.QA === "number" ? a.QA : null,
       attempts: typeof a.attempts === "number" ? a.attempts : null,
-      accuracyPercent:
-        typeof a.accuracyPercent === "number" ? a.accuracyPercent : null,
+      accuracyPercent: typeof a.accuracyPercent === "number" ? a.accuracyPercent : null,
       notesText: typeof a.notesText === "string" ? a.notesText : null,
     });
   }

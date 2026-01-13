@@ -13,9 +13,7 @@ export function InsertTable() {
     <SelectItem
       value="table"
       onPointerUp={() =>
-        showModal("Insert Table", (onClose) => (
-          <InsertTableDialog activeEditor={activeEditor} onClose={onClose} />
-        ))
+        showModal("Insert Table", onClose => <InsertTableDialog activeEditor={activeEditor} onClose={onClose} />)
       }
       className=""
     >

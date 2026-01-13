@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $rootTextContent } from "@lexical/text";
+import { useEffect, useState } from "react";
 
 let textEncoderInstance: null | TextEncoder = null;
 
@@ -43,12 +43,10 @@ const strlen = (text: string, charset: "UTF-8" | "UTF-16") => {
 };
 
 const countWords = (text: string) => {
-  return text.split(/\s+/).filter((word) => word.length > 0).length;
+  return text.split(/\s+/).filter(word => word.length > 0).length;
 };
 
-export function CounterCharacterPlugin({
-  charset = "UTF-16",
-}: CounterCharacterPluginProps) {
+export function CounterCharacterPlugin({ charset = "UTF-16" }: CounterCharacterPluginProps) {
   const [editor] = useLexicalComposerContext();
   const [stats, setStats] = useState(() => {
     const initialText = editor.getEditorState().read($rootTextContent);

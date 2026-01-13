@@ -1,10 +1,11 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { PROMPT_CAT } from "@/lib/cat";
 import { CAT_COACH_TOOLS, executeCatTool } from "@/lib/cat-tools";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { parseAssistantJsonOrThrow } from "@/lib/llm-response-parser";
 import { MessageContent, stringifyMessageContent } from "@/lib/message-content";
+
 import { getAuthenticatedUserId } from "../../auth/utils";
 
 export const runtime = "nodejs";
@@ -57,20 +58,11 @@ async function getUserSettings(userId: string) {
   const db = getAdminDb();
   if (!db) return null;
 
-  const doc = await db
-    .collection("users")
-    .doc(userId)
-    .collection("private")
-    .doc("settings")
-    .get();
+  const doc = await db.collection("users").doc(userId).collection("private").doc("settings").get();
 
   const data = (doc.data() ?? {}) as any;
-  const apiKey =
-    typeof data.openRouterApiKey === "string"
-      ? data.openRouterApiKey.trim()
-      : "";
-  const model =
-    typeof data.openRouterModel === "string" ? data.openRouterModel.trim() : "";
+  const apiKey = typeof data.openRouterApiKey === "string" ? data.openRouterApiKey.trim() : "";
+  const model = typeof data.openRouterModel === "string" ? data.openRouterModel.trim() : "";
 
   return {
     apiKey: apiKey || null,
@@ -82,18 +74,11 @@ async function readChatMessages(userId: string, chatId: string) {
   const db = getAdminDb();
   if (!db) return [];
 
-  const sessionRef = db
-    .collection("users")
-    .doc(userId)
-    .collection("chat_sessions")
-    .doc(chatId);
+  const sessionRef = db.collection("users").doc(userId).collection("chat_sessions").doc(chatId);
 
-  const snapshot = await sessionRef
-    .collection("messages")
-    .orderBy("createdAt", "asc")
-    .get();
+  const snapshot = await sessionRef.collection("messages").orderBy("createdAt", "asc").get();
 
-  return snapshot.docs.map((doc) => doc.data() as StoredMessage);
+  return snapshot.docs.map(doc => doc.data() as StoredMessage);
 }
 
 function buildContextMessages(allMessages: StoredMessage[]) {
@@ -109,8 +94,7 @@ function buildContextMessages(allMessages: StoredMessage[]) {
     if (message.role !== "user" && message.role !== "assistant") continue;
     const content = stringifyMessageContent(message.content).trim();
     if (!content) continue;
-    const role: "user" | "assistant" =
-      message.role === "assistant" ? "assistant" : "user";
+    const role: "user" | "assistant" = message.role === "assistant" ? "assistant" : "user";
     openRouterMessages.push({ role, content });
   }
 
@@ -137,7 +121,6 @@ function parseToolArgs(raw: unknown) {
     return {};
   }
 }
-
 
 async function callOpenRouterChatCompletions({
   apiKey,
@@ -169,28 +152,24 @@ async function callOpenRouterChatCompletions({
     body.response_format = { type: "json_object" };
   }
 
-  const response = await fetch(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": origin,
-        "X-Title": "CAT Coach",
-      },
-      body: JSON.stringify(body),
-    }
-  );
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": origin,
+      "X-Title": "CAT Coach",
+    },
+    body: JSON.stringify(body),
+  });
 
-  const data = await response.json().catch(() => ({} as any));
+  const data = await response.json().catch(() => ({}) as any);
   if (!response.ok) {
-    const errorMessage =
-      data?.error?.message ??
-      data?.error ??
-      `OpenRouter error (${response.status})`;
+    const errorMessage = data?.error?.message ?? data?.error ?? `OpenRouter error (${response.status})`;
     const error = new Error(String(errorMessage));
+
     (error as any).status = response.status;
+
     (error as any).details = data;
     throw error;
   }
@@ -242,9 +221,7 @@ async function generateCatCoachReply({
         lowered.includes("tools are not supported");
 
       const looksLikeJsonModeIssue =
-        lowered.includes("response_format") ||
-        lowered.includes("json_object") ||
-        lowered.includes("json mode");
+        lowered.includes("response_format") || lowered.includes("json_object") || lowered.includes("json mode");
 
       // If tools or json-mode not supported, retry without those features.
       if (looksLikeToolSupportIssue) {
@@ -275,12 +252,10 @@ async function generateCatCoachReply({
       typeof message?.content === "string"
         ? message.content
         : typeof message?.delta?.content === "string"
-        ? message.delta.content
-        : "";
+          ? message.delta.content
+          : "";
 
-    const rawToolCalls = Array.isArray(message?.tool_calls)
-      ? message.tool_calls
-      : [];
+    const rawToolCalls = Array.isArray(message?.tool_calls) ? message.tool_calls : [];
 
     if (rawToolCalls.length === 0) {
       if (typeof content !== "string" || !content.trim()) {
@@ -290,17 +265,14 @@ async function generateCatCoachReply({
     }
 
     const normalizedToolCalls = rawToolCalls
+
       .map((call: any) => {
         const id =
           typeof call?.id === "string" && call.id.trim()
             ? call.id
             : `tool_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        const name =
-          typeof call?.function?.name === "string" ? call.function.name : "";
-        const args =
-          typeof call?.function?.arguments === "string"
-            ? call.function.arguments
-            : "";
+        const name = typeof call?.function?.name === "string" ? call.function.name : "";
+        const args = typeof call?.function?.arguments === "string" ? call.function.arguments : "";
         if (!name.trim()) return null;
         return {
           id,
@@ -352,26 +324,17 @@ export async function POST(request: NextRequest) {
 
   const settings = await getUserSettings(userId);
   if (!settings?.apiKey) {
-    return NextResponse.json(
-      { error: "Add your OpenRouter API key in Settings first." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Add your OpenRouter API key in Settings first." }, { status: 400 });
   }
   if (!settings.model) {
-    return NextResponse.json(
-      { error: "Select an OpenRouter model first." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Select an OpenRouter model first." }, { status: 400 });
   }
 
   const stored = await readChatMessages(userId, chatId);
   const messages = buildContextMessages(stored);
 
   if (messages.length < 2) {
-    return NextResponse.json(
-      { error: "No user message found for this chat yet." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "No user message found for this chat yet." }, { status: 400 });
   }
 
   const origin = request.headers.get("origin") ?? "http://localhost:3000";
@@ -387,17 +350,17 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to generate response.",
+        error: error instanceof Error ? error.message : "Failed to generate response.",
+
         details: (error as any)?.details ?? null,
       },
+
       { status: (error as any)?.status ?? 500 }
     );
   }
 
   // ✅ Parse + validate JSON response from model
+
   let parsed: any;
   try {
     parsed = parseAssistantJsonOrThrow(content);

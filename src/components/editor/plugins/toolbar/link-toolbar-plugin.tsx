@@ -1,14 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
-import {
-  $isRangeSelection,
-  BaseSelection,
-  COMMAND_PRIORITY_NORMAL,
-  KEY_MODIFIER_COMMAND,
-} from "lexical";
+import { $isRangeSelection, BaseSelection, COMMAND_PRIORITY_NORMAL, KEY_MODIFIER_COMMAND } from "lexical";
 import { LinkIcon } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useToolbarContext } from "@/components/editor/context/toolbar-context";
 import { useUpdateToolbarHandler } from "@/components/editor/editor-hooks/use-update-toolbar";
@@ -16,11 +11,7 @@ import { getSelectedNode } from "@/components/editor/utils/get-selected-node";
 import { sanitizeUrl } from "@/components/editor/utils/url";
 import { Toggle } from "@/components/ui/toggle";
 
-export function LinkToolbarPlugin({
-  setIsLinkEditMode,
-}: {
-  setIsLinkEditMode: (isEditMode: boolean) => void;
-}) {
+export function LinkToolbarPlugin({ setIsLinkEditMode }: { setIsLinkEditMode: (isEditMode: boolean) => void }) {
   const { activeEditor } = useToolbarContext();
   const [isLink, setIsLink] = useState(false);
 
@@ -41,7 +32,7 @@ export function LinkToolbarPlugin({
   useEffect(() => {
     return activeEditor.registerCommand(
       KEY_MODIFIER_COMMAND,
-      (payload) => {
+      payload => {
         const event: KeyboardEvent = payload;
         const { code, ctrlKey, metaKey } = event;
 
@@ -59,7 +50,7 @@ export function LinkToolbarPlugin({
         }
         return false;
       },
-      COMMAND_PRIORITY_NORMAL,
+      COMMAND_PRIORITY_NORMAL
     );
   }, [activeEditor, isLink, setIsLinkEditMode]);
 
@@ -74,13 +65,7 @@ export function LinkToolbarPlugin({
   }, [activeEditor, isLink, setIsLinkEditMode]);
 
   return (
-    <Toggle
-      variant={"outline"}
-      size="sm"
-      className="size-8!"
-      aria-label="Toggle link"
-      onClick={insertLink}
-    >
+    <Toggle variant={"outline"} size="sm" className="size-8!" aria-label="Toggle link" onClick={insertLink}>
       <LinkIcon className="h-4 w-4" />
     </Toggle>
   );

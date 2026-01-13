@@ -7,8 +7,6 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { JSX, useEffect, useRef, useState } from "react";
-import * as React from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $wrapNodeInElement, mergeRegister } from "@lexical/utils";
 import {
@@ -29,13 +27,10 @@ import {
   LexicalCommand,
   LexicalEditor,
 } from "lexical";
+import { JSX, useEffect, useRef, useState } from "react";
+import * as React from "react";
 
-import {
-  $createImageNode,
-  $isImageNode,
-  ImageNode,
-  ImagePayload,
-} from "@/components/editor/nodes/image-node";
+import { $createImageNode, $isImageNode, ImageNode, ImagePayload } from "@/components/editor/nodes/image-node";
 import { CAN_USE_DOM } from "@/components/editor/shared/can-use-dom";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
@@ -49,14 +44,9 @@ export type InsertImagePayload = Readonly<ImagePayload>;
 const getDOMSelection = (targetWindow: Window | null): Selection | null =>
   CAN_USE_DOM ? (targetWindow || window).getSelection() : null;
 
-export const INSERT_IMAGE_COMMAND: LexicalCommand<InsertImagePayload> =
-  createCommand("INSERT_IMAGE_COMMAND");
+export const INSERT_IMAGE_COMMAND: LexicalCommand<InsertImagePayload> = createCommand("INSERT_IMAGE_COMMAND");
 
-export function InsertImageUriDialogBody({
-  onClick,
-}: {
-  onClick: (payload: InsertImagePayload) => void;
-}) {
+export function InsertImageUriDialogBody({ onClick }: { onClick: (payload: InsertImagePayload) => void }) {
   const [src, setSrc] = useState("");
   const [altText, setAltText] = useState("");
 
@@ -69,7 +59,7 @@ export function InsertImageUriDialogBody({
         <Input
           id="image-url"
           placeholder="i.e. https://source.unsplash.com/random"
-          onChange={(e) => setSrc(e.target.value)}
+          onChange={e => setSrc(e.target.value)}
           value={src}
           data-test-id="image-modal-url-input"
         />
@@ -79,7 +69,7 @@ export function InsertImageUriDialogBody({
         <Input
           id="alt-text"
           placeholder="Random unsplash image"
-          onChange={(e) => setAltText(e.target.value)}
+          onChange={e => setAltText(e.target.value)}
           value={altText}
           data-test-id="image-modal-alt-text-input"
         />
@@ -98,11 +88,7 @@ export function InsertImageUriDialogBody({
   );
 }
 
-export function InsertImageUploadedDialogBody({
-  onClick,
-}: {
-  onClick: (payload: InsertImagePayload) => void;
-}) {
+export function InsertImageUploadedDialogBody({ onClick }: { onClick: (payload: InsertImagePayload) => void }) {
   const [src, setSrc] = useState("");
   const [altText, setAltText] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -138,23 +124,19 @@ export function InsertImageUploadedDialogBody({
         <Input
           id="image-upload"
           type="file"
-          onChange={(e) => handleImageUpload(e.target.files)}
+          onChange={e => handleImageUpload(e.target.files)}
           accept="image/*"
           data-test-id="image-modal-file-upload"
         />
-        {isUploading ? (
-          <p className="text-xs text-muted-foreground">Uploading…</p>
-        ) : null}
-        {uploadError ? (
-          <p className="text-xs text-destructive">{uploadError}</p>
-        ) : null}
+        {isUploading ? <p className="text-xs text-muted-foreground">Uploading…</p> : null}
+        {uploadError ? <p className="text-xs text-destructive">{uploadError}</p> : null}
       </div>
       <div className="grid gap-2">
         <Label htmlFor="alt-text">Alt Text</Label>
         <Input
           id="alt-text"
           placeholder="Descriptive alternative text"
-          onChange={(e) => setAltText(e.target.value)}
+          onChange={e => setAltText(e.target.value)}
           value={altText}
           data-test-id="image-modal-alt-text-input"
         />
@@ -216,11 +198,7 @@ export function InsertImageDialog({
   );
 }
 
-export function ImagesPlugin({
-  captionsEnabled,
-}: {
-  captionsEnabled?: boolean;
-}): JSX.Element | null {
+export function ImagesPlugin({ captionsEnabled }: { captionsEnabled?: boolean }): JSX.Element | null {
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
@@ -231,7 +209,7 @@ export function ImagesPlugin({
     return mergeRegister(
       editor.registerCommand<InsertImagePayload>(
         INSERT_IMAGE_COMMAND,
-        (payload) => {
+        payload => {
           const imageNode = $createImageNode(payload);
           $insertNodes([imageNode]);
           if ($isRootOrShadowRoot(imageNode.getParentOrThrow())) {
@@ -240,29 +218,29 @@ export function ImagesPlugin({
 
           return true;
         },
-        COMMAND_PRIORITY_EDITOR,
+        COMMAND_PRIORITY_EDITOR
       ),
       editor.registerCommand<DragEvent>(
         DRAGSTART_COMMAND,
-        (event) => {
+        event => {
           return $onDragStart(event);
         },
-        COMMAND_PRIORITY_HIGH,
+        COMMAND_PRIORITY_HIGH
       ),
       editor.registerCommand<DragEvent>(
         DRAGOVER_COMMAND,
-        (event) => {
+        event => {
           return $onDragover(event);
         },
-        COMMAND_PRIORITY_LOW,
+        COMMAND_PRIORITY_LOW
       ),
       editor.registerCommand<DragEvent>(
         DROP_COMMAND,
-        (event) => {
+        event => {
           return $onDrop(event, editor);
         },
-        COMMAND_PRIORITY_HIGH,
-      ),
+        COMMAND_PRIORITY_HIGH
+      )
     );
   }, [captionsEnabled, editor]);
 
@@ -278,8 +256,7 @@ function $onDragStart(event: DragEvent): boolean {
   if (!dataTransfer) {
     return false;
   }
-  const TRANSPARENT_IMAGE =
-    "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+  const TRANSPARENT_IMAGE = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
   const img = document.createElement("img");
   img.src = TRANSPARENT_IMAGE;
   dataTransfer.setData("text/plain", "_");
@@ -298,7 +275,7 @@ function $onDragStart(event: DragEvent): boolean {
         width: node.__width,
       },
       type: "image",
-    }),
+    })
   );
 
   return true;

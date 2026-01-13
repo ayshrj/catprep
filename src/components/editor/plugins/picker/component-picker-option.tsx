@@ -1,6 +1,6 @@
-import { JSX } from "react";
 import { MenuOption } from "@lexical/react/LexicalTypeaheadMenuPlugin";
 import { LexicalEditor } from "lexical";
+import { JSX } from "react";
 
 export class ComponentPickerOption extends MenuOption {
   // What shows up in the editor
@@ -15,7 +15,7 @@ export class ComponentPickerOption extends MenuOption {
   onSelect: (
     queryString: string,
     editor: LexicalEditor,
-    showModal: (title: string, showModal: (onClose: () => void) => JSX.Element) => void,
+    showModal: (title: string, showModal: (onClose: () => void) => JSX.Element) => void
   ) => void;
 
   constructor(
@@ -27,12 +27,9 @@ export class ComponentPickerOption extends MenuOption {
       onSelect: (
         queryString: string,
         editor: LexicalEditor,
-        showModal: (
-          title: string,
-          showModal: (onClose: () => void) => JSX.Element,
-        ) => void,
+        showModal: (title: string, showModal: (onClose: () => void) => JSX.Element) => void
       ) => void;
-    },
+    }
   ) {
     super(title);
     this.title = title;

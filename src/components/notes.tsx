@@ -1,24 +1,19 @@
-import { CAT_KB_PARTS } from "@/lib/cat";
+import "katex/dist/katex.min.css";
+
+import { ChevronDown, ChevronUp, X } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Markdown from "react-markdown";
+import rehypeKatex from "rehype-katex";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import { cn } from "@/lib/utils";
-import { CopyButton } from "@/components/ui/copy-button";
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-  useMemo,
-} from "react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { X, ChevronUp, ChevronDown } from "lucide-react";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { AppSidebar } from "@/components/app-sidebar";
 
-import "katex/dist/katex.min.css";
+import { AppSidebar } from "@/components/app-sidebar";
+import { Button } from "@/components/ui/button";
+import { CopyButton } from "@/components/ui/copy-button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { CAT_KB_PARTS } from "@/lib/cat";
+import { cn } from "@/lib/utils";
 
 interface MarkdownRendererProps {
   children: string;
@@ -56,11 +51,7 @@ export function MarkdownRenderer({
 
     if (Array.isArray(node)) {
       return node.map((child, idx) => (
-        <React.Fragment
-          key={
-            React.isValidElement(child) && child.key != null ? child.key : idx
-          }
-        >
+        <React.Fragment key={React.isValidElement(child) && child.key != null ? child.key : idx}>
           {highlightChildren(child)}
         </React.Fragment>
       ));
@@ -68,14 +59,10 @@ export function MarkdownRenderer({
 
     if (React.isValidElement(node)) {
       const element = node as React.ReactElement<any>;
-      const className =
-        typeof element.props?.className === "string"
-          ? element.props.className
-          : "";
+      const className = typeof element.props?.className === "string" ? element.props.className : "";
 
       const shouldSkip =
-        (typeof element.type === "string" &&
-          (element.type === "code" || element.type === "pre")) ||
+        (typeof element.type === "string" && (element.type === "code" || element.type === "pre")) ||
         className.includes("katex");
 
       if (shouldSkip || element.props?.children == null) {
@@ -91,11 +78,12 @@ export function MarkdownRenderer({
     return node;
   };
 
-  const withHighlightedClass = (
-    Tag: keyof React.JSX.IntrinsicElements,
-    classes: string
-  ) => {
-    const Component = ({ node, ...props }: any) => (
+  const withHighlightedClass = (Tag: keyof React.JSX.IntrinsicElements, classes: string) => {
+    const Component = ({
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      node,
+      ...props
+    }: any) => (
       <Tag className={classes} {...props}>
         {highlightChildren(props.children)}
       </Tag>
@@ -143,13 +131,11 @@ interface CodeBlockProps extends React.HTMLAttributes<HTMLPreElement> {
 const CodeBlock = ({
   children,
   className,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   language,
   ...restProps
 }: CodeBlockProps) => {
-  const code =
-    typeof children === "string"
-      ? children
-      : childrenTakeAllStringContents(children);
+  const code = typeof children === "string" ? children : childrenTakeAllStringContents(children);
 
   const preClass = cn(
     "overflow-x-scroll rounded-md border bg-background/50 p-4 font-mono text-sm [scrollbar-width:none]",
@@ -175,12 +161,10 @@ function childrenTakeAllStringContents(element: any): string {
   }
 
   if (element?.props?.children) {
-    let children = element.props.children;
+    const children = element.props.children;
 
     if (Array.isArray(children)) {
-      return children
-        .map((child) => childrenTakeAllStringContents(child))
-        .join("");
+      return children.map(child => childrenTakeAllStringContents(child)).join("");
     } else {
       return childrenTakeAllStringContents(children);
     }
@@ -198,7 +182,13 @@ const COMPONENTS = {
   strong: withClass("strong", "font-semibold"),
   a: withClass("a", "text-primary underline underline-offset-2"),
   blockquote: withClass("blockquote", "border-l-2 border-primary pl-4"),
-  code: ({ children, className, node, ...rest }: any) => {
+  code: ({
+    children,
+    className,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    node,
+    ...rest
+  }: any) => {
     const match = /language-(\w+)/.exec(className || "");
     return match ? (
       <CodeBlock className={className} language={match[1]} {...rest}>
@@ -215,11 +205,18 @@ const COMPONENTS = {
       </code>
     );
   },
+
   pre: ({ children }: any) => children,
   ol: withClass("ol", "list-decimal space-y-2 pl-6"),
   ul: withClass("ul", "list-disc space-y-2 pl-6"),
   li: withClass("li", "my-1.5"),
-  table: ({ node, className, children, ...props }: any) => (
+  table: ({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    node,
+    className,
+    children,
+    ...props
+  }: any) => (
     <div className="my-4 w-full overflow-hidden rounded-lg border border-foreground/20">
       <table className={cn("w-full border-collapse", className)} {...props}>
         {children}
@@ -227,7 +224,12 @@ const COMPONENTS = {
     </div>
   ),
 
-  th: ({ node, className, ...props }: any) => (
+  th: ({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    node,
+    className,
+    ...props
+  }: any) => (
     <th
       className={cn(
         "border border-foreground/20 px-4 py-2 text-left font-bold",
@@ -239,7 +241,12 @@ const COMPONENTS = {
     />
   ),
 
-  td: ({ node, className, ...props }: any) => (
+  td: ({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    node,
+    className,
+    ...props
+  }: any) => (
     <td
       className={cn(
         "border border-foreground/20 px-4 py-2 text-left",
@@ -250,20 +257,22 @@ const COMPONENTS = {
     />
   ),
 
-  tr: ({ node, className, ...props }: any) => (
-    <tr
-      className={cn("m-0 border-t p-0 even:bg-muted", className)}
-      {...props}
-    />
-  ),
+  tr: ({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    node,
+    className,
+    ...props
+  }: any) => <tr className={cn("m-0 border-t p-0 even:bg-muted", className)} {...props} />,
   p: withClass("p", "whitespace-pre-wrap"),
   hr: withClass("hr", "border-foreground/20"),
 };
 
 function withClass(Tag: keyof React.JSX.IntrinsicElements, classes: string) {
-  const Component = ({ node, ...props }: any) => (
-    <Tag className={classes} {...props} />
-  );
+  const Component = ({
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    node,
+    ...props
+  }: any) => <Tag className={classes} {...props} />;
   Component.displayName = String(Tag);
   return Component;
 }
@@ -273,7 +282,7 @@ const buildRegex = (highlight: string) => {
 
   const pattern = highlight
     .split("")
-    .map((char) => {
+    .map(char => {
       const escaped = char.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       return escaped;
     })
@@ -288,9 +297,7 @@ const buildRegex = (highlight: string) => {
 
 const stripMath = (content: string) => {
   // Keep search behavior aligned with KaTeX rendering (math isn't plain text anymore).
-  return content
-    .replace(/\$\$[\s\S]*?\$\$/g, "")
-    .replace(/\$(?!\$)(?:\\.|[^$\\])*?\$(?!\$)/g, "");
+  return content.replace(/\$\$[\s\S]*?\$\$/g, "").replace(/\$(?!\$)(?:\\.|[^$\\])*?\$(?!\$)/g, "");
 };
 
 const HighlightTextMatch = ({
@@ -331,7 +338,7 @@ const HighlightTextMatch = ({
     const parts: React.ReactNode[] = [];
     let lastIndex = 0;
 
-    matches.forEach((match) => {
+    matches.forEach(match => {
       if (match.start > lastIndex) {
         parts.push(text.substring(lastIndex, match.start));
       }
@@ -345,9 +352,7 @@ const HighlightTextMatch = ({
           data-match-index={matchIndex}
           className={cn(
             "rounded px-0.5",
-            isCurrentMatch
-              ? "bg-chart-1 text-primary-foreground"
-              : "bg-chart-2 text-foreground"
+            isCurrentMatch ? "bg-chart-1 text-primary-foreground" : "bg-chart-2 text-foreground"
           )}
         >
           {match.text}
@@ -373,10 +378,7 @@ export const Notes: React.FC = () => {
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLElement>(null);
-  const flatSections = useMemo(
-    () => CAT_KB_PARTS.flatMap((part) => part.sections),
-    []
-  );
+  const flatSections = useMemo(() => CAT_KB_PARTS.flatMap(part => part.sections), []);
 
   const countMatches = useCallback((query: string, content: string) => {
     if (!query.trim()) return 0;
@@ -398,19 +400,15 @@ export const Notes: React.FC = () => {
   }, []);
 
   const sectionMatchCounts = useMemo(
-    () =>
-      flatSections.map((section) => countMatches(searchQuery, section.content)),
+    () => flatSections.map(section => countMatches(searchQuery, section.content)),
     [countMatches, flatSections, searchQuery]
   );
 
-  const totalMatches = useMemo(
-    () => sectionMatchCounts.reduce((sum, count) => sum + count, 0),
-    [sectionMatchCounts]
-  );
+  const totalMatches = useMemo(() => sectionMatchCounts.reduce((sum, count) => sum + count, 0), [sectionMatchCounts]);
 
   const sectionOffsets = useMemo(() => {
     let offset = 0;
-    return sectionMatchCounts.map((count) => {
+    return sectionMatchCounts.map(count => {
       const currentOffset = offset;
       offset += count;
       return currentOffset;
@@ -424,8 +422,7 @@ export const Notes: React.FC = () => {
       if (!element || !container) return false;
       const containerRect = container.getBoundingClientRect();
       const elementRect = element.getBoundingClientRect();
-      const targetTop =
-        elementRect.top - containerRect.top + container.scrollTop - 16;
+      const targetTop = elementRect.top - containerRect.top + container.scrollTop - 16;
       container.scrollTo({
         top: Math.max(targetTop, 0),
         behavior: "smooth",
@@ -490,9 +487,7 @@ export const Notes: React.FC = () => {
 
   useEffect(() => {
     if (searchQuery && totalMatches > 0) {
-      const element = document.querySelector(
-        `[data-match-index="${currentMatchIndex}"]`
-      );
+      const element = document.querySelector(`[data-match-index="${currentMatchIndex}"]`);
       if (element) {
         element.scrollIntoView({ behavior: "smooth", block: "center" });
       }
@@ -501,13 +496,13 @@ export const Notes: React.FC = () => {
 
   const handleNext = () => {
     if (totalMatches > 0) {
-      setCurrentMatchIndex((prev) => (prev + 1) % totalMatches);
+      setCurrentMatchIndex(prev => (prev + 1) % totalMatches);
     }
   };
 
   const handlePrevious = () => {
     if (totalMatches > 0) {
-      setCurrentMatchIndex((prev) => (prev - 1 + totalMatches) % totalMatches);
+      setCurrentMatchIndex(prev => (prev - 1 + totalMatches) % totalMatches);
     }
   };
 
@@ -533,18 +528,10 @@ export const Notes: React.FC = () => {
       <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="flex items-center justify-between gap-3 px-3 py-3 sm:px-4">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground">
-              CAT Knowledge Base
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Jump to a section or search inside the playbook.
-            </p>
+            <p className="text-sm font-semibold text-foreground">CAT Knowledge Base</p>
+            <p className="text-xs text-muted-foreground">Jump to a section or search inside the playbook.</p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsSearchOpen((open) => !open)}
-          >
+          <Button variant="outline" size="sm" onClick={() => setIsSearchOpen(open => !open)}>
             {isSearchOpen ? "Close search" : "Find"}
           </Button>
         </div>
@@ -557,12 +544,12 @@ export const Notes: React.FC = () => {
                 type="text"
                 placeholder="Find in playbook..."
                 value={searchQuery}
-                onChange={(e) => {
+                onChange={e => {
                   setSearchQuery(e.target.value);
                   setCurrentMatchIndex(0);
                 }}
                 className="min-w-[180px] flex-1"
-                onKeyDown={(e) => {
+                onKeyDown={e => {
                   if (e.key === "Enter") {
                     e.preventDefault();
                     if (e.shiftKey) {
@@ -575,26 +562,14 @@ export const Notes: React.FC = () => {
               />
               {searchQuery && (
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {totalMatches > 0
-                    ? `${currentMatchIndex + 1}/${totalMatches}`
-                    : "0/0"}
+                  {totalMatches > 0 ? `${currentMatchIndex + 1}/${totalMatches}` : "0/0"}
                 </span>
               )}
               <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handlePrevious}
-                  disabled={totalMatches === 0}
-                >
+                <Button variant="ghost" size="icon" onClick={handlePrevious} disabled={totalMatches === 0}>
                   <ChevronUp className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleNext}
-                  disabled={totalMatches === 0}
-                >
+                <Button variant="ghost" size="icon" onClick={handleNext} disabled={totalMatches === 0}>
                   <ChevronDown className="h-4 w-4" />
                 </Button>
               </div>
@@ -608,7 +583,7 @@ export const Notes: React.FC = () => {
         <div className="border-t md:hidden">
           <ScrollArea className="w-full">
             <div className="flex gap-2 px-3 py-2">
-              {flatSections.map((section) => (
+              {flatSections.map(section => (
                 <button
                   key={section.id}
                   type="button"
@@ -632,13 +607,13 @@ export const Notes: React.FC = () => {
         >
           <ScrollArea className="h-full">
             <div className="space-y-4 p-4">
-              {CAT_KB_PARTS.map((part) => (
+              {CAT_KB_PARTS.map(part => (
                 <div key={part.id} className="space-y-2">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                     {part.title}
                   </p>
                   <div className="space-y-1">
-                    {part.sections.map((section) => (
+                    {part.sections.map(section => (
                       <button
                         key={section.id}
                         type="button"
@@ -655,18 +630,15 @@ export const Notes: React.FC = () => {
           </ScrollArea>
         </AppSidebar>
 
-        <section
-          ref={contentRef}
-          className="min-h-0 flex-1 overflow-y-auto p-4"
-        >
+        <section ref={contentRef} className="min-h-0 flex-1 overflow-y-auto p-4">
           <div className="space-y-6">
-            {CAT_KB_PARTS.map((part) => (
+            {CAT_KB_PARTS.map(part => (
               <div key={part.id} className="space-y-4">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   <span>{part.title}</span>
                   <span className="h-px flex-1 bg-border" />
                 </div>
-                {part.sections.map((section) => {
+                {part.sections.map(section => {
                   const meta = sectionMeta.get(section.id);
                   return (
                     <article

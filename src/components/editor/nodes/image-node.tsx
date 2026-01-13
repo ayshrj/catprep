@@ -1,5 +1,3 @@
-import * as React from "react";
-import { JSX, Suspense } from "react";
 import type {
   DOMConversionMap,
   DOMConversionOutput,
@@ -13,6 +11,8 @@ import type {
   Spread,
 } from "lexical";
 import { $applyNodeReplacement, createEditor, DecoratorNode } from "lexical";
+import * as React from "react";
+import { JSX, Suspense } from "react";
 
 const ImageComponent = React.lazy(() => import("../editor-ui/image-component"));
 
@@ -85,13 +85,12 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
       node.__showCaption,
       node.__caption,
       node.__captionsEnabled,
-      node.__key,
+      node.__key
     );
   }
 
   static importJSON(serializedNode: SerializedImageNode): ImageNode {
-    const { altText, height, width, maxWidth, caption, src, showCaption } =
-      serializedNode;
+    const { altText, height, width, maxWidth, caption, src, showCaption } = serializedNode;
     const node = $createImageNode({
       altText,
       height,
@@ -136,7 +135,7 @@ export class ImageNode extends DecoratorNode<JSX.Element> {
     showCaption?: boolean,
     caption?: LexicalEditor,
     captionsEnabled?: boolean,
-    key?: NodeKey,
+    key?: NodeKey
   ) {
     super(key);
     this.__src = src;
@@ -234,17 +233,7 @@ export function $createImageNode({
   key,
 }: ImagePayload): ImageNode {
   return $applyNodeReplacement(
-    new ImageNode(
-      src,
-      altText,
-      maxWidth,
-      width,
-      height,
-      showCaption,
-      caption,
-      captionsEnabled,
-      key,
-    ),
+    new ImageNode(src, altText, maxWidth, width, height, showCaption, caption, captionsEnabled, key)
   );
 }
 

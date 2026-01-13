@@ -1,11 +1,4 @@
-import type {
-  DOMExportOutput,
-  EditorConfig,
-  LexicalEditor,
-  NodeKey,
-  SerializedTextNode,
-  Spread,
-} from "lexical";
+import type { DOMExportOutput, EditorConfig, LexicalEditor, NodeKey, SerializedTextNode, Spread } from "lexical";
 import { TextNode } from "lexical";
 
 import { uuid as UUID } from "@/components/editor/plugins/autocomplete-plugin";
@@ -42,10 +35,7 @@ export class AutocompleteNode extends TextNode {
   }
 
   static importJSON(serializedNode: SerializedAutocompleteNode): AutocompleteNode {
-    return $createAutocompleteNode(
-      serializedNode.text,
-      serializedNode.uuid,
-    ).updateFromJSON(serializedNode);
+    return $createAutocompleteNode(serializedNode.text, serializedNode.uuid).updateFromJSON(serializedNode);
   }
 
   exportJSON(): SerializedAutocompleteNode {

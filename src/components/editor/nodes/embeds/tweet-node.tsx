@@ -1,10 +1,5 @@
-import * as React from "react";
-import { JSX, useCallback, useEffect, useRef, useState } from "react";
 import { BlockWithAlignableContents } from "@lexical/react/LexicalBlockWithAlignableContents";
-import {
-  DecoratorBlockNode,
-  SerializedDecoratorBlockNode,
-} from "@lexical/react/LexicalDecoratorBlockNode";
+import { DecoratorBlockNode, SerializedDecoratorBlockNode } from "@lexical/react/LexicalDecoratorBlockNode";
 import type {
   DOMConversionMap,
   DOMConversionOutput,
@@ -16,6 +11,8 @@ import type {
   NodeKey,
   Spread,
 } from "lexical";
+import * as React from "react";
+import { JSX, useCallback, useEffect, useRef, useState } from "react";
 
 const WIDGET_SCRIPT_URL = "https://platform.twitter.com/widgets.js";
 
@@ -174,7 +171,7 @@ export class TweetNode extends DecoratorBlockNode {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _includeInert?: boolean | undefined,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _includeDirectionless?: false | undefined,
+    _includeDirectionless?: false | undefined
   ): string {
     return `https://x.com/i/web/status/${this.__id}`;
   }
@@ -201,8 +198,6 @@ export function $createTweetNode(tweetID: string): TweetNode {
   return new TweetNode(tweetID);
 }
 
-export function $isTweetNode(
-  node: TweetNode | LexicalNode | null | undefined,
-): node is TweetNode {
+export function $isTweetNode(node: TweetNode | LexicalNode | null | undefined): node is TweetNode {
   return node instanceof TweetNode;
 }

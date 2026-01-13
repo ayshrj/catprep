@@ -7,30 +7,24 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { useEffect } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { DRAG_DROP_PASTE } from "@lexical/rich-text";
 import { isMimeType } from "@lexical/utils";
 import { COMMAND_PRIORITY_LOW } from "lexical";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 import { INSERT_IMAGE_COMMAND } from "@/components/editor/plugins/images-plugin";
 import { uploadImageToCloudinary } from "@/lib/upload-image";
 
-const ACCEPTABLE_IMAGE_TYPES = [
-  "image/",
-  "image/heic",
-  "image/heif",
-  "image/gif",
-  "image/webp",
-];
+const ACCEPTABLE_IMAGE_TYPES = ["image/", "image/heic", "image/heif", "image/gif", "image/webp"];
 
 export function DragDropPastePlugin(): null {
   const [editor] = useLexicalComposerContext();
   useEffect(() => {
     return editor.registerCommand(
       DRAG_DROP_PASTE,
-      (files) => {
+      files => {
         (async () => {
           for (const file of Array.from(files)) {
             if (!isMimeType(file, ACCEPTABLE_IMAGE_TYPES)) continue;
@@ -50,7 +44,7 @@ export function DragDropPastePlugin(): null {
         })();
         return true;
       },
-      COMMAND_PRIORITY_LOW,
+      COMMAND_PRIORITY_LOW
     );
   }, [editor]);
   return null;

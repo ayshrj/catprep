@@ -2,35 +2,23 @@
 
 import { useCallback } from "react";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type NavValue = "chat" | "notes" | "saved";
 
-export function AppNavigationSelect({
-  value,
-  onChange,
-}: {
-  value: NavValue;
-  onChange: (value: NavValue) => void;
-}) {
+export function AppNavigationSelect({ value, onChange }: { value: NavValue; onChange: (value: NavValue) => void }) {
   const handleChange = useCallback(
     (next: string) => {
       if (next === "chat" || next === "notes" || next === "saved") {
         onChange(next);
       }
     },
-    [onChange],
+    [onChange]
   );
 
   return (
     <Select value={value} onValueChange={handleChange}>
-    <SelectTrigger aria-label="Navigate between Chat, Notes, and Rough notes">
+      <SelectTrigger aria-label="Navigate between Chat, Notes, and Rough notes">
         <SelectValue placeholder="Navigate" />
       </SelectTrigger>
       <SelectContent align="end">

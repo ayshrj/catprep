@@ -8,8 +8,6 @@ export function ImagePickerPlugin() {
     icon: <ImageIcon className="size-4" />,
     keywords: ["image", "photo", "picture", "file"],
     onSelect: (_, editor, showModal) =>
-      showModal("Insert Image", (onClose) => (
-        <InsertImageDialog activeEditor={editor} onClose={onClose} />
-      )),
+      showModal("Insert Image", onClose => <InsertImageDialog activeEditor={editor} onClose={onClose} />),
   });
 }

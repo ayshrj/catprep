@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { IDBPDatabase } from "idb";
 import { openDB } from "idb";
 import type { EditorState, LexicalEditor, SerializedEditorState } from "lexical";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 interface EditorDocumentRecord {
   id: string;
@@ -53,7 +53,7 @@ export function useIndexedDBPersistence(editor: LexicalEditor | null, key: strin
         updatedAt: Date.now(),
       });
     },
-    [editor, key, openDatabase],
+    [editor, key, openDatabase]
   );
 
   const debouncedSave = useMemo(() => {
@@ -95,14 +95,12 @@ export function useIndexedDBPersistence(editor: LexicalEditor | null, key: strin
       return;
     }
 
-    return editor.registerUpdateListener(
-      ({ editorState, dirtyElements, dirtyLeaves }) => {
-        if (dirtyElements.size === 0 && dirtyLeaves.size === 0) {
-          return;
-        }
-        debouncedSave(editorState);
-      },
-    );
+    return editor.registerUpdateListener(({ editorState, dirtyElements, dirtyLeaves }) => {
+      if (dirtyElements.size === 0 && dirtyLeaves.size === 0) {
+        return;
+      }
+      debouncedSave(editorState);
+    });
   }, [debouncedSave, editor]);
 
   useEffect(() => {

@@ -1,8 +1,9 @@
 import { randomUUID } from "crypto";
 import type { SerializedEditorState } from "lexical";
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { getAdminDb } from "@/lib/firebase-admin";
+
 import { getAuthenticatedUserId } from "../auth/utils";
 
 export const runtime = "nodejs";
@@ -50,16 +51,14 @@ export async function GET() {
         .limit(50)
         .get();
 
-      const notes = snapshot.docs.map((doc) => {
+      const notes = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
           id: doc.id,
           title: typeof data.title === "string" ? data.title : null,
           preview: typeof data.preview === "string" ? data.preview : "",
-          createdAt:
-            typeof data.createdAt === "string" ? data.createdAt : undefined,
-          updatedAt:
-            typeof data.updatedAt === "string" ? data.updatedAt : undefined,
+          createdAt: typeof data.createdAt === "string" ? data.createdAt : undefined,
+          updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : undefined,
         };
       });
 
@@ -71,12 +70,8 @@ export async function GET() {
 
   const store = getMemoryStore(userId);
   const notes = Array.from(store.values())
-    .sort(
-      (a, b) =>
-        (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "") ||
-        b.createdAt.localeCompare(a.createdAt)
-    )
-    .map((note) => ({
+    .sort((a, b) => (b.updatedAt ?? "").localeCompare(a.updatedAt ?? "") || b.createdAt.localeCompare(a.createdAt))
+    .map(note => ({
       id: note.id,
       title: note.title,
       preview: note.preview,
@@ -95,29 +90,16 @@ export async function POST(request: NextRequest) {
 
   const db = getAdminDb();
   const body = await request.json().catch(() => ({}));
-  const title =
-    typeof body.title === "string" && body.title.trim()
-      ? body.title.trim()
-      : null;
-  const preview =
-    typeof body.preview === "string" ? body.preview.trim() : "";
-  const payload =
-    body.payload && typeof body.payload === "object"
-      ? (body.payload as SerializedEditorState)
-      : null;
+  const title = typeof body.title === "string" && body.title.trim() ? body.title.trim() : null;
+  const preview = typeof body.preview === "string" ? body.preview.trim() : "";
+  const payload = body.payload && typeof body.payload === "object" ? (body.payload as SerializedEditorState) : null;
 
   if (!payload) {
-    return NextResponse.json(
-      { error: "Provide a valid `payload`." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Provide a valid `payload`." }, { status: 400 });
   }
 
   if (!preview) {
-    return NextResponse.json(
-      { error: "Provide preview text for the note." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Provide preview text for the note." }, { status: 400 });
   }
 
   const noteId = randomUUID();
@@ -125,21 +107,16 @@ export async function POST(request: NextRequest) {
 
   if (db) {
     try {
-      await db
-        .collection("users")
-        .doc(userId)
-        .collection("notes")
-        .doc(noteId)
-        .set(
-          {
-            title,
-            preview,
-            payload,
-            createdAt: now,
-            updatedAt: now,
-          },
-          { merge: true }
-        );
+      await db.collection("users").doc(userId).collection("notes").doc(noteId).set(
+        {
+          title,
+          preview,
+          payload,
+          createdAt: now,
+          updatedAt: now,
+        },
+        { merge: true }
+      );
 
       return NextResponse.json({ noteId });
     } catch (error) {

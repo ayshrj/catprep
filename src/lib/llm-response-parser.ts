@@ -68,9 +68,7 @@ function normalizeString(value: unknown) {
 function normalizeStringArray(value: unknown) {
   if (!value) return [];
   if (Array.isArray(value)) {
-    return value
-      .map((item) => normalizeString(item))
-      .filter((item) => item.length > 0);
+    return value.map(item => normalizeString(item)).filter(item => item.length > 0);
   }
   const single = normalizeString(value);
   return single ? [single] : [];
@@ -85,25 +83,16 @@ function normalizeScenario(value: unknown): LlmCatCoachResponse["scenario"] {
   const reason = normalizeString(value.reason);
   return {
     code: VALID_SCENARIO_CODES.has(code) ? (code as any) : "unknown",
-    confidence:
-      confidence === "low" || confidence === "med" || confidence === "high"
-        ? (confidence as any)
-        : "low",
+    confidence: confidence === "low" || confidence === "med" || confidence === "high" ? (confidence as any) : "low",
     reason,
   };
 }
 
-function normalizeTable(
-  value: unknown
-): LlmCatCoachResponse["mainAnswer"]["table"] {
+function normalizeTable(value: unknown): LlmCatCoachResponse["mainAnswer"]["table"] {
   if (!isPlainObject(value)) return null;
   const headers = normalizeStringArray(value.headers);
   const rows = Array.isArray(value.rows)
-    ? value.rows.map((row) =>
-        Array.isArray(row)
-          ? row.map((cell) => normalizeString(cell))
-          : [normalizeString(row)]
-      )
+    ? value.rows.map(row => (Array.isArray(row) ? row.map(cell => normalizeString(cell)) : [normalizeString(row)]))
     : [];
 
   if (headers.length === 0) return null;
@@ -113,9 +102,7 @@ function normalizeTable(
   };
 }
 
-function normalizeMainAnswer(
-  value: unknown
-): LlmCatCoachResponse["mainAnswer"] {
+function normalizeMainAnswer(value: unknown): LlmCatCoachResponse["mainAnswer"] {
   if (!isPlainObject(value)) {
     return { type: "other", bullets: [], table: null, notes: [] };
   }
@@ -128,9 +115,7 @@ function normalizeMainAnswer(
   };
 }
 
-function normalizeNextActions(
-  value: unknown
-): LlmCatCoachResponse["nextActions"] {
+function normalizeNextActions(value: unknown): LlmCatCoachResponse["nextActions"] {
   if (!isPlainObject(value)) {
     return { today: [], thisWeek: [] };
   }
@@ -163,16 +148,11 @@ function normalizeAssistantJson(raw: unknown): LlmCatCoachResponse {
 
   return {
     intent: VALID_INTENTS.has(intent) ? (intent as any) : "other",
-    responseMode: VALID_RESPONSE_MODES.has(responseMode)
-      ? (responseMode as any)
-      : "normal_coaching",
+    responseMode: VALID_RESPONSE_MODES.has(responseMode) ? (responseMode as any) : "normal_coaching",
     shouldAskQuickQuestions: Boolean(raw.shouldAskQuickQuestions),
     quickQuestions: normalizeStringArray(raw.quickQuestions),
     scenario: normalizeScenario(raw.scenario),
-    section:
-      section === "QA" || section === "VARC" || section === "DILR"
-        ? (section as any)
-        : null,
+    section: section === "QA" || section === "VARC" || section === "DILR" ? (section as any) : null,
     topicTag: topicTag || null,
     whatUserNeedsNow: normalizeString(raw.whatUserNeedsNow),
     mainAnswer: normalizeMainAnswer(raw.mainAnswer),
@@ -180,9 +160,7 @@ function normalizeAssistantJson(raw: unknown): LlmCatCoachResponse {
   };
 }
 
-export function parseAssistantJsonOrThrow(
-  raw: string
-): LlmCatCoachResponse {
+export function parseAssistantJsonOrThrow(raw: string): LlmCatCoachResponse {
   const candidate = extractFirstJsonObject(raw);
   if (!candidate) throw new Error("Model did not return a JSON object.");
 

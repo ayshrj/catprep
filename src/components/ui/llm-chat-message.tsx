@@ -1,21 +1,12 @@
 "use client";
-import React from "react";
 import { motion } from "framer-motion";
-import {
-  ChatMessage,
-  type ChatMessageProps,
-} from "@/components/ui/chat-message";
-import {
-  LlmMainAnswerTypeLabels,
-  type LlmCatCoachResponse,
-} from "@/types/llm-response";
-import { cn } from "@/lib/utils";
+import React from "react";
+
 import { SCENARIO_COLORS } from "@/app/constant/llm-chat";
-import {
-  CatCoachIntentLabels,
-  CatCoachResponseModeLabels,
-  CatScenarioCode,
-} from "@/lib/cat-tools";
+import { ChatMessage, type ChatMessageProps } from "@/components/ui/chat-message";
+import { CatCoachIntentLabels, CatCoachResponseModeLabels, CatScenarioCode } from "@/lib/cat-tools";
+import { cn } from "@/lib/utils";
+import { type LlmCatCoachResponse, LlmMainAnswerTypeLabels } from "@/types/llm-response";
 
 type LlmChatMessageProps = Omit<ChatMessageProps, "content"> & {
   content: LlmCatCoachResponse;
@@ -64,9 +55,7 @@ function Badge({ label, value }: { label: string; value: string }) {
       transition={{ duration: 0.2, ease: "easeInOut" }}
       className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border bg-background/80 px-2 py-0.5 text-[10px]"
     >
-      <span className="uppercase tracking-wide text-muted-foreground">
-        {label}
-      </span>
+      <span className="uppercase tracking-wide text-muted-foreground">{label}</span>
       <span className="font-medium text-foreground">{value}</span>
     </motion.div>
   );
@@ -99,7 +88,7 @@ function buildNotesHref(sectionId: string) {
 }
 
 function CompactList({ items }: { items: string[] }) {
-  const filtered = items.filter((item) => item?.trim());
+  const filtered = items.filter(item => item?.trim());
   if (!filtered.length) return null;
 
   return (
@@ -135,39 +124,26 @@ function SectionCard({
 }) {
   return (
     <div
-      className={cn(
-        "rounded-md border border-foreground/10 bg-muted/20 p-2 sm:p-3",
-        className
-      )}
+      className={cn("rounded-md border border-foreground/10 bg-muted/20 p-2 sm:p-3", className)}
       style={{ borderColor: accent }}
     >
-      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-        {title}
-      </div>
+      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</div>
       {children}
     </div>
   );
 }
 
-function renderTable(
-  table: LlmCatCoachResponse["mainAnswer"]["table"],
-  code: CatScenarioCode = "unknown"
-) {
+function renderTable(table: LlmCatCoachResponse["mainAnswer"]["table"], code: CatScenarioCode = "unknown") {
   if (!table?.headers?.length) return null;
 
   return (
-    <motion.div
-      variants={itemVariants}
-      className="overflow-hidden rounded-md border border-foreground/20"
-    >
+    <motion.div variants={itemVariants} className="overflow-hidden rounded-md border border-foreground/20">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[320px] border-collapse text-xs">
           <thead>
             <tr
               style={{
-                backgroundColor:
-                  SCENARIO_COLORS[code]?.accent ||
-                  SCENARIO_COLORS.unknown.accent,
+                backgroundColor: SCENARIO_COLORS[code]?.accent || SCENARIO_COLORS.unknown.accent,
               }}
             >
               {table.headers.map((h, i) => (
@@ -218,20 +194,13 @@ function renderTable(
 }
 
 function renderLlmContent(content: LlmCatCoachResponse) {
-  const scenarioColors =
-    SCENARIO_COLORS[content.scenario.code] || SCENARIO_COLORS.unknown;
-  const hasBullets =
-    content.mainAnswer.bullets?.filter((b) => b?.trim()).length > 0;
-  const hasTable =
-    content.mainAnswer.table?.headers?.length &&
-    content.mainAnswer.table?.headers?.length > 0;
-  const hasNotes =
-    content.mainAnswer.notes?.filter((n) => n?.trim()).length > 0;
-  const hasQuickQ = content.quickQuestions?.filter((q) => q?.trim()).length > 0;
-  const hasTodayActions =
-    content.nextActions.today?.filter((a) => a?.trim()).length > 0;
-  const hasWeekActions =
-    content.nextActions.thisWeek?.filter((a) => a?.trim()).length > 0;
+  const scenarioColors = SCENARIO_COLORS[content.scenario.code] || SCENARIO_COLORS.unknown;
+  const hasBullets = content.mainAnswer.bullets?.filter(b => b?.trim()).length > 0;
+  const hasTable = content.mainAnswer.table?.headers?.length && content.mainAnswer.table?.headers?.length > 0;
+  const hasNotes = content.mainAnswer.notes?.filter(n => n?.trim()).length > 0;
+  const hasQuickQ = content.quickQuestions?.filter(q => q?.trim()).length > 0;
+  const hasTodayActions = content.nextActions.today?.filter(a => a?.trim()).length > 0;
+  const hasWeekActions = content.nextActions.thisWeek?.filter(a => a?.trim()).length > 0;
   const cheatsheet = getCheatsheetSection(content);
 
   return (
@@ -294,14 +263,8 @@ function renderLlmContent(content: LlmCatCoachResponse) {
         className="flex flex-nowrap gap-1.5 overflow-x-auto px-3 pb-1 sm:flex-wrap sm:overflow-visible"
       >
         <Badge label="Intent" value={CatCoachIntentLabels[content.intent]} />
-        <Badge
-          label="Mode"
-          value={CatCoachResponseModeLabels[content.responseMode]}
-        />
-        <Badge
-          label="Type"
-          value={LlmMainAnswerTypeLabels[content.mainAnswer.type]}
-        />
+        <Badge label="Mode" value={CatCoachResponseModeLabels[content.responseMode]} />
+        <Badge label="Type" value={LlmMainAnswerTypeLabels[content.mainAnswer.type]} />
         {content.topicTag && <Badge label="Topic" value={content.topicTag} />}
       </motion.div>
 
@@ -320,9 +283,7 @@ function renderLlmContent(content: LlmCatCoachResponse) {
       {content.whatUserNeedsNow?.trim() && (
         <motion.div variants={itemVariants} className="px-3">
           <div className="rounded-lg border-2 border-primary bg-muted/40 p-2">
-            <p className="text-xs font-medium text-foreground">
-              {content.whatUserNeedsNow.trim()}
-            </p>
+            <p className="text-xs font-medium text-foreground">{content.whatUserNeedsNow.trim()}</p>
           </div>
         </motion.div>
       )}
@@ -335,20 +296,12 @@ function renderLlmContent(content: LlmCatCoachResponse) {
       )}
 
       {/* Table */}
-      {hasTable && (
-        <div className="px-3">
-          {renderTable(content.mainAnswer.table, content.scenario.code)}
-        </div>
-      )}
+      {hasTable && <div className="px-3">{renderTable(content.mainAnswer.table, content.scenario.code)}</div>}
 
       {/* Notes */}
       {hasNotes && (
         <motion.div variants={itemVariants} className="px-3">
-          <SectionCard
-            title="Notes"
-            accent={scenarioColors.accent}
-            className="bg-muted/30"
-          >
+          <SectionCard title="Notes" accent={scenarioColors.accent} className="bg-muted/30">
             <CompactList items={content.mainAnswer.notes} />
           </SectionCard>
         </motion.div>
@@ -357,11 +310,7 @@ function renderLlmContent(content: LlmCatCoachResponse) {
       {/* Quick Questions */}
       {hasQuickQ && content.shouldAskQuickQuestions && (
         <motion.div variants={itemVariants} className="px-3">
-          <SectionCard
-            title="Questions"
-            accent={scenarioColors.accent}
-            className="bg-primary/5"
-          >
+          <SectionCard title="Questions" accent={scenarioColors.accent} className="bg-primary/5">
             <CompactList items={content.quickQuestions} />
           </SectionCard>
         </motion.div>
@@ -372,20 +321,12 @@ function renderLlmContent(content: LlmCatCoachResponse) {
         <motion.div variants={itemVariants} className="px-3">
           <div className="grid gap-2 sm:grid-cols-2">
             {hasTodayActions && (
-              <SectionCard
-                title="Today"
-                accent={scenarioColors.accent}
-                className="bg-muted/30"
-              >
+              <SectionCard title="Today" accent={scenarioColors.accent} className="bg-muted/30">
                 <CompactList items={content.nextActions.today} />
               </SectionCard>
             )}
             {hasWeekActions && (
-              <SectionCard
-                title="This Week"
-                accent={scenarioColors.accent}
-                className="bg-muted/30"
-              >
+              <SectionCard title="This Week" accent={scenarioColors.accent} className="bg-muted/30">
                 <CompactList items={content.nextActions.thisWeek} />
               </SectionCard>
             )}

@@ -7,10 +7,10 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { JSX, useEffect, useRef, useState } from "react";
 import { $isCodeNode, CodeNode, getLanguageFriendlyName } from "@lexical/code";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $getNearestNodeFromDOMNode, isHTMLElement } from "lexical";
+import { JSX, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { useDebounce } from "@/components/editor/editor-hooks/use-debounce";
@@ -23,11 +23,7 @@ interface Position {
   right: string;
 }
 
-function CodeActionMenuContainer({
-  anchorElem,
-}: {
-  anchorElem: HTMLElement;
-}): JSX.Element {
+function CodeActionMenuContainer({ anchorElem }: { anchorElem: HTMLElement }): JSX.Element {
   const [editor] = useLexicalComposerContext();
 
   const [lang, setLang] = useState("");
@@ -71,8 +67,7 @@ function CodeActionMenuContainer({
       });
 
       if (codeNode) {
-        const { y: editorElemY, right: editorElemRight } =
-          anchorElem.getBoundingClientRect();
+        const { y: editorElemY, right: editorElemRight } = anchorElem.getBoundingClientRect();
         const { y, right } = codeDOMNode.getBoundingClientRect();
         setLang(_lang);
         setShown(true);
@@ -83,7 +78,7 @@ function CodeActionMenuContainer({
       }
     },
     50,
-    1000,
+    1000
   );
 
   useEffect(() => {
@@ -103,7 +98,7 @@ function CodeActionMenuContainer({
   useEffect(() => {
     return editor.registerMutationListener(
       CodeNode,
-      (mutations) => {
+      mutations => {
         editor.getEditorState().read(() => {
           for (const [key, type] of mutations) {
             switch (type) {
@@ -122,7 +117,7 @@ function CodeActionMenuContainer({
         });
         setShouldListenMouseMove(codeSetRef.current.size > 0);
       },
-      { skipInitialization: false },
+      { skipInitialization: false }
     );
   }, [editor]);
 
@@ -148,9 +143,7 @@ function getMouseInfo(event: MouseEvent): {
 
   if (isHTMLElement(target)) {
     const codeDOMNode = target.closest<HTMLElement>("code.PlaygroundEditorTheme__code");
-    const isOutside = !(
-      codeDOMNode || target.closest<HTMLElement>("div.code-action-menu-container")
-    );
+    const isOutside = !(codeDOMNode || target.closest<HTMLElement>("div.code-action-menu-container"));
 
     return { codeDOMNode, isOutside };
   } else {

@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
 import { $getSelectionStyleValueForProperty, $patchStyleText } from "@lexical/selection";
 import { $getSelection, $isRangeSelection, BaseSelection } from "lexical";
 import { PaintBucketIcon } from "lucide-react";
+import { useCallback, useState } from "react";
 
 import { useToolbarContext } from "@/components/editor/context/toolbar-context";
 import { useUpdateToolbarHandler } from "@/components/editor/editor-hooks/use-update-toolbar";
@@ -27,9 +27,7 @@ export function FontBackgroundToolbarPlugin() {
 
   const $updateToolbar = (selection: BaseSelection) => {
     if ($isRangeSelection(selection)) {
-      setBgColor(
-        $getSelectionStyleValueForProperty(selection, "background-color", "#fff"),
-      );
+      setBgColor($getSelectionStyleValueForProperty(selection, "background-color", "#fff"));
     }
   };
 
@@ -45,17 +43,17 @@ export function FontBackgroundToolbarPlugin() {
             $patchStyleText(selection, styles);
           }
         },
-        { tag: "historic" },
+        { tag: "historic" }
       );
     },
-    [activeEditor],
+    [activeEditor]
   );
 
   const onBgColorSelect = useCallback(
     (value: string) => {
       applyStyleText({ "background-color": value });
     },
-    [applyStyleText],
+    [applyStyleText]
   );
 
   return (
@@ -64,7 +62,7 @@ export function FontBackgroundToolbarPlugin() {
       defaultFormat="hex"
       defaultValue={bgColor}
       onValueChange={onBgColorSelect}
-      onOpenChange={(open) => {
+      onOpenChange={open => {
         if (!open) {
           activeEditor.setEditable(true);
           activeEditor.focus();

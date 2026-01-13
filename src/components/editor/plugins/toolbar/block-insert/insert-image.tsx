@@ -13,9 +13,7 @@ export function InsertImage() {
     <SelectItem
       value="image"
       onPointerUp={() => {
-        showModal("Insert Image", (onClose) => (
-          <InsertImageDialog activeEditor={activeEditor} onClose={onClose} />
-        ));
+        showModal("Insert Image", onClose => <InsertImageDialog activeEditor={activeEditor} onClose={onClose} />);
       }}
       className=""
     >

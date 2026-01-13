@@ -7,19 +7,14 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { JSX, useEffect } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $insertNodeToNearestRoot } from "@lexical/utils";
 import { COMMAND_PRIORITY_EDITOR, createCommand, LexicalCommand } from "lexical";
+import { JSX, useEffect } from "react";
 
-import {
-  $createYouTubeNode,
-  YouTubeNode,
-} from "@/components/editor/nodes/embeds/youtube-node";
+import { $createYouTubeNode, YouTubeNode } from "@/components/editor/nodes/embeds/youtube-node";
 
-export const INSERT_YOUTUBE_COMMAND: LexicalCommand<string> = createCommand(
-  "INSERT_YOUTUBE_COMMAND",
-);
+export const INSERT_YOUTUBE_COMMAND: LexicalCommand<string> = createCommand("INSERT_YOUTUBE_COMMAND");
 
 export function YouTubePlugin(): JSX.Element | null {
   const [editor] = useLexicalComposerContext();
@@ -31,13 +26,13 @@ export function YouTubePlugin(): JSX.Element | null {
 
     return editor.registerCommand<string>(
       INSERT_YOUTUBE_COMMAND,
-      (payload) => {
+      payload => {
         const youTubeNode = $createYouTubeNode(payload);
         $insertNodeToNearestRoot(youTubeNode);
 
         return true;
       },
-      COMMAND_PRIORITY_EDITOR,
+      COMMAND_PRIORITY_EDITOR
     );
   }, [editor]);
 

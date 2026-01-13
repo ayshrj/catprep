@@ -1,14 +1,14 @@
-import { NextResponse } from "next/server"
+import { NextResponse } from "next/server";
 
-import { getAuthCookies } from "../utils"
+import { getAuthCookies } from "../utils";
 
-export const runtime = "nodejs"
+export const runtime = "nodejs";
 
 export async function GET() {
-  const { authenticated, uid, email, displayName } = await getAuthCookies()
+  const { authenticated, uid, email, displayName } = await getAuthCookies();
 
   if (!authenticated || !uid) {
-    return NextResponse.json({ user: null })
+    return NextResponse.json({ user: null });
   }
 
   return NextResponse.json({
@@ -17,6 +17,5 @@ export async function GET() {
       email,
       displayName,
     },
-  })
+  });
 }
-

@@ -7,9 +7,9 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
+import { LinkPlugin as LexicalLinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 import * as React from "react";
 import { JSX } from "react";
-import { LinkPlugin as LexicalLinkPlugin } from "@lexical/react/LexicalLinkPlugin";
 
 import { validateUrl } from "@/components/editor/utils/url";
 

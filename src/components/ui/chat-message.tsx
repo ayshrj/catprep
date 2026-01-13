@@ -1,59 +1,52 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { motion } from "framer-motion";
 import { Ban, ChevronRight, Code2, Loader2, Terminal } from "lucide-react";
+import React, { useMemo, useState } from "react";
 
-import { cn } from "@/lib/utils";
-import { MessageContent, stringifyMessageContent } from "@/lib/message-content";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { FilePreview } from "@/components/ui/file-preview";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
+import { MessageContent, stringifyMessageContent } from "@/lib/message-content";
+import { cn } from "@/lib/utils";
 
-const chatBubbleVariants = cva(
-  "group/message relative wrap-break-word rounded-lg text-sm sm:max-w-[70%]",
-  {
-    variants: {
-      isUser: {
-        true: "bg-primary text-primary-foreground",
-        false: "bg-muted text-foreground",
-      },
-      animation: {
-        none: "",
-        slide: "duration-300 animate-in fade-in-0",
-        scale: "duration-300 animate-in fade-in-0 zoom-in-75",
-        fade: "duration-500 animate-in fade-in-0",
-      },
+const chatBubbleVariants = cva("group/message relative wrap-break-word rounded-lg text-sm sm:max-w-[70%]", {
+  variants: {
+    isUser: {
+      true: "bg-primary text-primary-foreground",
+      false: "bg-muted text-foreground",
     },
-    compoundVariants: [
-      {
-        isUser: true,
-        animation: "slide",
-        class: "slide-in-from-right",
-      },
-      {
-        isUser: false,
-        animation: "slide",
-        class: "slide-in-from-left",
-      },
-      {
-        isUser: true,
-        animation: "scale",
-        class: "origin-bottom-right",
-      },
-      {
-        isUser: false,
-        animation: "scale",
-        class: "origin-bottom-left",
-      },
-    ],
-  }
-);
+    animation: {
+      none: "",
+      slide: "duration-300 animate-in fade-in-0",
+      scale: "duration-300 animate-in fade-in-0 zoom-in-75",
+      fade: "duration-500 animate-in fade-in-0",
+    },
+  },
+  compoundVariants: [
+    {
+      isUser: true,
+      animation: "slide",
+      class: "slide-in-from-right",
+    },
+    {
+      isUser: false,
+      animation: "slide",
+      class: "slide-in-from-left",
+    },
+    {
+      isUser: true,
+      animation: "scale",
+      class: "origin-bottom-right",
+    },
+    {
+      isUser: false,
+      animation: "scale",
+      class: "origin-bottom-left",
+    },
+  ],
+});
 
 type Animation = VariantProps<typeof chatBubbleVariants>["animation"];
 
@@ -78,6 +71,7 @@ interface ToolResult {
   toolName: string;
   result: {
     __cancelled?: boolean;
+
     [key: string]: any;
   };
 }
@@ -102,6 +96,7 @@ interface TextPart {
 // For compatibility with AI SDK types, not used
 interface SourcePart {
   type: "source";
+
   source?: any;
 }
 
@@ -115,13 +110,7 @@ interface StepStartPart {
   type: "step-start";
 }
 
-type MessagePart =
-  | TextPart
-  | ReasoningPart
-  | ToolInvocationPart
-  | SourcePart
-  | FilePart
-  | StepStartPart;
+type MessagePart = TextPart | ReasoningPart | ToolInvocationPart | SourcePart | FilePart | StepStartPart;
 
 export interface Message {
   id: string;
@@ -154,20 +143,12 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   renderContent,
   paddingClassName = "p-3",
 }) => {
-  const attachments = useMemo(
-    () => experimental_attachments ?? [],
-    [experimental_attachments]
-  );
+  const attachments = useMemo(() => experimental_attachments ?? [], [experimental_attachments]);
 
   const isUser = role === "user";
   const displayContent = stringifyMessageContent(content);
-  const contentNode = renderContent ?? (
-    <MarkdownRenderer>{displayContent}</MarkdownRenderer>
-  );
-  const bubbleClassName = cn(
-    chatBubbleVariants({ isUser, animation }),
-    paddingClassName
-  );
+  const contentNode = renderContent ?? <MarkdownRenderer>{displayContent}</MarkdownRenderer>;
+  const bubbleClassName = cn(chatBubbleVariants({ isUser, animation }), paddingClassName);
 
   const formattedTime = createdAt?.toLocaleTimeString("en-US", {
     hour: "2-digit",
@@ -176,9 +157,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
 
   if (isUser) {
     return (
-      <div
-        className={cn("flex flex-col", isUser ? "items-end" : "items-start")}
-      >
+      <div className={cn("flex flex-col", isUser ? "items-end" : "items-start")}>
         {attachments.length > 0 ? (
           <div className="mb-1 flex flex-wrap gap-2">
             {attachments.map((attachment, index) => (
@@ -208,13 +187,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
     return parts.map((part, index) => {
       if (part.type === "text") {
         return (
-          <div
-            className={cn(
-              "flex flex-col",
-              isUser ? "items-end" : "items-start"
-            )}
-            key={`text-${index}`}
-          >
+          <div className={cn("flex flex-col", isUser ? "items-end" : "items-start")} key={`text-${index}`}>
             <div className={bubbleClassName}>
               <MarkdownRenderer>{part.text}</MarkdownRenderer>
               {actions ? (
@@ -240,12 +213,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       } else if (part.type === "reasoning") {
         return <ReasoningBlock key={`reasoning-${index}`} part={part} />;
       } else if (part.type === "tool-invocation") {
-        return (
-          <ToolCall
-            key={`tool-${index}`}
-            toolInvocations={[part.toolInvocation]}
-          />
-        );
+        return <ToolCall key={`tool-${index}`} toolInvocations={[part.toolInvocation]} />;
       }
       return null;
     });
@@ -315,9 +283,7 @@ function attachmentToFile(attachment: Attachment): File | null {
 
 function AttachmentPreview({ attachment }: { attachment: Attachment }) {
   const file = useMemo(() => attachmentToFile(attachment), [attachment]);
-  const isImage =
-    attachment.contentType?.startsWith("image/") ||
-    attachment.url.startsWith("data:image/");
+  const isImage = attachment.contentType?.startsWith("image/") || attachment.url.startsWith("data:image/");
 
   if (file) {
     return <FilePreview file={file} />;
@@ -332,9 +298,7 @@ function AttachmentPreview({ attachment }: { attachment: Attachment }) {
           className="h-10 w-10 shrink-0 rounded-sm border object-cover"
           src={attachment.url}
         />
-        <span className="w-full truncate text-muted-foreground">
-          {attachment.name ?? "Image attachment"}
-        </span>
+        <span className="w-full truncate text-muted-foreground">{attachment.name ?? "Image attachment"}</span>
       </div>
     );
   }
@@ -381,9 +345,7 @@ const ReasoningBlock = ({ part }: { part: ReasoningPart }) => {
             className="border-t"
           >
             <div className="p-2">
-              <div className="whitespace-pre-wrap text-xs">
-                {part.reasoning}
-              </div>
+              <div className="whitespace-pre-wrap text-xs">{part.reasoning}</div>
             </div>
           </motion.div>
         </CollapsibleContent>
@@ -392,17 +354,13 @@ const ReasoningBlock = ({ part }: { part: ReasoningPart }) => {
   );
 };
 
-function ToolCall({
-  toolInvocations,
-}: Pick<ChatMessageProps, "toolInvocations">) {
+function ToolCall({ toolInvocations }: Pick<ChatMessageProps, "toolInvocations">) {
   if (!toolInvocations?.length) return null;
 
   return (
     <div className="flex flex-col items-start gap-2">
       {toolInvocations.map((invocation, index) => {
-        const isCancelled =
-          invocation.state === "result" &&
-          invocation.result.__cancelled === true;
+        const isCancelled = invocation.state === "result" && invocation.result.__cancelled === true;
 
         if (isCancelled) {
           return (
@@ -446,10 +404,7 @@ function ToolCall({
             );
           case "result":
             return (
-              <div
-                key={index}
-                className="flex flex-col gap-1.5 rounded-lg border bg-muted/50 px-3 py-2 text-sm"
-              >
+              <div key={index} className="flex flex-col gap-1.5 rounded-lg border bg-muted/50 px-3 py-2 text-sm">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Code2 className="h-4 w-4" />
                   <span>

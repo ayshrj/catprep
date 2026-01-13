@@ -7,8 +7,6 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { Dispatch, JSX, useCallback, useEffect, useRef, useState } from "react";
-import * as React from "react";
 import { $isCodeHighlightNode } from "@lexical/code";
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
@@ -33,6 +31,8 @@ import {
   SuperscriptIcon,
   UnderlineIcon,
 } from "lucide-react";
+import { Dispatch, JSX, useCallback, useEffect, useRef, useState } from "react";
+import * as React from "react";
 import { createPortal } from "react-dom";
 
 import { getDOMRangeRect } from "@/components/editor/utils/get-dom-range-rect";
@@ -175,8 +175,8 @@ function FloatingTextFormat({
           $updateTextFormatFloatingToolbar();
           return false;
         },
-        COMMAND_PRIORITY_LOW,
-      ),
+        COMMAND_PRIORITY_LOW
+      )
     );
   }, [editor, $updateTextFormatFloatingToolbar]);
 
@@ -251,20 +251,12 @@ function FloatingTextFormat({
             >
               <CodeIcon className="h-4 w-4" />
             </ToggleGroupItem>
-            <ToggleGroupItem
-              value="link"
-              aria-label="Toggle link"
-              onClick={insertLink}
-              size="sm"
-            >
+            <ToggleGroupItem value="link" aria-label="Toggle link" onClick={insertLink} size="sm">
               <LinkIcon className="h-4 w-4" />
             </ToggleGroupItem>
             <Separator orientation="vertical" />
           </ToggleGroup>
-          <ToggleGroup
-            type="single"
-            defaultValue={isSubscript ? "subscript" : isSuperscript ? "superscript" : ""}
-          >
+          <ToggleGroup type="single" defaultValue={isSubscript ? "subscript" : isSuperscript ? "superscript" : ""}>
             <ToggleGroupItem
               value="subscript"
               aria-label="Toggle subscript"
@@ -295,7 +287,7 @@ function FloatingTextFormat({
 function useFloatingTextFormatToolbar(
   editor: LexicalEditor,
   anchorElem: HTMLDivElement | null,
-  setIsLinkEditMode: Dispatch<boolean>,
+  setIsLinkEditMode: Dispatch<boolean>
 ): JSX.Element | null {
   const [isText, setIsText] = useState(false);
   const [isLink, setIsLink] = useState(false);
@@ -319,9 +311,7 @@ function useFloatingTextFormatToolbar(
 
       if (
         nativeSelection !== null &&
-        (!$isRangeSelection(selection) ||
-          rootElement === null ||
-          !rootElement.contains(nativeSelection.anchorNode))
+        (!$isRangeSelection(selection) || rootElement === null || !rootElement.contains(nativeSelection.anchorNode))
       ) {
         setIsText(false);
         return;
@@ -350,10 +340,7 @@ function useFloatingTextFormatToolbar(
         setIsLink(false);
       }
 
-      if (
-        !$isCodeHighlightNode(selection.anchor.getNode()) &&
-        selection.getTextContent() !== ""
-      ) {
+      if (!$isCodeHighlightNode(selection.anchor.getNode()) && selection.getTextContent() !== "") {
         setIsText($isTextNode(node) || $isParagraphNode(node));
       } else {
         setIsText(false);
@@ -383,7 +370,7 @@ function useFloatingTextFormatToolbar(
         if (editor.getRootElement() === null) {
           setIsText(false);
         }
-      }),
+      })
     );
   }, [editor, updatePopup]);
 
@@ -405,7 +392,7 @@ function useFloatingTextFormatToolbar(
       isCode={isCode}
       setIsLinkEditMode={setIsLinkEditMode}
     />,
-    anchorElem,
+    anchorElem
   );
 }
 

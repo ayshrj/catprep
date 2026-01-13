@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
 import { $getSelectionStyleValueForProperty, $patchStyleText } from "@lexical/selection";
 import { $getSelection, $isRangeSelection, BaseSelection } from "lexical";
 import { Minus, Plus } from "lucide-react";
+import { useCallback, useState } from "react";
 
 import { useToolbarContext } from "@/components/editor/context/toolbar-context";
 import { useUpdateToolbarHandler } from "@/components/editor/editor-hooks/use-update-toolbar";
@@ -23,11 +23,7 @@ export function FontSizeToolbarPlugin() {
 
   const $updateToolbar = (selection: BaseSelection) => {
     if ($isRangeSelection(selection)) {
-      const value = $getSelectionStyleValueForProperty(
-        selection,
-        "font-size",
-        `${DEFAULT_FONT_SIZE}px`,
-      );
+      const value = $getSelectionStyleValueForProperty(selection, "font-size", `${DEFAULT_FONT_SIZE}px`);
       setFontSize(parseInt(value) || DEFAULT_FONT_SIZE);
     }
   };
@@ -47,7 +43,7 @@ export function FontSizeToolbarPlugin() {
       });
       setFontSize(size);
     },
-    [activeEditor, style],
+    [activeEditor, style]
   );
 
   return (
@@ -63,7 +59,7 @@ export function FontSizeToolbarPlugin() {
       </Button>
       <Input
         value={fontSize}
-        onChange={(e) => updateFontSize(parseInt(e.target.value) || DEFAULT_FONT_SIZE)}
+        onChange={e => updateFontSize(parseInt(e.target.value) || DEFAULT_FONT_SIZE)}
         className="h-8! w-12 text-center"
         min={MIN_FONT_SIZE}
         max={MAX_FONT_SIZE}

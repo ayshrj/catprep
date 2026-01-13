@@ -9,12 +9,7 @@ type AppNavbarProps = {
   trailing?: ReactNode;
 };
 
-export function AppNavbar({
-  title,
-  subtitle,
-  leading,
-  trailing,
-}: AppNavbarProps) {
+export function AppNavbar({ title, subtitle, leading, trailing }: AppNavbarProps) {
   return (
     <div className="sticky top-0 z-40 h-12 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:h-14">
       <div className="mx-auto flex h-full w-full max-w-7xl items-center justify-between gap-3 px-3 sm:px-6">
@@ -23,20 +18,12 @@ export function AppNavbar({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <Logo className="h-5 w-5" />
-              <div className="truncate text-base font-semibold tracking-tight">
-                {title}
-              </div>
+              <div className="truncate text-base font-semibold tracking-tight">{title}</div>
             </div>
-            {subtitle ? (
-              <div className="truncate text-[11px] text-muted-foreground">
-                {subtitle}
-              </div>
-            ) : null}
+            {subtitle ? <div className="truncate text-[11px] text-muted-foreground">{subtitle}</div> : null}
           </div>
         </div>
-        {trailing ? (
-          <div className="flex items-center gap-2">{trailing}</div>
-        ) : null}
+        {trailing ? <div className="flex items-center gap-2">{trailing}</div> : null}
       </div>
     </div>
   );

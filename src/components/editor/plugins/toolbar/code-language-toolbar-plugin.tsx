@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback, useState } from "react";
 import {
   $isCodeNode,
   CODE_LANGUAGE_FRIENDLY_NAME_MAP,
@@ -9,12 +8,8 @@ import {
 } from "@lexical/code";
 import { $isListNode } from "@lexical/list";
 import { $findMatchingParent } from "@lexical/utils";
-import {
-  $getNodeByKey,
-  $isRangeSelection,
-  $isRootOrShadowRoot,
-  BaseSelection,
-} from "lexical";
+import { $getNodeByKey, $isRangeSelection, $isRootOrShadowRoot, BaseSelection } from "lexical";
+import { useCallback, useState } from "react";
 
 import { useToolbarContext } from "@/components/editor/context/toolbar-context";
 import { useUpdateToolbarHandler } from "@/components/editor/editor-hooks/use-update-toolbar";
@@ -43,7 +38,7 @@ export function CodeLanguageToolbarPlugin() {
       let element =
         anchorNode.getKey() === "root"
           ? anchorNode
-          : $findMatchingParent(anchorNode, (e) => {
+          : $findMatchingParent(anchorNode, e => {
               const parent = e.getParent();
               return parent !== null && $isRootOrShadowRoot(parent);
             });
@@ -80,7 +75,7 @@ export function CodeLanguageToolbarPlugin() {
         }
       });
     },
-    [activeEditor, selectedElementKey],
+    [activeEditor, selectedElementKey]
   );
 
   return (

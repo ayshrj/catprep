@@ -7,7 +7,6 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { useEffect, useRef, useState } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import type { LexicalCommand, LexicalEditor, RangeSelection } from "lexical";
 import {
@@ -19,19 +18,16 @@ import {
   UNDO_COMMAND,
 } from "lexical";
 import { Loader2, MicIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import { useReport } from "@/components/editor/editor-hooks/use-report";
 import { CAN_USE_DOM } from "@/components/editor/shared/can-use-dom";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-export const SPEECH_TO_TEXT_COMMAND: LexicalCommand<boolean> = createCommand(
-  "SPEECH_TO_TEXT_COMMAND",
-);
+export const SPEECH_TO_TEXT_COMMAND: LexicalCommand<boolean> = createCommand("SPEECH_TO_TEXT_COMMAND");
 
-const VOICE_COMMANDS: Readonly<
-  Record<string, (arg0: { editor: LexicalEditor; selection: RangeSelection }) => void>
-> = {
+const VOICE_COMMANDS: Readonly<Record<string, (arg0: { editor: LexicalEditor; selection: RangeSelection }) => void>> = {
   "\n": ({ selection }) => {
     selection.insertParagraph();
   },
@@ -61,37 +57,34 @@ function SpeechToTextPluginImpl() {
       recognition.current = new SpeechRecognition();
       recognition.current.continuous = true;
       recognition.current.interimResults = true;
-      recognition.current.addEventListener(
-        "result",
-        (event: typeof SpeechRecognition) => {
-          const resultItem = event.results.item(event.resultIndex);
-          const { transcript } = resultItem.item(0);
-          report(transcript);
+      recognition.current.addEventListener("result", (event: typeof SpeechRecognition) => {
+        const resultItem = event.results.item(event.resultIndex);
+        const { transcript } = resultItem.item(0);
+        report(transcript);
 
-          if (!resultItem.isFinal) {
-            return;
-          }
+        if (!resultItem.isFinal) {
+          return;
+        }
 
-          editor.update(() => {
-            const selection = $getSelection();
+        editor.update(() => {
+          const selection = $getSelection();
 
-            if ($isRangeSelection(selection)) {
-              const command = VOICE_COMMANDS[transcript.toLowerCase().trim()];
+          if ($isRangeSelection(selection)) {
+            const command = VOICE_COMMANDS[transcript.toLowerCase().trim()];
 
-              if (command) {
-                command({
-                  editor,
-                  selection,
-                });
-              } else if (transcript.match(/\s*\n\s*/)) {
-                selection.insertParagraph();
-              } else {
-                selection.insertText(transcript);
-              }
+            if (command) {
+              command({
+                editor,
+                selection,
+              });
+            } else if (transcript.match(/\s*\n\s*/)) {
+              selection.insertParagraph();
+            } else {
+              selection.insertText(transcript);
             }
-          });
-        },
-      );
+          }
+        });
+      });
     }
 
     if (recognition.current) {
@@ -116,7 +109,7 @@ function SpeechToTextPluginImpl() {
         setIsEnabled(_isEnabled);
         return true;
       },
-      COMMAND_PRIORITY_EDITOR,
+      COMMAND_PRIORITY_EDITOR
     );
   }, [editor]);
 
@@ -143,9 +136,7 @@ function SpeechToTextPluginImpl() {
 }
 
 export function SpeechToTextPlugin() {
-  const [status, setStatus] = useState<"checking" | "supported" | "unsupported">(
-    "checking",
-  );
+  const [status, setStatus] = useState<"checking" | "supported" | "unsupported">("checking");
 
   useEffect(() => {
     // Check support on mount to prevent hydration mismatch and ensure

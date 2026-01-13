@@ -7,8 +7,6 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import type { JSX } from "react";
-import { useCallback, useEffect } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $getSelectionStyleValueForProperty, $isAtNodeEnd } from "@lexical/selection";
 import { mergeRegister } from "@lexical/utils";
@@ -26,11 +24,10 @@ import {
   KEY_ARROW_RIGHT_COMMAND,
   KEY_TAB_COMMAND,
 } from "lexical";
+import type { JSX } from "react";
+import { useCallback, useEffect } from "react";
 
-import {
-  $createAutocompleteNode,
-  AutocompleteNode,
-} from "@/components/editor/nodes/autocomplete-node";
+import { $createAutocompleteNode, AutocompleteNode } from "@/components/editor/nodes/autocomplete-node";
 import { addSwipeRightListener } from "@/components/editor/utils/swipe";
 
 const HISTORY_MERGE = { tag: HISTORY_MERGE_TAG };
@@ -91,9 +88,7 @@ function useQuery(): (searchText: string) => SearchPromise {
 function formatSuggestionText(suggestion: string): string {
   const userAgentData = window.navigator.userAgentData;
   const isMobile =
-    userAgentData !== undefined
-      ? userAgentData.mobile
-      : window.innerWidth <= 800 && window.innerHeight <= 600;
+    userAgentData !== undefined ? userAgentData.mobile : window.innerWidth <= 800 && window.innerHeight <= 600;
 
   return `${suggestion} ${isMobile ? "(SWIPE \u2B95)" : "(TAB)"}`;
 }
@@ -110,8 +105,7 @@ export function AutocompletePlugin(): JSX.Element | null {
     let searchPromise: null | SearchPromise = null;
     let prevNodeFormat: number = 0;
     function $clearSuggestion() {
-      const autocompleteNode =
-        autocompleteNodeKey !== null ? $getNodeByKey(autocompleteNodeKey) : null;
+      const autocompleteNode = autocompleteNodeKey !== null ? $getNodeByKey(autocompleteNodeKey) : null;
       if (autocompleteNode !== null && autocompleteNode.isAttached()) {
         autocompleteNode.remove();
         autocompleteNodeKey = null;
@@ -124,10 +118,7 @@ export function AutocompletePlugin(): JSX.Element | null {
       lastSuggestion = null;
       prevNodeFormat = 0;
     }
-    function updateAsyncSuggestion(
-      refSearchPromise: SearchPromise,
-      newSuggestion: null | string,
-    ) {
+    function updateAsyncSuggestion(refSearchPromise: SearchPromise, newSuggestion: null | string) {
       if (searchPromise !== refSearchPromise || newSuggestion === null) {
         // Outdated or no suggestion
         return;
@@ -139,11 +130,7 @@ export function AutocompletePlugin(): JSX.Element | null {
           // Outdated
           return;
         }
-        const fontSize = $getSelectionStyleValueForProperty(
-          selection,
-          "font-size",
-          "16px",
-        );
+        const fontSize = $getSelectionStyleValueForProperty(selection, "font-size", "16px");
 
         const selectionCopy = selection.clone();
         const prevNode = selection.getNodes()[0] as TextNode;
@@ -179,12 +166,12 @@ export function AutocompletePlugin(): JSX.Element | null {
         $clearSuggestion();
         searchPromise = query(match);
         searchPromise.promise
-          .then((newSuggestion) => {
+          .then(newSuggestion => {
             if (searchPromise !== null) {
               updateAsyncSuggestion(searchPromise, newSuggestion);
             }
           })
-          .catch((e) => {
+          .catch(e => {
             if (e !== "Dismissed") {
               console.error(e);
             }
@@ -208,9 +195,7 @@ export function AutocompletePlugin(): JSX.Element | null {
       }
       const fontSize = $getSelectionStyleValueForProperty(selection, "font-size", "16px");
 
-      const textNode = $createTextNode(lastSuggestion)
-        .setFormat(prevNodeFormat)
-        .setStyle(`font-size: ${fontSize}`);
+      const textNode = $createTextNode(lastSuggestion).setFormat(prevNodeFormat).setStyle(`font-size: ${fontSize}`);
       autocompleteNode.replace(textNode);
       textNode.selectNext();
       $clearSuggestion();
@@ -243,18 +228,10 @@ export function AutocompletePlugin(): JSX.Element | null {
     return mergeRegister(
       editor.registerNodeTransform(AutocompleteNode, $handleAutocompleteNodeTransform),
       editor.registerUpdateListener(handleUpdate),
-      editor.registerCommand(
-        KEY_TAB_COMMAND,
-        $handleKeypressCommand,
-        COMMAND_PRIORITY_LOW,
-      ),
-      editor.registerCommand(
-        KEY_ARROW_RIGHT_COMMAND,
-        $handleKeypressCommand,
-        COMMAND_PRIORITY_LOW,
-      ),
+      editor.registerCommand(KEY_TAB_COMMAND, $handleKeypressCommand, COMMAND_PRIORITY_LOW),
+      editor.registerCommand(KEY_ARROW_RIGHT_COMMAND, $handleKeypressCommand, COMMAND_PRIORITY_LOW),
       ...(rootElem !== null ? [addSwipeRightListener(rootElem, handleSwipeRight)] : []),
-      unmountSuggestion,
+      unmountSuggestion
     );
   }, [editor, query]);
 
@@ -291,8 +268,7 @@ class AutocompleteServer {
           ? String.fromCharCode(char0 + 32) + searchText.substring(1)
           : searchText;
         const match = this.DATABASE.find(
-          (dictionaryWord) =>
-            dictionaryWord.startsWith(caseInsensitiveSearchText) ?? null,
+          dictionaryWord => dictionaryWord.startsWith(caseInsensitiveSearchText) ?? null
         );
         if (match === undefined) {
           return resolve(null);

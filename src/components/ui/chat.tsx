@@ -1,29 +1,20 @@
 "use client";
 
-import {
-  forwardRef,
-  useCallback,
-  useRef,
-  useState,
-  type ReactElement,
-} from "react";
 import { ArrowDown, ThumbsDown, ThumbsUp } from "lucide-react";
+import { forwardRef, type ReactElement, useCallback, useRef, useState } from "react";
 
-import { cn } from "@/lib/utils";
-import { stringifyMessageContent } from "@/lib/message-content";
-import { useAutoScroll } from "@/hooks/use-auto-scroll";
 import { Button } from "@/components/ui/button";
 import { type Message } from "@/components/ui/chat-message";
 import { CopyButton } from "@/components/ui/copy-button";
 import { MessageInput } from "@/components/ui/message-input";
 import { MessageList } from "@/components/ui/message-list";
 import { PromptSuggestions } from "@/components/ui/prompt-suggestions";
+import { useAutoScroll } from "@/hooks/use-auto-scroll";
+import { stringifyMessageContent } from "@/lib/message-content";
+import { cn } from "@/lib/utils";
 
 interface ChatPropsBase {
-  handleSubmit: (
-    event?: { preventDefault?: () => void },
-    options?: { experimental_attachments?: FileList }
-  ) => void;
+  handleSubmit: (event?: { preventDefault?: () => void }, options?: { experimental_attachments?: FileList }) => void;
   messages: Array<Message>;
   input: string;
   className?: string;
@@ -31,10 +22,8 @@ interface ChatPropsBase {
   isGenerating: boolean;
   stop?: () => void;
   onSuggestionSelect?: (suggestion: string) => void;
-  onRateResponse?: (
-    messageId: string,
-    rating: "thumbs-up" | "thumbs-down"
-  ) => void;
+  onRateResponse?: (messageId: string, rating: "thumbs-up" | "thumbs-down") => void;
+
   setMessages?: (messages: any[]) => void;
   transcribeAudio?: (blob: Blob) => Promise<string>;
   allowAttachments?: boolean;
@@ -82,9 +71,7 @@ export function Chat({
     if (!setMessages) return;
 
     const latestMessages = [...messagesRef.current];
-    const lastAssistantMessage = latestMessages.findLast(
-      (m) => m.role === "assistant"
-    );
+    const lastAssistantMessage = latestMessages.findLast(m => m.role === "assistant");
 
     if (!lastAssistantMessage) return;
 
@@ -92,22 +79,20 @@ export function Chat({
     let updatedMessage = { ...lastAssistantMessage };
 
     if (lastAssistantMessage.toolInvocations) {
-      const updatedToolInvocations = lastAssistantMessage.toolInvocations.map(
-        (toolInvocation) => {
-          if (toolInvocation.state === "call") {
-            needsUpdate = true;
-            return {
-              ...toolInvocation,
-              state: "result",
-              result: {
-                content: "Tool execution was cancelled",
-                __cancelled: true, // Special marker to indicate cancellation
-              },
-            } as const;
-          }
-          return toolInvocation;
+      const updatedToolInvocations = lastAssistantMessage.toolInvocations.map(toolInvocation => {
+        if (toolInvocation.state === "call") {
+          needsUpdate = true;
+          return {
+            ...toolInvocation,
+            state: "result",
+            result: {
+              content: "Tool execution was cancelled",
+              __cancelled: true, // Special marker to indicate cancellation
+            },
+          } as const;
         }
-      );
+        return toolInvocation;
+      });
 
       if (needsUpdate) {
         updatedMessage = {
@@ -119,11 +104,7 @@ export function Chat({
 
     if (lastAssistantMessage.parts && lastAssistantMessage.parts.length > 0) {
       const updatedParts = lastAssistantMessage.parts.map((part: any) => {
-        if (
-          part.type === "tool-invocation" &&
-          part.toolInvocation &&
-          part.toolInvocation.state === "call"
-        ) {
+        if (part.type === "tool-invocation" && part.toolInvocation && part.toolInvocation.state === "call") {
           needsUpdate = true;
           return {
             ...part,
@@ -149,9 +130,7 @@ export function Chat({
     }
 
     if (needsUpdate) {
-      const messageIndex = latestMessages.findIndex(
-        (m) => m.id === lastAssistantMessage.id
-      );
+      const messageIndex = latestMessages.findIndex(m => m.id === lastAssistantMessage.id);
       if (messageIndex !== -1) {
         latestMessages[messageIndex] = updatedMessage;
         setMessages(latestMessages);
@@ -187,10 +166,7 @@ export function Chat({
           </Button>
         </>
       ) : (
-        <CopyButton
-          content={stringifyMessageContent(message.content)}
-          copyMessage="Copied response to clipboard!"
-        />
+        <CopyButton content={stringifyMessageContent(message.content)} copyMessage="Copied response to clipboard!" />
       ),
     }),
     [onRateResponse]
@@ -209,19 +185,11 @@ export function Chat({
 
       {messages.length > 0 ? (
         <ChatMessages messages={messages}>
-          <MessageList
-            messages={messages}
-            isTyping={isTyping}
-            messageOptions={messageOptions}
-          />
+          <MessageList messages={messages} isTyping={isTyping} messageOptions={messageOptions} />
         </ChatMessages>
       ) : null}
 
-      <ChatForm
-        className="mt-auto"
-        isPending={isGenerating || isTyping}
-        handleSubmit={handleSubmit}
-      >
+      <ChatForm className="mt-auto" isPending={isGenerating || isTyping} handleSubmit={handleSubmit}>
         {({ files, setFiles }) => (
           <MessageInput
             value={input}
@@ -246,13 +214,7 @@ export function ChatMessages({
 }: React.PropsWithChildren<{
   messages: Message[];
 }>) {
-  const {
-    containerRef,
-    scrollToBottom,
-    handleScroll,
-    shouldAutoScroll,
-    handleTouchStart,
-  } = useAutoScroll([messages]);
+  const { containerRef, scrollToBottom, handleScroll, shouldAutoScroll, handleTouchStart } = useAutoScroll([messages]);
 
   return (
     <div
@@ -261,9 +223,7 @@ export function ChatMessages({
       onScroll={handleScroll}
       onTouchStart={handleTouchStart}
     >
-      <div className="max-w-full [grid-column:1/1] [grid-row:1/1]">
-        {children}
-      </div>
+      <div className="max-w-full [grid-column:1/1] [grid-row:1/1]">{children}</div>
 
       {!shouldAutoScroll && (
         <div className="pointer-events-none flex flex-1 items-end justify-end [grid-column:1/1] [grid-row:1/1]">
@@ -283,27 +243,17 @@ export function ChatMessages({
   );
 }
 
-export const ChatContainer = forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => {
-  return (
-    <div
-      ref={ref}
-      className={cn("grid max-h-full w-full grid-rows-[1fr_auto]", className)}
-      {...props}
-    />
-  );
-});
+export const ChatContainer = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => {
+    return <div ref={ref} className={cn("grid max-h-full w-full grid-rows-[1fr_auto]", className)} {...props} />;
+  }
+);
 ChatContainer.displayName = "ChatContainer";
 
 interface ChatFormProps {
   className?: string;
   isPending: boolean;
-  handleSubmit: (
-    event?: { preventDefault?: () => void },
-    options?: { experimental_attachments?: FileList }
-  ) => void;
+  handleSubmit: (event?: { preventDefault?: () => void }, options?: { experimental_attachments?: FileList }) => void;
   children: (props: {
     files: File[] | null;
     setFiles: React.Dispatch<React.SetStateAction<File[] | null>>;
@@ -311,6 +261,7 @@ interface ChatFormProps {
 }
 
 export const ChatForm = forwardRef<HTMLFormElement, ChatFormProps>(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   ({ children, handleSubmit, isPending, className }, ref) => {
     const [files, setFiles] = useState<File[] | null>(null);
 

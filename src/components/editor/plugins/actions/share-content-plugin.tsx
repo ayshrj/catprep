@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import {
   editorStateFromSerializedDocument,
   SerializedDocument,
@@ -9,6 +8,7 @@ import {
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { CLEAR_HISTORY_COMMAND } from "lexical";
 import { SendIcon } from "lucide-react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 
 import { docFromHash, docToHash } from "@/components/editor/utils/doc-serialization";
@@ -25,7 +25,7 @@ export function ShareContentPlugin() {
     await window.navigator.clipboard.writeText(newUrl);
   }
   useEffect(() => {
-    docFromHash(window.location.hash).then((doc) => {
+    docFromHash(window.location.hash).then(doc => {
       if (doc && doc.source === "editor") {
         editor.setEditorState(editorStateFromSerializedDocument(editor, doc));
         editor.dispatchCommand(CLEAR_HISTORY_COMMAND, undefined);
@@ -42,10 +42,10 @@ export function ShareContentPlugin() {
             shareDoc(
               serializedDocumentFromEditorState(editor.getEditorState(), {
                 source: "editor",
-              }),
+              })
             ).then(
               () => toast.success("URL copied to clipboard"),
-              () => toast.error("URL could not be copied to clipboard"),
+              () => toast.error("URL could not be copied to clipboard")
             )
           }
           title="Share"

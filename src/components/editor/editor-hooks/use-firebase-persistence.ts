@@ -1,14 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { EditorState, LexicalEditor, SerializedEditorState } from "lexical";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 const API_URL = "/api/editor/state";
 const SAVE_DEBOUNCE_MS = 500;
 
-async function fetchEditorState(
-  key: string,
-): Promise<SerializedEditorState | null> {
+async function fetchEditorState(key: string): Promise<SerializedEditorState | null> {
   try {
     const response = await fetch(`${API_URL}?key=${encodeURIComponent(key)}`, {
       credentials: "include",
@@ -18,23 +16,18 @@ async function fetchEditorState(
       return null;
     }
 
-    const data = (await response.json().catch(() => ({} as any))) as {
+    const data = (await response.json().catch(() => ({}) as any)) as {
       payload?: SerializedEditorState | null;
     };
 
-    return data?.payload && typeof data.payload === "object"
-      ? (data.payload as SerializedEditorState)
-      : null;
+    return data?.payload && typeof data.payload === "object" ? (data.payload as SerializedEditorState) : null;
   } catch (error) {
     console.error("Failed to load editor state from storage", error);
     return null;
   }
 }
 
-async function persistEditorState(
-  key: string,
-  payload: SerializedEditorState,
-) {
+async function persistEditorState(key: string, payload: SerializedEditorState) {
   try {
     const response = await fetch(API_URL, {
       method: "POST",
@@ -53,10 +46,7 @@ async function persistEditorState(
   }
 }
 
-export function useFirebasePersistence(
-  editor: LexicalEditor | null,
-  storageKey: string,
-) {
+export function useFirebasePersistence(editor: LexicalEditor | null, storageKey: string) {
   const saveTimerRef = useRef<number | null>(null);
   const hasHydratedRef = useRef(false);
 
@@ -85,7 +75,7 @@ export function useFirebasePersistence(
       const serialized = editorState.toJSON() as SerializedEditorState;
       await persistEditorState(storageKey, serialized);
     },
-    [editor, storageKey],
+    [editor, storageKey]
   );
 
   const debouncedSave = useMemo(() => {
@@ -108,14 +98,12 @@ export function useFirebasePersistence(
       return;
     }
 
-    return editor.registerUpdateListener(
-      ({ editorState, dirtyElements, dirtyLeaves }) => {
-        if (dirtyElements.size === 0 && dirtyLeaves.size === 0) {
-          return;
-        }
-        debouncedSave(editorState);
-      },
-    );
+    return editor.registerUpdateListener(({ editorState, dirtyElements, dirtyLeaves }) => {
+      if (dirtyElements.size === 0 && dirtyLeaves.size === 0) {
+        return;
+      }
+      debouncedSave(editorState);
+    });
   }, [debouncedSave, editor]);
 
   useEffect(() => {

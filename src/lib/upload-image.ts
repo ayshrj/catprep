@@ -29,10 +29,9 @@ export async function uploadImageToCloudinary(
     signal: options?.signal,
   });
 
-  const data = await response.json().catch(() => ({} as any));
+  const data = await response.json().catch(() => ({}) as any);
   if (!response.ok) {
-    const message =
-      typeof data?.error === "string" ? data.error : "Upload failed.";
+    const message = typeof data?.error === "string" ? data.error : "Upload failed.";
     throw new Error(message);
   }
 

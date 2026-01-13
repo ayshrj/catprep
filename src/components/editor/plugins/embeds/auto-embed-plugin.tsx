@@ -7,7 +7,6 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { JSX, useMemo, useState } from "react";
 import {
   AutoEmbedOption,
   EmbedConfig,
@@ -19,6 +18,7 @@ import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext
 import { PopoverPortal } from "@radix-ui/react-popover";
 import type { LexicalEditor } from "lexical";
 import { TwitterIcon, YoutubeIcon } from "lucide-react";
+import { JSX, useMemo, useState } from "react";
 
 import { useEditorModal } from "@/components/editor/editor-hooks/use-modal";
 import { INSERT_TWEET_COMMAND } from "@/components/editor/plugins/embeds/twitter-plugin";
@@ -62,9 +62,7 @@ export const YoutubeEmbedConfig: CustomEmbedConfig = {
 
   // Determine if a given URL is a match and return url data.
   parseUrl: async (url: string) => {
-    const match = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/.exec(
-      url,
-    );
+    const match = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/.exec(url);
 
     const id = match ? (match?.[2].length === 11 ? match[2] : null) : null;
 
@@ -100,9 +98,7 @@ export const TwitterEmbedConfig: CustomEmbedConfig = {
 
   // Determine if a given URL is a match and return url data.
   parseUrl: (text: string) => {
-    const match = /^https:\/\/(twitter|x)\.com\/(#!\/)?(\w+)\/status(es)*\/(\d+)/.exec(
-      text,
-    );
+    const match = /^https:\/\/(twitter|x)\.com\/(#!\/)?(\w+)\/status(es)*\/(\d+)/.exec(text);
 
     if (match != null) {
       return {
@@ -145,14 +141,14 @@ export function AutoEmbedDialog({
       debounce((inputText: string) => {
         const urlMatch = URL_MATCHER.exec(inputText);
         if (embedConfig != null && inputText != null && urlMatch != null) {
-          Promise.resolve(embedConfig.parseUrl(inputText)).then((parseResult) => {
+          Promise.resolve(embedConfig.parseUrl(inputText)).then(parseResult => {
             setEmbedResult(parseResult);
           });
         } else if (embedResult != null) {
           setEmbedResult(null);
         }
       }, 200),
-    [embedConfig, embedResult],
+    [embedConfig, embedResult]
   );
 
   const onClick = () => {
@@ -170,18 +166,14 @@ export function AutoEmbedDialog({
           placeholder={embedConfig.exampleUrl}
           value={text}
           data-test-id={`${embedConfig.type}-embed-modal-url`}
-          onChange={(e) => {
+          onChange={e => {
             const { value } = e.target;
             setText(value);
             validateText(value);
           }}
         />
         <DialogFooter>
-          <Button
-            disabled={!embedResult}
-            onClick={onClick}
-            data-test-id={`${embedConfig.type}-embed-modal-submit-btn`}
-          >
+          <Button disabled={!embedResult} onClick={onClick} data-test-id={`${embedConfig.type}-embed-modal-submit-btn`}>
             Embed
           </Button>
         </DialogFooter>
@@ -194,16 +186,12 @@ export function AutoEmbedPlugin(): JSX.Element {
   const [modal, showModal] = useEditorModal();
 
   const openEmbedModal = (embedConfig: CustomEmbedConfig) => {
-    showModal(`Embed ${embedConfig.contentName}`, (onClose) => (
+    showModal(`Embed ${embedConfig.contentName}`, onClose => (
       <AutoEmbedDialog embedConfig={embedConfig} onClose={onClose} />
     ));
   };
 
-  const getMenuOptions = (
-    activeEmbedConfig: CustomEmbedConfig,
-    embedFn: () => void,
-    dismissFn: () => void,
-  ) => {
+  const getMenuOptions = (activeEmbedConfig: CustomEmbedConfig, embedFn: () => void, dismissFn: () => void) => {
     return [
       new AutoEmbedOption("Dismiss", {
         onSelect: dismissFn,
@@ -231,7 +219,7 @@ export function AutoEmbedPlugin(): JSX.Element {
                     <Command>
                       <CommandList>
                         <CommandGroup>
-                          {options.map((option) => (
+                          {options.map(option => (
                             <CommandItem
                               key={option.key}
                               value={option.title}

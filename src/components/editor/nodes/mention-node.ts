@@ -1,6 +1,5 @@
 import {
   $applyNodeReplacement,
-  TextNode,
   type DOMConversionMap,
   type DOMConversionOutput,
   type DOMExportOutput,
@@ -9,6 +8,7 @@ import {
   type NodeKey,
   type SerializedTextNode,
   type Spread,
+  TextNode,
 } from "lexical";
 
 export type SerializedMentionNode = Spread<
@@ -113,8 +113,6 @@ export function $createMentionNode(mentionName: string): MentionNode {
   return $applyNodeReplacement(mentionNode);
 }
 
-export function $isMentionNode(
-  node: LexicalNode | null | undefined,
-): node is MentionNode {
+export function $isMentionNode(node: LexicalNode | null | undefined): node is MentionNode {
   return node instanceof MentionNode;
 }

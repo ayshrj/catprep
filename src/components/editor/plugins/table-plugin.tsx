@@ -7,14 +7,8 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { createContext, JSX, useContext, useEffect, useMemo, useState } from "react";
-import * as React from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import {
-  $createTableNodeWithDimensions,
-  INSERT_TABLE_COMMAND,
-  TableNode,
-} from "@lexical/table";
+import { $createTableNodeWithDimensions, INSERT_TABLE_COMMAND, TableNode } from "@lexical/table";
 import {
   $insertNodes,
   COMMAND_PRIORITY_EDITOR,
@@ -25,6 +19,8 @@ import {
   LexicalEditor,
   LexicalNode,
 } from "lexical";
+import { createContext, JSX, useContext, useEffect, useMemo, useState } from "react";
+import * as React from "react";
 
 import { invariant } from "@/components/editor/shared/invariant";
 import { Button } from "@/components/ui/button";
@@ -41,10 +37,7 @@ export type InsertTableCommandPayload = Readonly<{
 export type CellContextShape = {
   cellEditorConfig: null | CellEditorConfig;
   cellEditorPlugins: null | JSX.Element | Array<JSX.Element>;
-  set: (
-    cellEditorConfig: null | CellEditorConfig,
-    cellEditorPlugins: null | JSX.Element | Array<JSX.Element>,
-  ) => void;
+  set: (cellEditorConfig: null | CellEditorConfig, cellEditorPlugins: null | JSX.Element | Array<JSX.Element>) => void;
 };
 
 export type CellEditorConfig = Readonly<{
@@ -84,7 +77,7 @@ export function TableContext({ children }: { children: JSX.Element }) {
             setContextValue({ cellEditorConfig, cellEditorPlugins });
           },
         }),
-        [contextValue.cellEditorConfig, contextValue.cellEditorPlugins],
+        [contextValue.cellEditorConfig, contextValue.cellEditorPlugins]
       )}
     >
       {children}
@@ -130,7 +123,7 @@ export function InsertTableDialog({
           <Input
             id="rows"
             placeholder={"# of rows (1-500)"}
-            onChange={(e) => setRows(e.target.value)}
+            onChange={e => setRows(e.target.value)}
             value={rows}
             data-test-id="table-modal-rows"
             type="number"
@@ -141,7 +134,7 @@ export function InsertTableDialog({
           <Input
             id="columns"
             placeholder={"# of columns (1-50)"}
-            onChange={(e) => setColumns(e.target.value)}
+            onChange={e => setColumns(e.target.value)}
             value={columns}
             data-test-id="table-modal-columns"
             type="number"
@@ -177,15 +170,11 @@ export function TablePlugin({
     return editor.registerCommand<InsertTableCommandPayload>(
       INSERT_NEW_TABLE_COMMAND,
       ({ columns, rows, includeHeaders }) => {
-        const tableNode = $createTableNodeWithDimensions(
-          Number(rows),
-          Number(columns),
-          includeHeaders,
-        );
+        const tableNode = $createTableNodeWithDimensions(Number(rows), Number(columns), includeHeaders);
         $insertNodes([tableNode]);
         return true;
       },
-      COMMAND_PRIORITY_EDITOR,
+      COMMAND_PRIORITY_EDITOR
     );
   }, [cellContext, cellEditorConfig, children, editor]);
 

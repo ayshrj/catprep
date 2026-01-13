@@ -1,8 +1,6 @@
 export type MessageContent = string | Record<string, unknown> | unknown[];
 
-export function coerceStoredMessageContent(
-  value: unknown
-): MessageContent | null {
+export function coerceStoredMessageContent(value: unknown): MessageContent | null {
   if (typeof value === "string") return value;
   if (Array.isArray(value)) return value;
   if (value && typeof value === "object") return value as Record<string, unknown>;
@@ -12,10 +10,7 @@ export function coerceStoredMessageContent(
   return null;
 }
 
-export function stringifyMessageContent(
-  value: unknown,
-  maxLength?: number
-): string {
+export function stringifyMessageContent(value: unknown, maxLength?: number): string {
   let text = "";
   if (typeof value === "string") {
     text = value;
@@ -81,28 +76,16 @@ export function sanitizeForFirestore(value: unknown): unknown {
   return String(value);
 }
 
-function isFirestoreArrayMarker(
-  value: unknown
-): value is { fsArrayMarker: true; fsArrayItems: unknown[] } {
-  if (
-    value === null ||
-    typeof value !== "object" ||
-    Array.isArray(value)
-  ) {
+function isFirestoreArrayMarker(value: unknown): value is { fsArrayMarker: true; fsArrayItems: unknown[] } {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
     return false;
   }
   const obj = value as Record<string, unknown>;
   const keys = Object.keys(obj);
-  return (
-    keys.length === 2 &&
-    obj[FIRESTORE_ARRAY_MARKER] === true &&
-    Array.isArray(obj[FIRESTORE_ARRAY_ITEMS])
-  );
+  return keys.length === 2 && obj[FIRESTORE_ARRAY_MARKER] === true && Array.isArray(obj[FIRESTORE_ARRAY_ITEMS]);
 }
 
-function isLegacyFirestoreArrayMarker(
-  value: unknown
-): value is { __fs_array__: unknown } {
+function isLegacyFirestoreArrayMarker(value: unknown): value is { __fs_array__: unknown } {
   return (
     value !== null &&
     typeof value === "object" &&
@@ -114,20 +97,15 @@ function isLegacyFirestoreArrayMarker(
 
 export function restoreFromFirestore(value: unknown): unknown {
   if (Array.isArray(value)) {
-    return value.map((item) => restoreFromFirestore(item));
+    return value.map(item => restoreFromFirestore(item));
   }
   if (isFirestoreArrayMarker(value)) {
     const inner = (value as Record<string, unknown>)[FIRESTORE_ARRAY_ITEMS];
-    return Array.isArray(inner)
-      ? inner.map((item) => restoreFromFirestore(item))
-      : [];
+    return Array.isArray(inner) ? inner.map(item => restoreFromFirestore(item)) : [];
   }
   if (isLegacyFirestoreArrayMarker(value)) {
-    const inner =
-      (value as Record<string, unknown>)[LEGACY_FIRESTORE_ARRAY_MARKER];
-    return Array.isArray(inner)
-      ? inner.map((item) => restoreFromFirestore(item))
-      : [];
+    const inner = (value as Record<string, unknown>)[LEGACY_FIRESTORE_ARRAY_MARKER];
+    return Array.isArray(inner) ? inner.map(item => restoreFromFirestore(item)) : [];
   }
   if (value && typeof value === "object") {
     const result: Record<string, unknown> = {};

@@ -7,17 +7,13 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import * as React from "react";
-import { JSX, useCallback, useEffect, useMemo, useState } from "react";
-import dynamic from "next/dynamic";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
-import {
-  MenuOption,
-  MenuTextMatch,
-  useBasicTypeaheadTriggerMatch,
-} from "@lexical/react/LexicalTypeaheadMenuPlugin";
+import { MenuOption, MenuTextMatch, useBasicTypeaheadTriggerMatch } from "@lexical/react/LexicalTypeaheadMenuPlugin";
 import { TextNode } from "lexical";
 import { CircleUserRoundIcon } from "lucide-react";
+import dynamic from "next/dynamic";
+import * as React from "react";
+import { JSX, useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { $createMentionNode } from "@/components/editor/nodes/mention-node";
@@ -26,9 +22,9 @@ import { Command, CommandGroup, CommandItem, CommandList } from "@/components/ui
 const LexicalTypeaheadMenuPlugin = dynamic(
   () =>
     import("@lexical/react/LexicalTypeaheadMenuPlugin").then(
-      (mod) => mod.LexicalTypeaheadMenuPlugin<MentionTypeaheadOption>,
+      mod => mod.LexicalTypeaheadMenuPlugin<MentionTypeaheadOption>
     ),
-  { ssr: false },
+  { ssr: false }
 );
 
 const PUNCTUATION = "\\.,\\+\\*\\?\\$\\@\\|#{}\\(\\)\\^\\-\\[\\]\\\\/!%'\"~=<>_:;";
@@ -60,17 +56,7 @@ const VALID_JOINS =
 const LENGTH_LIMIT = 75;
 
 const AtSignMentionsRegex = new RegExp(
-  "(^|\\s|\\()(" +
-    "[" +
-    TRIGGERS +
-    "]" +
-    "((?:" +
-    VALID_CHARS +
-    VALID_JOINS +
-    "){0," +
-    LENGTH_LIMIT +
-    "})" +
-    ")$",
+  "(^|\\s|\\()(" + "[" + TRIGGERS + "]" + "((?:" + VALID_CHARS + VALID_JOINS + "){0," + LENGTH_LIMIT + "})" + ")$"
 );
 
 // 50 is the longest alias length limit.
@@ -78,16 +64,7 @@ const ALIAS_LENGTH_LIMIT = 50;
 
 // Regex used to match alias.
 const AtSignMentionsRegexAliasRegex = new RegExp(
-  "(^|\\s|\\()(" +
-    "[" +
-    TRIGGERS +
-    "]" +
-    "((?:" +
-    VALID_CHARS +
-    "){0," +
-    ALIAS_LENGTH_LIMIT +
-    "})" +
-    ")$",
+  "(^|\\s|\\()(" + "[" + TRIGGERS + "]" + "((?:" + VALID_CHARS + "){0," + ALIAS_LENGTH_LIMIT + "})" + ")$"
 );
 
 // At most, 5 suggestions are shown in the popup.
@@ -504,9 +481,7 @@ const dummyMentionsData = [
 const dummyLookupService = {
   search(string: string, callback: (results: Array<string>) => void): void {
     setTimeout(() => {
-      const results = dummyMentionsData.filter((mention) =>
-        mention.toLowerCase().includes(string.toLowerCase()),
-      );
+      const results = dummyMentionsData.filter(mention => mention.toLowerCase().includes(string.toLowerCase()));
       callback(results);
     }, 500);
   },
@@ -531,7 +506,7 @@ function useMentionLookupService(mentionString: string | null) {
     }
 
     mentionsCache.set(mentionString, null);
-    dummyLookupService.search(mentionString, (newResults) => {
+    dummyLookupService.search(mentionString, newResults => {
       mentionsCache.set(mentionString, newResults);
       setResults(newResults);
     });
@@ -540,10 +515,7 @@ function useMentionLookupService(mentionString: string | null) {
   return results;
 }
 
-function checkForAtSignMentions(
-  text: string,
-  minMatchLength: number,
-): MenuTextMatch | null {
+function checkForAtSignMentions(text: string, minMatchLength: number): MenuTextMatch | null {
   let match = AtSignMentionsRegex.exec(text);
 
   if (match === null) {
@@ -596,23 +568,13 @@ export function MentionsPlugin(): JSX.Element | null {
   const options = useMemo(
     () =>
       results
-        .map(
-          (result) =>
-            new MentionTypeaheadOption(
-              result,
-              <CircleUserRoundIcon className="size-4" />,
-            ),
-        )
+        .map(result => new MentionTypeaheadOption(result, <CircleUserRoundIcon className="size-4" />))
         .slice(0, SUGGESTION_LIST_LENGTH_LIMIT),
-    [results],
+    [results]
   );
 
   const onSelectOption = useCallback(
-    (
-      selectedOption: MentionTypeaheadOption,
-      nodeToReplace: TextNode | null,
-      closeMenu: () => void,
-    ) => {
+    (selectedOption: MentionTypeaheadOption, nodeToReplace: TextNode | null, closeMenu: () => void) => {
       editor.update(() => {
         const mentionNode = $createMentionNode(selectedOption.name);
         if (nodeToReplace) {
@@ -622,7 +584,7 @@ export function MentionsPlugin(): JSX.Element | null {
         closeMenu();
       });
     },
-    [editor],
+    [editor]
   );
 
   const checkForMentionMatch = useCallback(
@@ -633,7 +595,7 @@ export function MentionsPlugin(): JSX.Element | null {
       }
       return getPossibleQueryMatch(text);
     },
-    [checkForSlashTriggerMatch, editor],
+    [checkForSlashTriggerMatch, editor]
   );
 
   return (
@@ -642,27 +604,22 @@ export function MentionsPlugin(): JSX.Element | null {
       onSelectOption={onSelectOption}
       triggerFn={checkForMentionMatch}
       options={options}
-      menuRenderFn={(
-        anchorElementRef,
-        { selectedIndex, selectOptionAndCleanUp, setHighlightedIndex },
-      ) => {
+      menuRenderFn={(anchorElementRef, { selectedIndex, selectOptionAndCleanUp, setHighlightedIndex }) => {
         return anchorElementRef.current && results.length
           ? createPortal(
               <div className="fixed z-10 w-[200px] rounded-md shadow-md">
                 <Command
-                  onKeyDown={(e) => {
+                  onKeyDown={e => {
                     if (e.key === "ArrowUp") {
                       e.preventDefault();
                       setHighlightedIndex(
                         selectedIndex !== null
                           ? (selectedIndex - 1 + options.length) % options.length
-                          : options.length - 1,
+                          : options.length - 1
                       );
                     } else if (e.key === "ArrowDown") {
                       e.preventDefault();
-                      setHighlightedIndex(
-                        selectedIndex !== null ? (selectedIndex + 1) % options.length : 0,
-                      );
+                      setHighlightedIndex(selectedIndex !== null ? (selectedIndex + 1) % options.length : 0);
                     }
                   }}
                 >
@@ -687,7 +644,7 @@ export function MentionsPlugin(): JSX.Element | null {
                   </CommandList>
                 </Command>
               </div>,
-              anchorElementRef.current,
+              anchorElementRef.current
             )
           : null;
       }}

@@ -1,14 +1,10 @@
 import { ElementTransformer } from "@lexical/markdown";
 
-import {
-  $createTweetNode,
-  $isTweetNode,
-  TweetNode,
-} from "@/components/editor/nodes/embeds/tweet-node";
+import { $createTweetNode, $isTweetNode, TweetNode } from "@/components/editor/nodes/embeds/tweet-node";
 
 export const TWEET: ElementTransformer = {
   dependencies: [TweetNode],
-  export: (node) => {
+  export: node => {
     if (!$isTweetNode(node)) {
       return null;
     }

@@ -1,15 +1,11 @@
 "use client";
 
-import { useCallback } from "react";
 import { $createCodeNode, $isCodeNode } from "@lexical/code";
-import {
-  $convertFromMarkdownString,
-  $convertToMarkdownString,
-  Transformer,
-} from "@lexical/markdown";
+import { $convertFromMarkdownString, $convertToMarkdownString, Transformer } from "@lexical/markdown";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { $createTextNode, $getRoot } from "lexical";
 import { FileTextIcon } from "lucide-react";
+import { useCallback } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -31,13 +27,13 @@ export function MarkdownTogglePlugin({
           firstChild.getTextContent(),
           transformers,
           undefined, // node
-          shouldPreserveNewLinesInMarkdown,
+          shouldPreserveNewLinesInMarkdown
         );
       } else {
         const markdown = $convertToMarkdownString(
           transformers,
           undefined, //node
-          shouldPreserveNewLinesInMarkdown,
+          shouldPreserveNewLinesInMarkdown
         );
         const codeNode = $createCodeNode("markdown");
         codeNode.append($createTextNode(markdown));

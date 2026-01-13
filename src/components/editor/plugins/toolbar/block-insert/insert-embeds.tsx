@@ -8,7 +8,7 @@ import { SelectItem } from "@/components/ui/select";
 
 export function InsertEmbeds() {
   const { activeEditor } = useToolbarContext();
-  return EmbedConfigs.map((embedConfig) => (
+  return EmbedConfigs.map(embedConfig => (
     <SelectItem
       key={embedConfig.type}
       value={embedConfig.type}

@@ -1,13 +1,8 @@
+import { $isCodeNode } from "@lexical/code";
+import { $getNearestNodeFromDOMNode, $getSelection, $setSelection, LexicalEditor } from "lexical";
+import { CircleCheckIcon, CopyIcon } from "lucide-react";
 import * as React from "react";
 import { useState } from "react";
-import { $isCodeNode } from "@lexical/code";
-import {
-  $getNearestNodeFromDOMNode,
-  $getSelection,
-  $setSelection,
-  LexicalEditor,
-} from "lexical";
-import { CircleCheckIcon, CopyIcon } from "lucide-react";
 
 import { useDebounce } from "@/components/editor/editor-hooks/use-debounce";
 
@@ -58,11 +53,7 @@ export function CopyButton({ editor, getCodeDOMNode }: Props) {
       onClick={handleClick}
       aria-label="copy"
     >
-      {isCopyCompleted ? (
-        <CircleCheckIcon className="size-4" />
-      ) : (
-        <CopyIcon className="size-4" />
-      )}
+      {isCopyCompleted ? <CircleCheckIcon className="size-4" /> : <CopyIcon className="size-4" />}
     </button>
   );
 }

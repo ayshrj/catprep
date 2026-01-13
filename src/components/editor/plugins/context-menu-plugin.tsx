@@ -1,5 +1,3 @@
-import type { JSX } from "react";
-import { useMemo } from "react";
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import {
@@ -14,10 +12,12 @@ import {
   $isRangeSelection,
   COPY_COMMAND,
   CUT_COMMAND,
-  PASTE_COMMAND,
   type LexicalNode,
+  PASTE_COMMAND,
 } from "lexical";
 import { Clipboard, ClipboardType, Copy, Link2Off, Scissors, Trash2 } from "lucide-react";
+import type { JSX } from "react";
+import { useMemo } from "react";
 
 export function ContextMenuPlugin(): JSX.Element {
   const [editor] = useLexicalComposerContext();
@@ -118,7 +118,7 @@ export function ContextMenuPlugin(): JSX.Element {
             ancestorNodeWithRootAsParent?.remove();
           } else if ($isNodeSelection(selection)) {
             const selectedNodes = selection.getNodes();
-            selectedNodes.forEach((node) => {
+            selectedNodes.forEach(node => {
               if ($isDecoratorNode(node)) {
                 node.remove();
               }

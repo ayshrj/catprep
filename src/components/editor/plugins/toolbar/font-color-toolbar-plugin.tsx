@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
 import { $getSelectionStyleValueForProperty, $patchStyleText } from "@lexical/selection";
 import { $getSelection, $isRangeSelection, BaseSelection } from "lexical";
 import { BaselineIcon } from "lucide-react";
+import { useCallback, useState } from "react";
 
 import { useToolbarContext } from "@/components/editor/context/toolbar-context";
 import { useUpdateToolbarHandler } from "@/components/editor/editor-hooks/use-update-toolbar";
@@ -43,14 +43,14 @@ export function FontColorToolbarPlugin() {
         }
       });
     },
-    [activeEditor],
+    [activeEditor]
   );
 
   const onFontColorSelect = useCallback(
     (value: string) => {
       applyStyleText({ color: value });
     },
-    [applyStyleText],
+    [applyStyleText]
   );
 
   return (
@@ -59,7 +59,7 @@ export function FontColorToolbarPlugin() {
       defaultFormat="hex"
       defaultValue={fontColor}
       onValueChange={onFontColorSelect}
-      onOpenChange={(open) => {
+      onOpenChange={open => {
         if (!open) {
           activeEditor.setEditable(true);
           activeEditor.focus();

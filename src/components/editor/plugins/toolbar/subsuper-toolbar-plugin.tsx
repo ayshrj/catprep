@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { $isTableSelection } from "@lexical/table";
 import { $isRangeSelection, BaseSelection, FORMAT_TEXT_COMMAND } from "lexical";
 import { SubscriptIcon, SuperscriptIcon } from "lucide-react";
+import { useState } from "react";
 
 import { useToolbarContext } from "@/components/editor/context/toolbar-context";
 import { useUpdateToolbarHandler } from "@/components/editor/editor-hooks/use-update-toolbar";
@@ -27,10 +27,7 @@ export function SubSuperToolbarPlugin() {
   useUpdateToolbarHandler($updateToolbar);
 
   return (
-    <ToggleGroup
-      type="single"
-      defaultValue={isSubscript ? "subscript" : isSuperscript ? "superscript" : ""}
-    >
+    <ToggleGroup type="single" defaultValue={isSubscript ? "subscript" : isSuperscript ? "superscript" : ""}>
       <ToggleGroupItem
         value="subscript"
         size="sm"

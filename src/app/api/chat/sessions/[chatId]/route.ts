@@ -1,50 +1,48 @@
-import { NextResponse, type NextRequest } from "next/server"
+import { type NextRequest, NextResponse } from "next/server";
 
-import { getAdminDb } from "@/lib/firebase-admin"
-import { getAuthenticatedUserId } from "../../../auth/utils"
+import { getAdminDb } from "@/lib/firebase-admin";
 
-export const runtime = "nodejs"
+import { getAuthenticatedUserId } from "../../../auth/utils";
 
-type MemoryStore = Map<string, Map<string, any[]>>
+export const runtime = "nodejs";
+
+type MemoryStore = Map<string, Map<string, any[]>>;
 
 const globalAny = globalThis as unknown as {
-  __chatHistoryStore?: MemoryStore
-  __chatArchivedSessions?: Map<string, Set<string>>
-}
+  __chatHistoryStore?: MemoryStore;
+  __chatArchivedSessions?: Map<string, Set<string>>;
+};
 
 function getArchivedSet(userId: string) {
   if (!globalAny.__chatArchivedSessions) {
-    globalAny.__chatArchivedSessions = new Map()
+    globalAny.__chatArchivedSessions = new Map();
   }
   if (!globalAny.__chatArchivedSessions.has(userId)) {
-    globalAny.__chatArchivedSessions.set(userId, new Set())
+    globalAny.__chatArchivedSessions.set(userId, new Set());
   }
-  return globalAny.__chatArchivedSessions.get(userId)!
+  return globalAny.__chatArchivedSessions.get(userId)!;
 }
 
 function normalizeChatId(raw: string) {
-  const trimmed = raw.trim()
-  const sanitized = trimmed.replaceAll("/", "")
-  if (!sanitized) return null
-  return sanitized.slice(0, 128)
+  const trimmed = raw.trim();
+  const sanitized = trimmed.replaceAll("/", "");
+  if (!sanitized) return null;
+  return sanitized.slice(0, 128);
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ chatId: string }> }
-) {
-  const userId = await getAuthenticatedUserId()
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ chatId: string }> }) {
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 })
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
 
-  const { chatId: rawChatId } = await params
-  const chatId = normalizeChatId(rawChatId)
+  const { chatId: rawChatId } = await params;
+  const chatId = normalizeChatId(rawChatId);
   if (!chatId) {
-    return NextResponse.json({ error: "Invalid chatId." }, { status: 400 })
+    return NextResponse.json({ error: "Invalid chatId." }, { status: 400 });
   }
 
-  const body = await request.json().catch(() => ({}))
+  const body = await request.json().catch(() => ({}));
   const archived =
     typeof body.archived === "boolean"
       ? body.archived
@@ -52,30 +50,23 @@ export async function PATCH(
         ? true
         : body.action === "unarchive"
           ? false
-          : null
+          : null;
 
   if (archived === null) {
-    return NextResponse.json(
-      { error: "Provide `archived: boolean`." },
-      { status: 400 }
-    )
+    return NextResponse.json({ error: "Provide `archived: boolean`." }, { status: 400 });
   }
 
-  const db = getAdminDb()
-  const now = new Date().toISOString()
+  const db = getAdminDb();
+  const now = new Date().toISOString();
 
   if (!db) {
-    const set = getArchivedSet(userId)
-    if (archived) set.add(chatId)
-    else set.delete(chatId)
-    return NextResponse.json({ ok: true, archived })
+    const set = getArchivedSet(userId);
+    if (archived) set.add(chatId);
+    else set.delete(chatId);
+    return NextResponse.json({ ok: true, archived });
   }
 
-  const sessionRef = db
-    .collection("users")
-    .doc(userId)
-    .collection("chat_sessions")
-    .doc(chatId)
+  const sessionRef = db.collection("users").doc(userId).collection("chat_sessions").doc(chatId);
 
   await sessionRef.set(
     {
@@ -84,51 +75,43 @@ export async function PATCH(
       updatedAt: now,
     },
     { merge: true }
-  )
+  );
 
-  return NextResponse.json({ ok: true, archived })
+  return NextResponse.json({ ok: true, archived });
 }
 
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ chatId: string }> }
-) {
-  const userId = await getAuthenticatedUserId()
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ chatId: string }> }) {
+  const userId = await getAuthenticatedUserId();
   if (!userId) {
-    return NextResponse.json({ error: "Not authenticated." }, { status: 401 })
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
   }
 
-  const { chatId: rawChatId } = await params
-  const chatId = normalizeChatId(rawChatId)
+  const { chatId: rawChatId } = await params;
+  const chatId = normalizeChatId(rawChatId);
   if (!chatId) {
-    return NextResponse.json({ error: "Invalid chatId." }, { status: 400 })
+    return NextResponse.json({ error: "Invalid chatId." }, { status: 400 });
   }
 
-  const db = getAdminDb()
+  const db = getAdminDb();
 
   if (!db) {
-    const store = globalAny.__chatHistoryStore
-    store?.get(userId)?.delete(chatId)
-    getArchivedSet(userId).delete(chatId)
-    return NextResponse.json({ ok: true })
+    const store = globalAny.__chatHistoryStore;
+    store?.get(userId)?.delete(chatId);
+    getArchivedSet(userId).delete(chatId);
+    return NextResponse.json({ ok: true });
   }
 
-  const sessionRef = db
-    .collection("users")
-    .doc(userId)
-    .collection("chat_sessions")
-    .doc(chatId)
+  const sessionRef = db.collection("users").doc(userId).collection("chat_sessions").doc(chatId);
 
-  const docs = await sessionRef.collection("messages").listDocuments()
+  const docs = await sessionRef.collection("messages").listDocuments();
   for (let i = 0; i < docs.length; i += 400) {
-    const batch = db.batch()
+    const batch = db.batch();
     for (const ref of docs.slice(i, i + 400)) {
-      batch.delete(ref)
+      batch.delete(ref);
     }
-    await batch.commit()
+    await batch.commit();
   }
 
-  await sessionRef.delete().catch(() => null)
-  return NextResponse.json({ ok: true })
+  await sessionRef.delete().catch(() => null);
+  return NextResponse.json({ ok: true });
 }
-

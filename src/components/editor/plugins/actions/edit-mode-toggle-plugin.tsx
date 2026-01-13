@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
 import { LockIcon, UnlockIcon } from "lucide-react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -25,11 +25,7 @@ export function EditModeTogglePlugin() {
           size={"sm"}
           className="p-2"
         >
-          {isEditable ? (
-            <LockIcon className="size-4" />
-          ) : (
-            <UnlockIcon className="size-4" />
-          )}
+          {isEditable ? <LockIcon className="size-4" /> : <UnlockIcon className="size-4" />}
         </Button>
       </TooltipTrigger>
       <TooltipContent>{isEditable ? "View Only Mode" : "Edit Mode"}</TooltipContent>

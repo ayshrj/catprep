@@ -1,3 +1,6 @@
+import { useTheme } from "next-themes";
+import React, { SVGProps } from "react";
+
 import { AnthropicBlack } from "@/components/ui/svgs/anthropicBlack";
 import { AnthropicWhite } from "@/components/ui/svgs/anthropicWhite";
 import { Cohere } from "@/components/ui/svgs/cohere";
@@ -13,8 +16,6 @@ import { OpenrouterDark } from "@/components/ui/svgs/openrouterDark";
 import { OpenrouterLight } from "@/components/ui/svgs/openrouterLight";
 import { QwenDark } from "@/components/ui/svgs/qwenDark";
 import { QwenLight } from "@/components/ui/svgs/qwenLight";
-import { useTheme } from "next-themes";
-import React, { SVGProps } from "react";
 
 export const MODELS_ICONS: Record<
   string,
@@ -35,17 +36,9 @@ export const MODELS_ICONS: Record<
   cohere: { light: Cohere },
 };
 
-export const ModelIcon = ({
-  model,
-}: {
-  model: string;
-}): React.JSX.Element | null => {
+export const ModelIcon = ({ model }: { model: string }): React.JSX.Element | null => {
   const { theme } = useTheme();
   const IconComponent =
-    MODELS_ICONS[model.split("/")[0]]?.[
-      theme === "dark" && MODELS_ICONS[model.split("/")[0]]?.dark
-        ? "dark"
-        : "light"
-    ];
+    MODELS_ICONS[model.split("/")[0]]?.[theme === "dark" && MODELS_ICONS[model.split("/")[0]]?.dark ? "dark" : "light"];
   return IconComponent ? <IconComponent width={24} height={24} /> : null;
 };

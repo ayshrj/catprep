@@ -1,8 +1,4 @@
-import type {
-  CatCoachIntent,
-  CatCoachResponseMode,
-  CatScenarioCode,
-} from "@/lib/cat-tools";
+import type { CatCoachIntent, CatCoachResponseMode, CatScenarioCode } from "@/lib/cat-tools";
 
 export type LlmConfidence = "low" | "med" | "high";
 
@@ -13,15 +9,7 @@ export type LlmScenario = {
 };
 
 export type LlmMainAnswer = {
-  type:
-    | "greeting"
-    | "onboarding_questions"
-    | "plan"
-    | "mock_review"
-    | "formula"
-    | "topic"
-    | "gdpi"
-    | "other";
+  type: "greeting" | "onboarding_questions" | "plan" | "mock_review" | "formula" | "topic" | "gdpi" | "other";
   bullets: string[];
   table: { headers: string[]; rows: string[][] } | null;
   notes: string[];
@@ -58,9 +46,7 @@ export const LlmMainAnswerTypeLabels: Record<LlmMainAnswer["type"], string> = {
   other: "Other",
 };
 
-export function isLlmCatCoachResponse(
-  value: unknown
-): value is LlmCatCoachResponse {
+export function isLlmCatCoachResponse(value: unknown): value is LlmCatCoachResponse {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const obj = value as Record<string, unknown>;
 
@@ -79,11 +65,7 @@ export function isLlmCatCoachResponse(
   if (typeof scenario.reason !== "string") return false;
 
   const mainAnswer = obj.mainAnswer as Record<string, unknown> | null;
-  if (
-    !mainAnswer ||
-    typeof mainAnswer !== "object" ||
-    Array.isArray(mainAnswer)
-  ) {
+  if (!mainAnswer || typeof mainAnswer !== "object" || Array.isArray(mainAnswer)) {
     return false;
   }
   if (typeof mainAnswer.type !== "string") return false;
@@ -91,11 +73,7 @@ export function isLlmCatCoachResponse(
   if (!Array.isArray(mainAnswer.notes)) return false;
 
   const nextActions = obj.nextActions as Record<string, unknown> | null;
-  if (
-    !nextActions ||
-    typeof nextActions !== "object" ||
-    Array.isArray(nextActions)
-  ) {
+  if (!nextActions || typeof nextActions !== "object" || Array.isArray(nextActions)) {
     return false;
   }
   if (!Array.isArray(nextActions.today)) return false;

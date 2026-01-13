@@ -1,9 +1,10 @@
-import { NextResponse, type NextRequest } from "next/server";
+import type { SerializedEditorState } from "lexical";
+import { type NextRequest, NextResponse } from "next/server";
 
 import cloudinary from "@/lib/cloudinary";
 import { getAdminDb } from "@/lib/firebase-admin";
+
 import { getAuthenticatedUserId } from "../../auth/utils";
-import type { SerializedEditorState } from "lexical";
 
 export const runtime = "nodejs";
 
@@ -82,7 +83,7 @@ function extractCloudinaryPublicId(src: string): string | null {
     }
     if (rest.length === 0) return null;
 
-    const versionIndex = rest.findIndex((segment) => /^v\d+$/.test(segment));
+    const versionIndex = rest.findIndex(segment => /^v\d+$/.test(segment));
     const publicParts = versionIndex >= 0 ? rest.slice(versionIndex + 1) : rest;
     if (publicParts.length === 0) return null;
 
@@ -105,7 +106,7 @@ function extractCloudinaryPublicId(src: string): string | null {
 
 function extractNoteImagePublicIds(payload: SerializedEditorState): string[] {
   const publicIds = new Set<string>();
-  collectImageSources(payload).forEach((src) => {
+  collectImageSources(payload).forEach(src => {
     const publicId = extractCloudinaryPublicId(src);
     if (publicId) {
       publicIds.add(publicId);
@@ -119,12 +120,7 @@ async function loadFromFirestore(userId: string, noteId: string) {
   if (!db) return null;
 
   try {
-    const doc = await db
-      .collection("users")
-      .doc(userId)
-      .collection("notes")
-      .doc(noteId)
-      .get();
+    const doc = await db.collection("users").doc(userId).collection("notes").doc(noteId).get();
 
     if (!doc.exists) return null;
 
@@ -139,10 +135,8 @@ async function loadFromFirestore(userId: string, noteId: string) {
       title: typeof data.title === "string" ? data.title : null,
       preview: typeof data.preview === "string" ? data.preview : "",
       payload,
-      createdAt:
-        typeof data.createdAt === "string" ? data.createdAt : new Date().toISOString(),
-      updatedAt:
-        typeof data.updatedAt === "string" ? data.updatedAt : new Date().toISOString(),
+      createdAt: typeof data.createdAt === "string" ? data.createdAt : new Date().toISOString(),
+      updatedAt: typeof data.updatedAt === "string" ? data.updatedAt : new Date().toISOString(),
     } satisfies StoredNote;
   } catch (error) {
     console.error("Failed to load rough note from Firestore", error);
@@ -155,18 +149,14 @@ async function persistToFirestore(
   noteId: string,
   payload: SerializedEditorState,
   preview: string,
-  title: string | null,
+  title: string | null
 ) {
   const db = getAdminDb();
   if (!db) return false;
 
   try {
-    const noteRef = db
-      .collection("users")
-      .doc(userId)
-      .collection("notes")
-      .doc(noteId);
-    await noteRef.get().then(async (existing) => {
+    const noteRef = db.collection("users").doc(userId).collection("notes").doc(noteId);
+    await noteRef.get().then(async existing => {
       const isNew = !existing.exists;
       await noteRef.set(
         {
@@ -187,10 +177,7 @@ async function persistToFirestore(
   }
 }
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ noteId: string }> },
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ noteId: string }> }) {
   const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
@@ -199,10 +186,7 @@ export async function GET(
   const { noteId: rawNoteId } = await params;
   const noteId = normalizeNoteId(rawNoteId);
   if (!noteId) {
-    return NextResponse.json(
-      { error: "Invalid noteId." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid noteId." }, { status: 400 });
   }
 
   const note = await loadFromFirestore(userId, noteId);
@@ -219,10 +203,7 @@ export async function GET(
   return NextResponse.json({ note: stored });
 }
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ noteId: string }> },
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ noteId: string }> }) {
   const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
@@ -231,36 +212,20 @@ export async function PATCH(
   const { noteId: rawNoteId } = await params;
   const noteId = normalizeNoteId(rawNoteId);
   if (!noteId) {
-    return NextResponse.json(
-      { error: "Invalid noteId." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid noteId." }, { status: 400 });
   }
 
   const body = await request.json().catch(() => ({}));
-  const preview =
-    typeof body.preview === "string" ? body.preview.trim() : "";
-  const payload =
-    body.payload && typeof body.payload === "object"
-      ? (body.payload as SerializedEditorState)
-      : null;
-  const title =
-    typeof body.title === "string" && body.title.trim()
-      ? body.title.trim()
-      : null;
+  const preview = typeof body.preview === "string" ? body.preview.trim() : "";
+  const payload = body.payload && typeof body.payload === "object" ? (body.payload as SerializedEditorState) : null;
+  const title = typeof body.title === "string" && body.title.trim() ? body.title.trim() : null;
 
   if (!payload) {
-    return NextResponse.json(
-      { error: "Provide a valid `payload`." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Provide a valid `payload`." }, { status: 400 });
   }
 
   if (!preview) {
-    return NextResponse.json(
-      { error: "Provide preview text for the note." },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Provide preview text for the note." }, { status: 400 });
   }
 
   const stored = {
@@ -282,10 +247,7 @@ export async function PATCH(
   return NextResponse.json({ noteId });
 }
 
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ noteId: string }> },
-) {
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ noteId: string }> }) {
   const userId = await getAuthenticatedUserId();
   if (!userId) {
     return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
@@ -307,11 +269,7 @@ export async function DELETE(
   const publicIds = extractNoteImagePublicIds(note.payload);
   if (publicIds.length > 0) {
     try {
-      await Promise.allSettled(
-        publicIds.map((publicId) =>
-          cloudinary.uploader.destroy(publicId, { invalidate: true })
-        )
-      );
+      await Promise.allSettled(publicIds.map(publicId => cloudinary.uploader.destroy(publicId, { invalidate: true })));
     } catch (error) {
       console.error("Failed to delete Cloudinary images for note", error);
     }
@@ -320,18 +278,10 @@ export async function DELETE(
   const db = getAdminDb();
   if (db) {
     try {
-      await db
-        .collection("users")
-        .doc(userId)
-        .collection("notes")
-        .doc(noteId)
-        .delete();
+      await db.collection("users").doc(userId).collection("notes").doc(noteId).delete();
     } catch (error) {
       console.error("Failed to delete rough note from Firestore", error);
-      return NextResponse.json(
-        { error: "Failed to delete rough note." },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Failed to delete rough note." }, { status: 500 });
     }
   }
 

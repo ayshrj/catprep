@@ -232,345 +232,173 @@ const KB_WORKING_PRO = `## 5) Working Professional Schedule Templates
 
 const KB_QA_FORMULAS = `# 6) QA — Formulas + Shortcuts + Traps
 
-## 6.1 Arithmetic
+## Complete Formula Tables (everything in this chapter)
+
+### Arithmetic
+| Topic | Key formula(s) |
+|---|---|
+| Percentages | $\\text{New}=\\text{Old}\\left(1\\pm\\frac{p}{100}\\right)$; $\\text{Net\\%}=a+b+\\frac{ab}{100}$; $A=B\\left(1+\\frac{x}{100}\\right)$ |
+| Profit–Loss–Discount | $\\text{Profit\\%}=\\frac{SP-CP}{CP}\\cdot100$; $SP=MP\\left(1-\\frac{d}{100}\\right)$ |
+| SI/CI | $SI=\\frac{P\\cdot r\\cdot t}{100}$; $A=P\\left(1+\\frac{r}{100}\\right)^t$; $A=P\\left(1+\\frac{r}{100n}\\right)^{nt}$ |
+| Ratio–Proportion | $a:b=c:d\\Rightarrow ad=bc$; $\\text{One part}=\\frac{T}{a+b}$ |
+| Averages | $\\bar{x}=\\frac{\\sum x_i}{n}$; $\\bar{x}=\\frac{\\sum w_ix_i}{\\sum w_i}$ |
+| Mixtures / dilution | $\\text{Concentration}=\\frac{\\text{solute}}{\\text{solution}}$ (solute constant in dilution/replacement) |
+| Time & Work | $\\text{Rate}=\\frac{1}{T}$; $T_{\\text{together}}=\\frac{ab}{a+b}$; $\\text{Work}\\propto (\\text{men})\\cdot(\\text{days})\\cdot(\\text{hours})\\cdot(\\text{efficiency})$ |
+| Pipes & Cisterns | $\\text{Net rate}=\\sum(\\text{inlet})-\\sum(\\text{outlet})$; $T=\\frac{1}{\\text{Net rate}}$ |
+| TSD (trains/boats) | $D=S\\cdot T$; $v_{\\text{rel}}=v_1+v_2$ (opp), $v_{\\text{rel}}=\\left\\lvert v_1-v_2\\right\\rvert$ (same); $v_{\\text{avg}}=\\frac{2v_1v_2}{v_1+v_2}$; $1\\ \\text{m/s}=3.6\\ \\text{km/h}$ |
+
+### Algebra
+| Topic | Key formula(s) |
+|---|---|
+| Quadratic | $D=b^2-4ac$; $\\alpha+\\beta=-\\frac{b}{a}$; $\\alpha\\beta=\\frac{c}{a}$ |
+| AP | $T_n=a+(n-1)d$; $S_n=\\frac{n}{2}\\left(2a+(n-1)d\\right)$ |
+| GP ($r\\ne 1$) | $T_n=ar^{n-1}$; $S_n=a\\frac{r^n-1}{r-1}$ |
+
+### Geometry + Mensuration
+| Topic | Key formula(s) |
+|---|---|
+| Triangle | $\\text{Area}=\\frac{1}{2}bh$ |
+| Pythagoras | $a^2+b^2=c^2$ |
+| Polygon | $\\text{Interior sum}=180(n-2)$; $\\text{Diagonals}=\\frac{n(n-3)}{2}$ |
+| Circle | $\\text{Area}=\\pi r^2$; $\\text{Circumference}=2\\pi r$ |
+| Cylinder | $V=\\pi r^2h$ |
+| Sphere | $V=\\frac{4}{3}\\pi r^3$; $A=4\\pi r^2$ |
+| Similarity | $\\text{Area}\\propto k^2$; $\\text{Volume}\\propto k^3$ |
+
+### Number System
+| Topic | Key formula(s) |
+|---|---|
+| Divisors | If $N=p^a q^b r^c\\cdots$, then $\\#\\text{divisors}=(a+1)(b+1)(c+1)\\cdots$ |
+| Trailing zeros | $Z=\\left\\lfloor\\frac{n}{5}\\right\\rfloor+\\left\\lfloor\\frac{n}{25}\\right\\rfloor+\\left\\lfloor\\frac{n}{125}\\right\\rfloor+\\cdots$ |
+
+### Modern Math
+| Topic | Key formula(s) |
+|---|---|
+| P\\&C | $\\;{}^nP_r=\\frac{n!}{(n-r)!}$; $\\;{}^nC_r=\\frac{n!}{r!(n-r)!}$; multiset $\\frac{n!}{a!b!\\cdots}$; repetition $n^r$ |
+| Probability | $P(A\\cup B)=P(A)+P(B)-P(A\\cap B)$; $P(\\ge 1)=1-P(0)$; $P(A\\cap B)=P(A)\\cdot P(B)$ |
+
+## 6.1 Arithmetic — Tables
 
 ### Percentages
-**Must-know**
-- Basic change:
-  $$
-  \\text{New}=\\text{Old}\\left(1\\pm\\frac{p}{100}\\right)
-  $$
-- Successive change (signs matter):
-  $$
-  \\text{Net\\%}=a+b+\\frac{ab}{100}
-  $$
-- If $A$ is $x\\%$ more than $B$:
-  $$
-  A=B\\left(1+\\frac{x}{100}\\right),\\quad B=\\frac{A}{1+\\frac{x}{100}}
-  $$
-
-**Shortcuts**
-- Fraction anchors:
-  $$
-  \\frac{1}{8}=12.5\\%,\\ \\frac{1}{6}\\approx16.67\\%,\\ \\frac{1}{11}\\approx9.09\\%,\\ \\frac{1}{7}\\approx14.29\\%
-  $$
-
-**Traps**
-- Base confusion (old vs new)
-- Successive discounts are not additive (use successive change)
-
-**Practice types**
-- Reverse percentage
-- Successive changes
-- Discount + profit chains
-
----
+| Bucket | Content |
+|---|---|
+| Must-know | $\\text{New}=\\text{Old}\\left(1\\pm\\frac{p}{100}\\right)$; $\\text{Net\\%}=a+b+\\frac{ab}{100}$; $A=B\\left(1+\\frac{x}{100}\\right)$; $B=\\frac{A}{1+\\frac{x}{100}}$ |
+| Shortcuts | $\\frac{1}{8}=12.5\\%$; $\\frac{1}{6}\\approx16.67\\%$; $\\frac{1}{11}\\approx9.09\\%$; $\\frac{1}{7}\\approx14.29\\%$ |
+| Traps | Base confusion (old vs new); successive discounts not additive (use $a+b+\\frac{ab}{100}$) |
+| Practice | Reverse %; successive change chains; discount/profit chains |
 
 ### Profit–Loss–Discount
-**Must-know**
-- Profit/Loss:
-  $$
-  \\text{Profit\\%}=\\frac{SP-CP}{CP}\\cdot100,\\quad \\text{Loss\\%}=\\frac{CP-SP}{CP}\\cdot100
-  $$
-- Discount:
-  $$
-  SP=MP\\left(1-\\frac{d}{100}\\right)
-  $$
-
-**Shortcuts**
-- Convert each step to a multiplier (chain quickly)
-- Back-solve from options
-
-**Traps**
-- Profit\\% base is $CP$
-- Discount\\% base is $MP$
-
-**Practice**
-- $MP\\rightarrow SP\\rightarrow$ profit\\%
-- Successive discounts
-- Target profit then find $MP$/$d$
-
----
+| Bucket | Content |
+|---|---|
+| Must-know | $\\text{Profit\\%}=\\frac{SP-CP}{CP}\\cdot100$; $\\text{Loss\\%}=\\frac{CP-SP}{CP}\\cdot100$; $SP=MP\\left(1-\\frac{d}{100}\\right)$ |
+| Shortcuts | Multiply factors (chain quickly); back-solve from options |
+| Traps | Profit% base is $CP$; Discount% base is $MP$ |
+| Practice | $MP\\to SP\\to$ profit%; successive discounts; target profit then find $MP$/$d$ |
 
 ### Simple Interest / Compound Interest
-**Must-know**
-- Simple interest:
-  $$
-  SI=\\frac{P\\cdot r\\cdot t}{100}
-  $$
-- Compound amount:
-  $$
-  A=P\\left(1+\\frac{r}{100}\\right)^t
-  $$
-- Compounded $n$ times/year:
-  $$
-  A=P\\left(1+\\frac{r}{100n}\\right)^{nt}
-  $$
-
-**Shortcuts**
-- For small $r$: $(1+r)^2\\approx 1+2r+r^2$ (use only when appropriate)
-- Back-solve from options (common)
-
-**Traps**
-- Unit mismatch (months/years)
-- Mixing SI and CI periods
-
-**Practice**
-- $CI-SI$
-- Effective annual rate
-- Mixed compounding
-
----
+| Bucket | Content |
+|---|---|
+| Must-know | $SI=\\frac{P\\cdot r\\cdot t}{100}$; $A=P\\left(1+\\frac{r}{100}\\right)^t$; $A=P\\left(1+\\frac{r}{100n}\\right)^{nt}$ |
+| Shortcuts | Back-solve from options; (only when safe) small-$r$ approx: $(1+r)^2\\approx 1+2r+r^2$ |
+| Traps | Months/years mismatch; mixing SI/CI periods |
+| Practice | $CI-SI$; effective annual rate; mixed compounding |
 
 ### Ratio–Proportion
-**Must-know**
-- Proportion:
-  $$
-  a:b=c:d\\ \\Rightarrow\\ ad=bc
-  $$
-- Unit method: if total is $T$ split in $a:b$:
-  $$
-  \\text{One part}=\\frac{T}{a+b}
-  $$
-
-**Traps**
-- Misreading “$x\\%$ of”
-- Scaling mistakes
-
----
+| Bucket | Content |
+|---|---|
+| Must-know | $a:b=c:d\\Rightarrow ad=bc$; if total $T$ split in $a:b$: $\\text{One part}=\\frac{T}{a+b}$ |
+| Traps | Misreading “$x\\%$ of”; scaling mistakes |
 
 ### Averages
-**Must-know**
-- Average:
-  $$
-  \\bar{x}=\\frac{\\sum x_i}{n}
-  $$
-- Weighted average:
-  $$
-  \\bar{x}=\\frac{\\sum w_i x_i}{\\sum w_i}
-  $$
-
-**Traps**
-- Adding averages directly
-- Ignoring weights
-
----
+| Bucket | Content |
+|---|---|
+| Must-know | $\\bar{x}=\\frac{\\sum x_i}{n}$; weighted: $\\bar{x}=\\frac{\\sum w_ix_i}{\\sum w_i}$ |
+| Traps | Adding averages directly; ignoring weights |
 
 ### Mixtures–Alligation / Dilution
-**Must-know**
-- Concentration idea:
-  $$
-  \\text{Concentration}=\\frac{\\text{solute}}{\\text{solution}}
-  $$
-- Dilution: solute stays constant
-
-**Traps**
-- Forgetting solute constancy in replacement
-- Wrong base for concentration
-
----
+| Bucket | Content |
+|---|---|
+| Must-know | $\\text{Concentration}=\\frac{\\text{solute}}{\\text{solution}}$; dilution/replacement: solute stays constant |
+| Traps | Forgetting solute constancy; wrong base for concentration |
 
 ### Time & Work
-**Must-know**
-- Rate:
-  $$
-  \\text{Rate}=\\frac{1}{\\text{Time}}
-  $$
-- Together (A in $a$, B in $b$):
-  $$
-  T_{\\text{together}}=\\frac{ab}{a+b}
-  $$
-- Work proportionality:
-  $$
-  \\text{Work}\\propto (\\text{men})\\cdot(\\text{days})\\cdot(\\text{hours})\\cdot(\\text{efficiency})
-  $$
-
-**Traps**
-- Confusing work done vs remaining
-- Sign errors when subtracting contributions
-
----
+| Bucket | Content |
+|---|---|
+| Must-know | $\\text{Rate}=\\frac{1}{T}$; together (A in $a$, B in $b$): $T_{\\text{together}}=\\frac{ab}{a+b}$; $\\text{Work}\\propto (\\text{men})\\cdot(\\text{days})\\cdot(\\text{hours})\\cdot(\\text{efficiency})$ |
+| Traps | Confusing work done vs remaining; sign errors while subtracting work |
 
 ### Pipes & Cisterns
-**Must-know**
-- Net rate:
-  $$
-  \\text{Net rate}=\\sum(\\text{inlet rates})-\\sum(\\text{outlet rates})
-  $$
-- Time:
-  $$
-  T=\\frac{1}{\\text{Net rate}}
-  $$
-
-**Traps**
-- Wrong sign for outlet/leak
-- Unit mismatch
-
----
+| Bucket | Content |
+|---|---|
+| Must-know | $\\text{Net rate}=\\sum(\\text{inlet rates})-\\sum(\\text{outlet rates})$; $T=\\frac{1}{\\text{Net rate}}$ |
+| Traps | Wrong sign for outlet/leak; unit mismatch |
 
 ### Time–Speed–Distance (Trains/Boats)
-**Must-know**
-- Core:
-  $$
-  D=S\\cdot T
-  $$
-- Relative speed:
-  $$
-  v_{\\text{rel}}=
-  \\begin{cases}
-  v_1+v_2 & \\text{opposite directions}\\\\
-  |v_1-v_2| & \\text{same direction}
-  \\end{cases}
-  $$
-- Average speed (equal distance):
-  $$
-  v_{\\text{avg}}=\\frac{2v_1v_2}{v_1+v_2}
-  $$
-- Conversion:
-  $$
-  1\\ \\text{m/s}=3.6\\ \\text{km/h}
-  $$
-
-**Traps**
-- Wrong relative speed sign
-- Unit mismatch
+| Bucket | Content |
+|---|---|
+| Must-know | $D=S\\cdot T$; $v_{\\text{rel}}=v_1+v_2$ (opposite), $v_{\\text{rel}}=\\left\\lvert v_1-v_2\\right\\rvert$ (same); $v_{\\text{avg}}=\\frac{2v_1v_2}{v_1+v_2}$ (equal distance); $1\\ \\text{m/s}=3.6\\ \\text{km/h}$ |
+| Traps | Wrong relative-speed sign; unit mismatch |
 
 ---
 
-## 6.2 Algebra (Key formulas)
+## 6.2 Algebra — Tables
 
 ### Quadratic
-**Must-know**
-- Discriminant:
-  $$
-  D=b^2-4ac
-  $$
-- If roots are $\\alpha,\\beta$:
-  $$
-  \\alpha+\\beta=-\\frac{b}{a},\\quad \\alpha\\beta=\\frac{c}{a}
-  $$
-
----
+| Bucket | Content |
+|---|---|
+| Must-know | $D=b^2-4ac$; if roots $\\alpha,\\beta$: $\\alpha+\\beta=-\\frac{b}{a}$; $\\alpha\\beta=\\frac{c}{a}$ |
 
 ### Sequences & Series
-**AP**
-- Term:
-  $$
-  T_n=a+(n-1)d
-  $$
-- Sum:
-  $$
-  S_n=\\frac{n}{2}\\left(2a+(n-1)d\\right)
-  $$
-
-**GP ($r\\ne 1$)**
-- Term:
-  $$
-  T_n=ar^{n-1}
-  $$
-- Sum:
-  $$
-  S_n=a\\frac{r^n-1}{r-1}
-  $$
+| Type | Term | Sum |
+|---|---|---|
+| AP | $T_n=a+(n-1)d$ | $S_n=\\frac{n}{2}\\left(2a+(n-1)d\\right)$ |
+| GP ($r\\ne1$) | $T_n=ar^{n-1}$ | $S_n=a\\frac{r^n-1}{r-1}$ |
 
 ---
 
-## 6.3 Geometry (Core formulas)
-
-**Triangle area**
-  $$
-  \\text{Area}=\\frac{1}{2}bh
-  $$
-
-**Pythagoras**
-  $$
-  a^2+b^2=c^2
-  $$
-
-**Polygon**
-- Interior angle sum:
-  $$
-  180(n-2)
-  $$
-- Number of diagonals:
-  $$
-  \\frac{n(n-3)}{2}
-  $$
-
-**Circle**
-- Area and circumference:
-  $$
-  \\text{Area}=\\pi r^2,\\quad \\text{Circumference}=2\\pi r
-  $$
+## 6.3 Geometry — Tables
+| Topic | Formula |
+|---|---|
+| Triangle area | $\\text{Area}=\\frac{1}{2}bh$ |
+| Pythagoras | $a^2+b^2=c^2$ |
+| Polygon | $\\text{Interior sum}=180(n-2)$; $\\text{Diagonals}=\\frac{n(n-3)}{2}$ |
+| Circle | $\\text{Area}=\\pi r^2$; $\\text{Circumference}=2\\pi r$ |
 
 ---
 
-## 6.4 Mensuration (Core)
-- Cylinder:
-  $$
-  V=\\pi r^2h
-  $$
-- Sphere:
-  $$
-  V=\\frac{4}{3}\\pi r^3,\\quad A=4\\pi r^2
-  $$
-
-Similarity scaling:
-  $$
-  \\text{Area}\\propto k^2,\\quad \\text{Volume}\\propto k^3
-  $$
+## 6.4 Mensuration — Tables
+| Topic | Formula |
+|---|---|
+| Cylinder | $V=\\pi r^2h$ |
+| Sphere | $V=\\frac{4}{3}\\pi r^3$; $A=4\\pi r^2$ |
+| Similarity scaling | $\\text{Area}\\propto k^2$; $\\text{Volume}\\propto k^3$ |
 
 ---
 
-## 6.5 Number System (High-yield)
-
-### Divisors
-If $N=p^a q^b r^c\\cdots$ then number of divisors:
-  $$
-  (a+1)(b+1)(c+1)\\cdots
-  $$
-
-### Trailing zeros in factorial
-Zeros in $n!$:
-  $$
-  Z=\\left\\lfloor\\frac{n}{5}\\right\\rfloor+\\left\\lfloor\\frac{n}{25}\\right\\rfloor+\\left\\lfloor\\frac{n}{125}\\right\\rfloor+\\cdots
-  $$
+## 6.5 Number System — Tables
+| Topic | Formula |
+|---|---|
+| Divisors | If $N=p^a q^b r^c\\cdots$: $\\#\\text{divisors}=(a+1)(b+1)(c+1)\\cdots$ |
+| Trailing zeros in $n!$ | $Z=\\left\\lfloor\\frac{n}{5}\\right\\rfloor+\\left\\lfloor\\frac{n}{25}\\right\\rfloor+\\left\\lfloor\\frac{n}{125}\\right\\rfloor+\\cdots$ |
 
 ---
 
-## 6.6 Modern Math (High-yield)
+## 6.6 Modern Math — Tables
 
 ### Permutation–Combination
-- Permutation:
-  $$
-  {}^nP_r=\\frac{n!}{(n-r)!}
-  $$
-- Combination:
-  $$
-  {}^nC_r=\\frac{n!}{r!(n-r)!}
-  $$
-- Multiset permutations:
-  $$
-  \\frac{n!}{a!\\,b!\\,c!\\cdots}
-  $$
-- Repetition arrangements:
-  $$
-  n^r
-  $$
+| Topic | Formula |
+|---|---|
+| Permutation | $\\;{}^nP_r=\\frac{n!}{(n-r)!}$ |
+| Combination | $\\;{}^nC_r=\\frac{n!}{r!(n-r)!}$ |
+| Multiset permutations | $\\frac{n!}{a!\\,b!\\,c!\\cdots}$ |
+| Repetition arrangements | $n^r$ |
 
 ### Probability
-- Union:
-  $$
-  P(A\\cup B)=P(A)+P(B)-P(A\\cap B)
-  $$
-- At least one:
-  $$
-  P(\\ge 1)=1-P(0)
-  $$
-- Independence:
-  $$
-  P(A\\cap B)=P(A)\\cdot P(B)
-  $$`;
+| Topic | Formula |
+|---|---|
+| Union | $P(A\\cup B)=P(A)+P(B)-P(A\\cap B)$ |
+| At least one | $P(\\ge 1)=1-P(0)$ |
+| Independence | $P(A\\cap B)=P(A)\\cdot P(B)$ |`;
 
 const KB_DILR_FRAMEWORKS = `# 7) DILR — Frameworks + Selection (Complete)
 
@@ -633,50 +461,19 @@ Eliminate options that are:
 const KB_REVISION_SHEET = `# 9) Final High-Yield Revision Sheet (One Page)
 
 ## QA (core)
-- Percent:
-  $$
-  \\text{New}=\\text{Old}\\left(1\\pm\\frac{p}{100}\\right),\\quad \\text{Net\\%}=a+b+\\frac{ab}{100}
-  $$
-- Profit/Loss:
-  $$
-  \\text{Profit\\%}=\\frac{SP-CP}{CP}\\cdot 100
-  $$
-- SI/CI:
-  $$
-  SI=\\frac{P\\cdot r\\cdot t}{100},\\quad A=P\\left(1+\\frac{r}{100}\\right)^t
-  $$
-- TSD:
-  $$
-  D=S\\cdot T,\\quad v_{\\text{avg}}=\\frac{2v_1v_2}{v_1+v_2}
-  $$
-- Work:
-  $$
-  \\text{Rate}=\\frac{1}{T},\\quad T_{\\text{together}}=\\frac{ab}{a+b}
-  $$
-- Geometry:
-  $$
-  a^2+b^2=c^2,\\quad \\text{Area}=\\frac{1}{2}bh
-  $$
-- Circle:
-  $$
-  \\text{Area}=\\pi r^2,\\quad \\text{Circumference}=2\\pi r
-  $$
-- Polygon:
-  $$
-  \\text{Interior sum}=180(n-2),\\quad \\text{Diagonals}=\\frac{n(n-3)}{2}
-  $$
-- Trailing zeros:
-  $$
-  Z=\\left\\lfloor\\frac{n}{5}\\right\\rfloor+\\left\\lfloor\\frac{n}{25}\\right\\rfloor+\\left\\lfloor\\frac{n}{125}\\right\\rfloor+\\cdots
-  $$
-- P\\&C:
-  $$
-  {}^nP_r=\\frac{n!}{(n-r)!},\\quad {}^nC_r=\\frac{n!}{r!(n-r)!}
-  $$
-- Probability:
-  $$
-  P(A\\cup B)=P(A)+P(B)-P(A\\cap B),\\quad P(\\ge 1)=1-P(0)
-  $$
+| Topic | Formula |
+|---|---|
+| Percentages | $\\text{New}=\\text{Old}\\left(1\\pm\\frac{p}{100}\\right)$; $\\text{Net\\%}=a+b+\\frac{ab}{100}$ |
+| Profit/Loss | $\\text{Profit\\%}=\\frac{SP-CP}{CP}\\cdot 100$ |
+| SI/CI | $SI=\\frac{P\\cdot r\\cdot t}{100}$; $A=P\\left(1+\\frac{r}{100}\\right)^t$ |
+| TSD | $D=S\\cdot T$; $v_{\\text{avg}}=\\frac{2v_1v_2}{v_1+v_2}$ |
+| Time & Work | $\\text{Rate}=\\frac{1}{T}$; $T_{\\text{together}}=\\frac{ab}{a+b}$ |
+| Geometry | $a^2+b^2=c^2$; $\\text{Area}=\\frac{1}{2}bh$ |
+| Circle | $\\text{Area}=\\pi r^2$; $\\text{Circumference}=2\\pi r$ |
+| Polygon | $\\text{Interior sum}=180(n-2)$; $\\text{Diagonals}=\\frac{n(n-3)}{2}$ |
+| Trailing zeros | $Z=\\left\\lfloor\\frac{n}{5}\\right\\rfloor+\\left\\lfloor\\frac{n}{25}\\right\\rfloor+\\left\\lfloor\\frac{n}{125}\\right\\rfloor+\\cdots$ |
+| P\\&C | $\\;{}^nP_r=\\frac{n!}{(n-r)!}$; $\\;{}^nC_r=\\frac{n!}{r!(n-r)!}$ |
+| Probability | $P(A\\cup B)=P(A)+P(B)-P(A\\cap B)$; $P(\\ge 1)=1-P(0)$ |
 
 ## DILR (core)
 - Scan 2–3 mins → pick easiest 2 sets  
@@ -777,11 +574,9 @@ export const CAT_KB_PARTS: CatKnowledgePart[] = [
   },
 ];
 
-export const CAT_KB_SECTIONS = CAT_KB_PARTS.flatMap((part) => part.sections);
+export const CAT_KB_SECTIONS = CAT_KB_PARTS.flatMap(part => part.sections);
 
-export const COMPLETE_MARKDOWN = CAT_KB_SECTIONS.map((section) =>
-  section.content.trim()
-).join("\n\n---\n\n");
+export const COMPLETE_MARKDOWN = CAT_KB_SECTIONS.map(section => section.content.trim()).join("\n\n---\n\n");
 
 export const GAMES = {
   goal: "CAT 2026 skill-building via games (DILR + QA heavy, VARC included)",
@@ -921,17 +716,8 @@ export const GAMES = {
     },
   },
   progress_metrics: {
-    DILR: [
-      "finish 1 logic grid in <= 25 min with clean table",
-      "reduce 'random trial' to near zero",
-    ],
-    QA: [
-      "24-game success rate >= 70% within 2 minutes",
-      "mental math accuracy >= 90%",
-    ],
-    VARC: [
-      "2-line summaries reflect main idea + author tone correctly",
-      "inference errors decreasing week over week",
-    ],
+    DILR: ["finish 1 logic grid in <= 25 min with clean table", "reduce 'random trial' to near zero"],
+    QA: ["24-game success rate >= 70% within 2 minutes", "mental math accuracy >= 90%"],
+    VARC: ["2-line summaries reflect main idea + author tone correctly", "inference errors decreasing week over week"],
   },
 };

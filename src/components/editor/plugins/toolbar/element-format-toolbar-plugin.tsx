@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { $isLinkNode } from "@lexical/link";
 import { $findMatchingParent } from "@lexical/utils";
 import {
@@ -20,6 +19,7 @@ import {
   IndentDecreaseIcon,
   IndentIncreaseIcon,
 } from "lucide-react";
+import { useState } from "react";
 
 import { useToolbarContext } from "@/components/editor/context/toolbar-context";
 import { useUpdateToolbarHandler } from "@/components/editor/editor-hooks/use-update-toolbar";
@@ -56,11 +56,7 @@ const ELEMENT_FORMAT_OPTIONS: {
   },
 } as const;
 
-export function ElementFormatToolbarPlugin({
-  separator = true,
-}: {
-  separator?: boolean;
-}) {
+export function ElementFormatToolbarPlugin({ separator = true }: { separator?: boolean }) {
   const { activeEditor } = useToolbarContext();
   const [elementFormat, setElementFormat] = useState<ElementFormatType>("left");
 
@@ -72,17 +68,14 @@ export function ElementFormatToolbarPlugin({
       let matchingParent;
       if ($isLinkNode(parent)) {
         // If node is a link, we need to fetch the parent paragraph node to set format
-        matchingParent = $findMatchingParent(
-          node,
-          (parentNode) => $isElementNode(parentNode) && !parentNode.isInline(),
-        );
+        matchingParent = $findMatchingParent(node, parentNode => $isElementNode(parentNode) && !parentNode.isInline());
       }
       setElementFormat(
         $isElementNode(matchingParent)
           ? matchingParent.getFormatType()
           : $isElementNode(node)
             ? node.getFormatType()
-            : parent?.getFormatType() || "left",
+            : parent?.getFormatType() || "left"
       );
     }
   };
@@ -105,39 +98,18 @@ export function ElementFormatToolbarPlugin({
 
   return (
     <>
-      <ToggleGroup
-        type="single"
-        value={elementFormat}
-        defaultValue={elementFormat}
-        onValueChange={handleValueChange}
-      >
+      <ToggleGroup type="single" value={elementFormat} defaultValue={elementFormat} onValueChange={handleValueChange}>
         {/* Alignment toggles */}
         {Object.entries(ELEMENT_FORMAT_OPTIONS).map(([value, option]) => (
-          <ToggleGroupItem
-            key={value}
-            value={value}
-            variant={"outline"}
-            size="sm"
-            aria-label={option.name}
-          >
+          <ToggleGroupItem key={value} value={value} variant={"outline"} size="sm" aria-label={option.name}>
             {option.icon}
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
       {separator && <Separator orientation="vertical" className="h-7!" />}
       {/* Indentation toggles */}
-      <ToggleGroup
-        type="single"
-        value={elementFormat}
-        defaultValue={elementFormat}
-        onValueChange={handleValueChange}
-      >
-        <ToggleGroupItem
-          value="outdent"
-          aria-label="Outdent"
-          variant={"outline"}
-          size="sm"
-        >
+      <ToggleGroup type="single" value={elementFormat} defaultValue={elementFormat} onValueChange={handleValueChange}>
+        <ToggleGroupItem value="outdent" aria-label="Outdent" variant={"outline"} size="sm">
           <IndentDecreaseIcon className="size-4" />
         </ToggleGroupItem>
 
