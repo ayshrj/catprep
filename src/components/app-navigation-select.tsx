@@ -30,13 +30,13 @@ export function AppNavigationSelect({
 
   return (
     <Select value={value} onValueChange={handleChange}>
-      <SelectTrigger aria-label="Navigate between Chat, Notes, and Saved notes">
+    <SelectTrigger aria-label="Navigate between Chat, Notes, and Rough notes">
         <SelectValue placeholder="Navigate" />
       </SelectTrigger>
       <SelectContent align="end">
         <SelectItem value="chat">Chat</SelectItem>
         <SelectItem value="notes">Notes</SelectItem>
-        <SelectItem value="saved">Saved notes</SelectItem>
+        <SelectItem value="saved">Rough notes</SelectItem>
       </SelectContent>
     </Select>
   );

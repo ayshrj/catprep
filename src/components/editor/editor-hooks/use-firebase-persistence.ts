@@ -26,7 +26,7 @@ async function fetchEditorState(
       ? (data.payload as SerializedEditorState)
       : null;
   } catch (error) {
-    console.error("Failed to load editor state from Firebase", error);
+    console.error("Failed to load editor state from storage", error);
     return null;
   }
 }
@@ -46,10 +46,10 @@ async function persistEditorState(
     });
 
     if (!response.ok) {
-      console.error("Failed to save editor state to Firebase", response.status);
+      console.error("Failed to save editor state to storage", response.status);
     }
   } catch (error) {
-    console.error("Failed to save editor state to Firebase", error);
+    console.error("Failed to save editor state to storage", error);
   }
 }
 

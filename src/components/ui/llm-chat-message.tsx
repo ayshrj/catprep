@@ -72,6 +72,32 @@ function Badge({ label, value }: { label: string; value: string }) {
   );
 }
 
+function getCheatsheetSection(content: LlmCatCoachResponse) {
+  if (content.topicTag?.startsWith("QA")) {
+    return { id: "qa-formulas", label: "Open cheatsheet" };
+  }
+  if (content.topicTag?.startsWith("DILR")) {
+    return { id: "dilr-frameworks", label: "Open cheatsheet" };
+  }
+  if (content.topicTag?.startsWith("VARC")) {
+    return { id: "varc-frameworks", label: "Open cheatsheet" };
+  }
+  if (content.scenario?.code && content.scenario.code !== "unknown") {
+    return { id: "scenario-playbook", label: "Open playbook" };
+  }
+  return null;
+}
+
+function buildNotesHref(sectionId: string) {
+  if (typeof window === "undefined") {
+    return `/?view=notes#${sectionId}`;
+  }
+  const params = new URLSearchParams(window.location.search);
+  params.set("view", "notes");
+  const query = params.toString();
+  return `/?${query}#${sectionId}`;
+}
+
 function CompactList({ items }: { items: string[] }) {
   const filtered = items.filter((item) => item?.trim());
   if (!filtered.length) return null;
@@ -206,6 +232,7 @@ function renderLlmContent(content: LlmCatCoachResponse) {
     content.nextActions.today?.filter((a) => a?.trim()).length > 0;
   const hasWeekActions =
     content.nextActions.thisWeek?.filter((a) => a?.trim()).length > 0;
+  const cheatsheet = getCheatsheetSection(content);
 
   return (
     <motion.div
@@ -277,6 +304,17 @@ function renderLlmContent(content: LlmCatCoachResponse) {
         />
         {content.topicTag && <Badge label="Topic" value={content.topicTag} />}
       </motion.div>
+
+      {cheatsheet ? (
+        <motion.div variants={itemVariants} className="px-3">
+          <a
+            href={buildNotesHref(cheatsheet.id)}
+            className="inline-flex items-center rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition hover:border-primary/60 hover:bg-primary/20"
+          >
+            {cheatsheet.label}
+          </a>
+        </motion.div>
+      ) : null}
 
       {/* Focus */}
       {content.whatUserNeedsNow?.trim() && (

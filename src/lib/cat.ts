@@ -65,7 +65,19 @@ TOOL AWARENESS:
 - You MUST still call tools when needed, but your FINAL assistant response must be JSON per schema.
 `;
 
-export const COMPLETE_MARKDOWN = `# CAT 2026 — Complete Knowledge Base
+export type CatKnowledgeSection = {
+  id: string;
+  title: string;
+  content: string;
+};
+
+export type CatKnowledgePart = {
+  id: string;
+  title: string;
+  sections: CatKnowledgeSection[];
+};
+
+const KB_OVERVIEW = `# CAT 2026 — Complete Knowledge Base
 
 This is the complete, consolidated **CAT preparation content** collected so far:
 - Sections + tagging checklist (QA / DILR / VARC)
@@ -76,11 +88,9 @@ This is the complete, consolidated **CAT preparation content** collected so far:
 - QA formulas + shortcuts + traps (topic-wise)
 - DILR frameworks + set-selection rules
 - VARC frameworks + elimination rules + VA methods
-- Final revision sheet (high-yield)
+- Final revision sheet (high-yield)`;
 
----
-
-## 1) CAT Sections & Topic Tagging Checklist
+const KB_SECTIONS_TAGGING = `## 1) CAT Sections & Topic Tagging Checklist
 
 ### 1.1 QA (Quantitative Aptitude)
 
@@ -93,8 +103,6 @@ This is the complete, consolidated **CAT preparation content** collected so far:
 | Number System | Divisibility; Primes; Factors; HCF/LCM; Remainders & cyclicity; Last digit; Trailing zeros; Factorials; number properties; base/system (rare) |
 | Modern Math | Sets & Venn basics; Permutation–Combination; Probability; Basic Statistics (mean/median/mode); Counting principles |
 
----
-
 ### 1.2 VARC (Verbal Ability & Reading Comprehension)
 
 | Bucket | Sub-topics (tags) |
@@ -102,8 +110,6 @@ This is the complete, consolidated **CAT preparation content** collected so far:
 | RC Question Types | Main idea; Inference; Tone/Attitude; Specific detail; Vocabulary-in-context; Purpose; Structure/logic |
 | Verbal Ability | Para-jumbles (PJ); Para-summary; Odd sentence out; Sentence insertion/para-completion (varies) |
 | Support Skills | Reading speed; Comprehension stamina; Elimination; Basic grammar sense (supportive) |
-
----
 
 ### 1.3 DILR (Data Interpretation & Logical Reasoning)
 
@@ -113,18 +119,14 @@ This is the complete, consolidated **CAT preparation content** collected so far:
 | LR | Seating (linear/circular); Arrangements; Grouping/Selection; Distribution; Ordering/Ranking; Scheduling; Games/Tournaments; Routes/Networks; Venn/Set-based logic; Binary logic; Constraints puzzles |
 | Hybrid | DI+LR mixed sets (most CAT-like) |
 
----
-
 ### 1.4 Mandatory “Quick Classification” for Any Question
 Whenever you see any question (mock/screenshot/text), classify it as:
 - **Section:** QA / DILR / VARC  
 - **Tag:** (e.g., QA → Arithmetic → Percentages)  
 - **Skill used:** (e.g., ratio conversion + equation framing)  
-- **How to recognize quickly:** (1 line)
+- **How to recognize quickly:** (1 line)`;
 
----
-
-## 2) “Every Case Scenario” Playbook (Complete)
+const KB_SCENARIOS = `## 2) “Every Case Scenario” Playbook (Complete)
 
 | Scenario | Trigger | Meaning | What to do (next 14 days) | Daily structure (working professional) | Target metric |
 |---|---|---|---|---|---|
@@ -150,11 +152,9 @@ Whenever you see any question (mock/screenshot/text), classify it as:
 **Playbook rules**
 - DILR: **scan → select → commit**, never marry a set  
 - QA: **easy first**, skip time sinks  
-- VARC: **RC daily** is non-negotiable  
+- VARC: **RC daily** is non-negotiable  `;
 
----
-
-## 3) Mock Strategy + Analysis Framework (Complete)
+const KB_MOCK_STRATEGY = `## 3) Mock Strategy + Analysis Framework (Complete)
 
 ### 3.1 Output format for mock review
 1) **Score snapshot**
@@ -180,8 +180,6 @@ Whenever you see any question (mock/screenshot/text), classify it as:
 4) **Error log format**
 - Date | Section | Topic tag | Mistake type (concept / calculation / selection / inference / time) | Correct method | Trigger line
 
----
-
 ### 3.2 Non-negotiable mock analysis steps
 Bucket every question into:
 - **WRONG**
@@ -195,11 +193,9 @@ Fix order:
 3) **Concept gaps** (topic revision)
 
 Reattempt:
-- Reattempt **wrong + time-sink** questions after **7–10 days**
+- Reattempt **wrong + time-sink** questions after **7–10 days**`;
 
----
-
-## 4) Time Management Rules (Section-wise)
+const KB_TIME_MANAGEMENT = `## 4) Time Management Rules (Section-wise)
 
 ### QA
 - **2-pass**
@@ -216,11 +212,9 @@ Reattempt:
 ### VARC
 - Default: **RC first then VA** (unless your data says otherwise)
 - Use elimination; avoid overthinking inference
-- Daily RC practice + review errors
+- Daily RC practice + review errors`;
 
----
-
-## 5) Working Professional Schedule Templates
+const KB_WORKING_PRO = `## 5) Working Professional Schedule Templates
 
 ### Template A: Normal weekday (2 hours/day)
 - 45m QA (concept + drill)
@@ -234,11 +228,9 @@ Reattempt:
 ### Weekend template (5–6h/day)
 - 1 full mock OR 2 sectionals
 - Deep analysis
-- Weak-topic drill block (2h)
+- Weak-topic drill block (2h)`;
 
----
-
-# 6) QA — Formulas + Shortcuts + Traps
+const KB_QA_FORMULAS = `# 6) QA — Formulas + Shortcuts + Traps
 
 ## 6.1 Arithmetic
 
@@ -578,11 +570,9 @@ Zeros in $n!$:
 - Independence:
   $$
   P(A\\cap B)=P(A)\\cdot P(B)
-  $$
+  $$`;
 
----
-
-# 7) DILR — Frameworks + Selection (Complete)
+const KB_DILR_FRAMEWORKS = `# 7) DILR — Frameworks + Selection (Complete)
 
 ## 7.1 Universal DILR solve template
 1) Convert text → **table/grid**
@@ -609,11 +599,9 @@ Zeros in $n!$:
 - Starting hardest set first
 - Spending 20 minutes on one set
 - Over-calculating when only comparison needed
-- Not writing a clean table early
+- Not writing a clean table early`;
 
----
-
-# 8) VARC — RC + VA Frameworks (Complete)
+const KB_VARC_FRAMEWORKS = `# 8) VARC — RC + VA Frameworks (Complete)
 
 ## 8.1 RC reading method (stable)
 - Read structure: intro → claim → evidence → caveat → conclusion
@@ -640,11 +628,9 @@ Eliminate options that are:
 
 ## 8.5 Odd sentence out
 - Identify the paragraph’s “thread”
-- Odd sentence breaks topic/time/logic/flow
+- Odd sentence breaks topic/time/logic/flow`;
 
----
-
-# 9) Final High-Yield Revision Sheet (One Page)
+const KB_REVISION_SHEET = `# 9) Final High-Yield Revision Sheet (One Page)
 
 ## QA (core)
 - Percent:
@@ -681,7 +667,7 @@ Eliminate options that are:
   $$
 - Trailing zeros:
   $$
-  Z=\\left\\lfloor\\frac{n}{5}\\right\\rfloor+\\left\\lfloor\\frac{n}{25}\\right\\rfloor+\\cdots
+  Z=\\left\\lfloor\\frac{n}{5}\\right\\rfloor+\\left\\lfloor\\frac{n}{25}\\right\\rfloor+\\left\\lfloor\\frac{n}{125}\\right\\rfloor+\\cdots
   $$
 - P\\&C:
   $$
@@ -700,7 +686,252 @@ Eliminate options that are:
 ## VARC (core)
 - Eliminate out-of-scope / extreme / distorted options  
 - Main idea ≠ detail; inference must be supported  
-- PJ: opener + link pairs + conclusion  
+- PJ: opener + link pairs + conclusion  `;
 
----
-`;
+export const CAT_KB_PARTS: CatKnowledgePart[] = [
+  {
+    id: "overview",
+    title: "Overview",
+    sections: [
+      {
+        id: "overview",
+        title: "CAT 2026 — Complete Knowledge Base",
+        content: KB_OVERVIEW,
+      },
+    ],
+  },
+  {
+    id: "foundations",
+    title: "Foundations",
+    sections: [
+      {
+        id: "sections-tagging",
+        title: "CAT Sections & Topic Tagging Checklist",
+        content: KB_SECTIONS_TAGGING,
+      },
+      {
+        id: "scenario-playbook",
+        title: "Every Case Scenario Playbook",
+        content: KB_SCENARIOS,
+      },
+      {
+        id: "mock-strategy",
+        title: "Mock Strategy + Analysis Framework",
+        content: KB_MOCK_STRATEGY,
+      },
+      {
+        id: "time-management",
+        title: "Time Management Rules",
+        content: KB_TIME_MANAGEMENT,
+      },
+      {
+        id: "schedule-templates",
+        title: "Working Professional Schedules",
+        content: KB_WORKING_PRO,
+      },
+    ],
+  },
+  {
+    id: "qa-formulas",
+    title: "QA Formulas",
+    sections: [
+      {
+        id: "qa-formulas",
+        title: "QA — Formulas + Shortcuts + Traps",
+        content: KB_QA_FORMULAS,
+      },
+    ],
+  },
+  {
+    id: "dilr-frameworks",
+    title: "DILR Frameworks",
+    sections: [
+      {
+        id: "dilr-frameworks",
+        title: "DILR — Frameworks + Selection",
+        content: KB_DILR_FRAMEWORKS,
+      },
+    ],
+  },
+  {
+    id: "varc-frameworks",
+    title: "VARC Frameworks",
+    sections: [
+      {
+        id: "varc-frameworks",
+        title: "VARC — RC + VA Frameworks",
+        content: KB_VARC_FRAMEWORKS,
+      },
+    ],
+  },
+  {
+    id: "revision-sheet",
+    title: "Final Revision Sheet",
+    sections: [
+      {
+        id: "revision-sheet",
+        title: "Final High-Yield Revision Sheet",
+        content: KB_REVISION_SHEET,
+      },
+    ],
+  },
+];
+
+export const CAT_KB_SECTIONS = CAT_KB_PARTS.flatMap((part) => part.sections);
+
+export const COMPLETE_MARKDOWN = CAT_KB_SECTIONS.map((section) =>
+  section.content.trim()
+).join("\n\n---\n\n");
+
+export const GAMES = {
+  goal: "CAT 2026 skill-building via games (DILR + QA heavy, VARC included)",
+  baseline_ratio_by_section: {
+    DILR: 0.5,
+    QA: 0.3,
+    VARC: 0.2,
+  },
+  recommended_games_ranked: {
+    do_most: [
+      {
+        name: "Logic Grid Puzzles (Zebra/Einstein style)",
+        section: "DILR",
+        weight: 0.18,
+        why: "Closest to CAT LR: constraints -> table -> deductions",
+      },
+      {
+        name: "Sudoku (9x9 + variants)",
+        section: "DILR",
+        weight: 0.17,
+        why: "Constraint discipline + no-guessing habit",
+      },
+      {
+        name: "KenKen / Calcudoku",
+        section: "DILR+QA",
+        weight: 0.15,
+        why: "Constraints + arithmetic fluency under time",
+      },
+      {
+        name: "Minesweeper",
+        section: "DILR",
+        weight: 0.1,
+        why: "Inference + marking + avoiding random clicks",
+      },
+      {
+        name: "24 Game (make 24 using + - × ÷)",
+        section: "QA",
+        weight: 0.12,
+        why: "Fast operations + flexible arithmetic",
+      },
+      {
+        name: "Mental-math timed drills (as a game)",
+        section: "QA",
+        weight: 0.12,
+        why: "Speed + accuracy; reduces silly mistakes",
+      },
+    ],
+    do_some: [
+      {
+        name: "SET (pattern card game)",
+        section: "DILR",
+        weight: 0.06,
+        why: "Pattern recognition + speed",
+      },
+      {
+        name: "Nonograms (Picross)",
+        section: "DILR",
+        weight: 0.05,
+        why: "Constraint tracking + clean notation",
+      },
+      {
+        name: "Reading + 2-line summary (daily)",
+        section: "VARC",
+        weight: 0.08,
+        why: "RC structure + retention",
+      },
+      {
+        name: "Inference mini-drill (must be true?)",
+        section: "VARC",
+        weight: 0.07,
+        why: "CAT-style inference discipline",
+      },
+    ],
+    do_minimal_or_skip: [
+      {
+        name: "Reflex-only games (aim/reaction)",
+        reason: "Low transfer to CAT skills",
+      },
+      {
+        name: "Long grind RPGs / open-world time sinks",
+        reason: "Kills consistency; low ROI per minute",
+      },
+      {
+        name: "Tilt-heavy competitive multiplayer",
+        reason: "High time cost + inconsistent routine",
+      },
+    ],
+  },
+  daily_time_budget_minutes: {
+    weekday: 30,
+    weekend: 60,
+    max_if_busy: 20,
+  },
+  weekly_plan_template: {
+    weekday_sessions: [
+      {
+        days_per_week: 3,
+        minutes: 30,
+        focus: "DILR",
+        games: ["Logic Grid Puzzles", "Sudoku"],
+      },
+      {
+        days_per_week: 2,
+        minutes: 30,
+        focus: "QA",
+        games: ["24 Game", "Mental-math timed drills"],
+      },
+      {
+        days_per_week: 2,
+        minutes: 20,
+        focus: "VARC",
+        games: ["Reading + 2-line summary", "Inference mini-drill"],
+      },
+    ],
+    weekend_sessions: [
+      {
+        days_per_week: 2,
+        minutes: 60,
+        focus: "DILR+QA",
+        games: ["KenKen/Calcudoku", "Logic Grid Puzzles", "24 Game"],
+      },
+    ],
+  },
+  adjustment_rules: {
+    if_DILR_is_weakest: {
+      new_ratio_by_section: { DILR: 0.6, QA: 0.25, VARC: 0.15 },
+      move_time_from: ["QA drills", "VARC drills"],
+      move_time_to: ["Logic Grid Puzzles", "Sudoku", "KenKen"],
+    },
+    if_QA_is_weakest: {
+      new_ratio_by_section: { DILR: 0.45, QA: 0.4, VARC: 0.15 },
+      move_time_to: ["24 Game", "Mental-math timed drills", "KenKen"],
+    },
+    if_VARC_is_weakest: {
+      new_ratio_by_section: { DILR: 0.45, QA: 0.25, VARC: 0.3 },
+      move_time_to: ["Reading + 2-line summary", "Inference mini-drill"],
+    },
+  },
+  progress_metrics: {
+    DILR: [
+      "finish 1 logic grid in <= 25 min with clean table",
+      "reduce 'random trial' to near zero",
+    ],
+    QA: [
+      "24-game success rate >= 70% within 2 minutes",
+      "mental math accuracy >= 90%",
+    ],
+    VARC: [
+      "2-line summaries reflect main idea + author tone correctly",
+      "inference errors decreasing week over week",
+    ],
+  },
+};

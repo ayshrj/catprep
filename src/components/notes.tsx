@@ -1,14 +1,22 @@
-import { COMPLETE_MARKDOWN } from "@/lib/cat";
+import { CAT_KB_PARTS } from "@/lib/cat";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import { cn } from "@/lib/utils";
 import { CopyButton } from "@/components/ui/copy-button";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { X, ChevronUp, ChevronDown } from "lucide-react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { AppSidebar } from "@/components/app-sidebar";
 
 import "katex/dist/katex.min.css";
 
@@ -16,14 +24,16 @@ interface MarkdownRendererProps {
   children: string;
   searchQuery?: string;
   currentMatchIndex?: number;
+  matchOffset?: number;
 }
 
 export function MarkdownRenderer({
   children,
   searchQuery = "",
   currentMatchIndex = 0,
+  matchOffset = 0,
 }: MarkdownRendererProps) {
-  let matchCounter = 0;
+  let matchCounter = matchOffset;
   const nextMatchIndex = () => matchCounter++;
 
   const highlightChildren = (node: React.ReactNode): React.ReactNode => {
@@ -361,9 +371,12 @@ export const Notes: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
-  const [totalMatches, setTotalMatches] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLElement>(null);
+  const flatSections = useMemo(
+    () => CAT_KB_PARTS.flatMap((part) => part.sections),
+    []
+  );
 
   const countMatches = useCallback((query: string, content: string) => {
     if (!query.trim()) return 0;
@@ -384,22 +397,80 @@ export const Notes: React.FC = () => {
     return count;
   }, []);
 
+  const sectionMatchCounts = useMemo(
+    () =>
+      flatSections.map((section) => countMatches(searchQuery, section.content)),
+    [countMatches, flatSections, searchQuery]
+  );
+
+  const totalMatches = useMemo(
+    () => sectionMatchCounts.reduce((sum, count) => sum + count, 0),
+    [sectionMatchCounts]
+  );
+
+  const sectionOffsets = useMemo(() => {
+    let offset = 0;
+    return sectionMatchCounts.map((count) => {
+      const currentOffset = offset;
+      offset += count;
+      return currentOffset;
+    });
+  }, [sectionMatchCounts]);
+
+  const scrollToSection = useCallback((id: string) => {
+    const performScroll = () => {
+      const element = document.getElementById(id);
+      const container = contentRef.current;
+      if (!element || !container) return false;
+      const containerRect = container.getBoundingClientRect();
+      const elementRect = element.getBoundingClientRect();
+      const targetTop =
+        elementRect.top - containerRect.top + container.scrollTop - 16;
+      container.scrollTo({
+        top: Math.max(targetTop, 0),
+        behavior: "smooth",
+      });
+      return true;
+    };
+
+    if (performScroll()) return;
+    if (typeof window !== "undefined") {
+      requestAnimationFrame(() => {
+        performScroll();
+      });
+    }
+  }, []);
+
   useEffect(() => {
-    const matches = countMatches(searchQuery, COMPLETE_MARKDOWN);
-    setTotalMatches(matches);
-    if (matches === 0) {
+    if (!searchQuery.trim()) {
       setCurrentMatchIndex(0);
-    } else if (currentMatchIndex >= matches) {
+      return;
+    }
+    if (totalMatches === 0) {
+      setCurrentMatchIndex(0);
+    } else if (currentMatchIndex >= totalMatches) {
       setCurrentMatchIndex(0);
     }
-  }, [searchQuery, countMatches, currentMatchIndex]);
+  }, [currentMatchIndex, searchQuery, totalMatches]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const scrollFromHash = () => {
+      const id = window.location.hash.replace("#", "").trim();
+      if (id) {
+        scrollToSection(id);
+      }
+    };
+    scrollFromHash();
+    window.addEventListener("hashchange", scrollFromHash);
+    return () => window.removeEventListener("hashchange", scrollFromHash);
+  }, [scrollToSection]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "f") {
         e.preventDefault();
         setIsSearchOpen(true);
-        setTimeout(() => searchInputRef.current?.focus(), 0);
       } else if (e.key === "Escape" && isSearchOpen) {
         setIsSearchOpen(false);
         setSearchQuery("");
@@ -409,6 +480,12 @@ export const Notes: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isSearchOpen]);
+
+  useEffect(() => {
+    if (!isSearchOpen) return;
+    const timer = setTimeout(() => searchInputRef.current?.focus(), 0);
+    return () => clearTimeout(timer);
   }, [isSearchOpen]);
 
   useEffect(() => {
@@ -440,68 +517,183 @@ export const Notes: React.FC = () => {
     setCurrentMatchIndex(0);
   };
 
+  const sectionMeta = useMemo(() => {
+    const meta = new Map<string, { offset: number; matches: number }>();
+    flatSections.forEach((section, index) => {
+      meta.set(section.id, {
+        offset: sectionOffsets[index] ?? 0,
+        matches: sectionMatchCounts[index] ?? 0,
+      });
+    });
+    return meta;
+  }, [flatSections, sectionMatchCounts, sectionOffsets]);
+
   return (
     <div className="relative flex h-full min-h-0 flex-col">
-      {isSearchOpen && (
-        <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-background p-3 shadow-sm">
-          <Input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Find in page..."
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentMatchIndex(0);
-            }}
-            className="flex-1"
-            onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                e.preventDefault();
-                if (e.shiftKey) {
-                  handlePrevious();
-                } else {
-                  handleNext();
-                }
-              }
-            }}
-          />
-          {searchQuery && (
-            <span className="text-sm text-muted-foreground whitespace-nowrap">
-              {totalMatches > 0
-                ? `${currentMatchIndex + 1}/${totalMatches}`
-                : "0/0"}
-            </span>
-          )}
+      <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="flex items-center justify-between gap-3 px-3 py-3 sm:px-4">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">
+              CAT Knowledge Base
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Jump to a section or search inside the playbook.
+            </p>
+          </div>
           <Button
-            variant="ghost"
-            size="icon"
-            onClick={handlePrevious}
-            disabled={totalMatches === 0}
+            variant="outline"
+            size="sm"
+            onClick={() => setIsSearchOpen((open) => !open)}
           >
-            <ChevronUp className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleNext}
-            disabled={totalMatches === 0}
-          >
-            <ChevronDown className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={handleClose}>
-            <X className="h-4 w-4" />
+            {isSearchOpen ? "Close search" : "Find"}
           </Button>
         </div>
-      )}
 
-      <section ref={contentRef} className="min-h-0 flex-1 overflow-y-auto p-4">
-        <MarkdownRenderer
-          searchQuery={searchQuery}
-          currentMatchIndex={currentMatchIndex}
+        {isSearchOpen && (
+          <div className="border-t px-3 py-2 sm:px-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Find in playbook..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentMatchIndex(0);
+                }}
+                className="min-w-[180px] flex-1"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (e.shiftKey) {
+                      handlePrevious();
+                    } else {
+                      handleNext();
+                    }
+                  }
+                }}
+              />
+              {searchQuery && (
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {totalMatches > 0
+                    ? `${currentMatchIndex + 1}/${totalMatches}`
+                    : "0/0"}
+                </span>
+              )}
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handlePrevious}
+                  disabled={totalMatches === 0}
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleNext}
+                  disabled={totalMatches === 0}
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </div>
+              <Button variant="ghost" size="icon" onClick={handleClose}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className="border-t md:hidden">
+          <ScrollArea className="w-full">
+            <div className="flex gap-2 px-3 py-2">
+              {flatSections.map((section) => (
+                <button
+                  key={section.id}
+                  type="button"
+                  onClick={() => scrollToSection(section.id)}
+                  className="whitespace-nowrap rounded-full border bg-background px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  {section.title}
+                </button>
+              ))}
+            </div>
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+        </div>
+      </div>
+
+      <div className="flex min-h-0 flex-1">
+        <AppSidebar
+          title="Sections"
+          className="hidden h-full w-[18rem] shrink-0 rounded-none border-0 border-r border-border/60 bg-muted/20 shadow-none md:flex"
+          contentClassName="p-0"
         >
-          {COMPLETE_MARKDOWN}
-        </MarkdownRenderer>
-      </section>
+          <ScrollArea className="h-full">
+            <div className="space-y-4 p-4">
+              {CAT_KB_PARTS.map((part) => (
+                <div key={part.id} className="space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {part.title}
+                  </p>
+                  <div className="space-y-1">
+                    {part.sections.map((section) => (
+                      <button
+                        key={section.id}
+                        type="button"
+                        onClick={() => scrollToSection(section.id)}
+                        className="w-full rounded-lg px-2 py-1 text-left text-xs text-muted-foreground transition hover:bg-muted/70 hover:text-foreground"
+                      >
+                        {section.title}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </AppSidebar>
+
+        <section
+          ref={contentRef}
+          className="min-h-0 flex-1 overflow-y-auto p-4"
+        >
+          <div className="space-y-6">
+            {CAT_KB_PARTS.map((part) => (
+              <div key={part.id} className="space-y-4">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  <span>{part.title}</span>
+                  <span className="h-px flex-1 bg-border" />
+                </div>
+                {part.sections.map((section) => {
+                  const meta = sectionMeta.get(section.id);
+                  return (
+                    <article
+                      key={section.id}
+                      id={section.id}
+                      className="scroll-mt-24 rounded-2xl border bg-background p-4 shadow-sm"
+                    >
+                      {meta?.matches ? (
+                        <div className="mb-2 text-[11px] text-muted-foreground">
+                          {meta.matches} match{meta.matches === 1 ? "" : "es"}
+                        </div>
+                      ) : null}
+                      <MarkdownRenderer
+                        searchQuery={searchQuery}
+                        currentMatchIndex={currentMatchIndex}
+                        matchOffset={meta?.offset ?? 0}
+                      >
+                        {section.content}
+                      </MarkdownRenderer>
+                    </article>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
   );
 };

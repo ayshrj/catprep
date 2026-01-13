@@ -42,6 +42,7 @@ import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { uploadImageToCloudinary } from "@/lib/upload-image";
 
 export type InsertImagePayload = Readonly<ImagePayload>;
 
@@ -104,19 +105,29 @@ export function InsertImageUploadedDialogBody({
 }) {
   const [src, setSrc] = useState("");
   const [altText, setAltText] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   const isDisabled = src === "";
 
-  const loadImage = (files: FileList | null) => {
-    const reader = new FileReader();
-    reader.onload = function () {
-      if (typeof reader.result === "string") {
-        setSrc(reader.result);
-      }
-      return "";
-    };
-    if (files !== null) {
-      reader.readAsDataURL(files[0]);
+  const handleImageUpload = async (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    setUploadError("");
+    setSrc("");
+    if (!altText.trim()) {
+      setAltText(file.name);
+    }
+    try {
+      const { url } = await uploadImageToCloudinary(file, {
+        folder: "cat99/notes",
+      });
+      setSrc(url);
+    } catch (error: any) {
+      setUploadError(error?.message ?? "Upload failed.");
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -127,10 +138,16 @@ export function InsertImageUploadedDialogBody({
         <Input
           id="image-upload"
           type="file"
-          onChange={(e) => loadImage(e.target.files)}
+          onChange={(e) => handleImageUpload(e.target.files)}
           accept="image/*"
           data-test-id="image-modal-file-upload"
         />
+        {isUploading ? (
+          <p className="text-xs text-muted-foreground">Uploading…</p>
+        ) : null}
+        {uploadError ? (
+          <p className="text-xs text-destructive">{uploadError}</p>
+        ) : null}
       </div>
       <div className="grid gap-2">
         <Label htmlFor="alt-text">Alt Text</Label>
@@ -144,11 +161,11 @@ export function InsertImageUploadedDialogBody({
       </div>
       <Button
         type="submit"
-        disabled={isDisabled}
+        disabled={isDisabled || isUploading}
         onClick={() => onClick({ altText, src })}
         data-test-id="image-modal-file-upload-btn"
       >
-        Confirm
+        {isUploading ? "Uploading..." : "Confirm"}
       </Button>
     </div>
   );

@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import Link from "next/link";
 
 import {
   $getRoot,
@@ -10,7 +9,26 @@ import {
   type LexicalEditor,
   type SerializedEditorState,
 } from "lexical";
+import { $convertToMarkdownString } from "@lexical/markdown";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Card,
@@ -22,7 +40,19 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { FullFeaturedEditor } from "@/components/full-featured-editor";
 import { parseISO } from "date-fns";
 import { AppNavigationSelect } from "@/components/app-navigation-select";
-import Logo from "@/lib/logo";
+import { AppNavbar } from "@/components/app-navbar";
+import { AppSidebar } from "@/components/app-sidebar";
+import { AppContent, APP_CONTENT_HEIGHT } from "@/components/app-content";
+import MarkdownRenderer from "@/components/ui/markdown-renderer";
+import { MARKDOWN_TRANSFORMERS } from "@/components/editor/markdown-transformers";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { MoreVertical, PanelLeft } from "lucide-react";
 
 type RoughNote = {
   id: string;
@@ -41,6 +71,11 @@ export default function NotesPage() {
   const [currentNoteId, setCurrentNoteId] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(true);
   const [loadingNote, setLoadingNote] = useState<string | null>(null);
+  const [historySheetOpen, setHistorySheetOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"edit" | "view">("edit");
+  const [previewMarkdown, setPreviewMarkdown] = useState("");
+  const [noteToDelete, setNoteToDelete] = useState<RoughNote | null>(null);
+  const [isDeletingNote, setIsDeletingNote] = useState(false);
 
   const noteEditorRef = useRef<LexicalEditor | null>(null);
 
@@ -76,9 +111,19 @@ export default function NotesPage() {
     []
   );
 
+  const refreshPreview = useCallback(() => {
+    const editor = noteEditorRef.current;
+    if (!editor) return;
+    const markdown = editor.getEditorState().read(() =>
+      $convertToMarkdownString(MARKDOWN_TRANSFORMERS, undefined, true)
+    );
+    setPreviewMarkdown(markdown);
+  }, []);
+
   const openNote = useCallback(async (noteId: string) => {
     setLoadingNote(noteId);
     setError(null);
+    setViewMode("view");
     try {
       const response = await fetch(`/api/notes/${encodeURIComponent(noteId)}`, {
         credentials: "include",
@@ -106,6 +151,7 @@ export default function NotesPage() {
           );
           editor.setEditorState(parsed);
         });
+        refreshPreview();
       }
 
       setCurrentNoteId(noteId);
@@ -116,7 +162,15 @@ export default function NotesPage() {
     } finally {
       setLoadingNote(null);
     }
-  }, []);
+  }, [refreshPreview]);
+
+  const openNoteFromSheet = useCallback(
+    (noteId: string) => {
+      void openNote(noteId);
+      setHistorySheetOpen(false);
+    },
+    [openNote],
+  );
 
   const sortedNotes = useMemo(() => {
     return [...notes].sort((a, b) => {
@@ -142,17 +196,111 @@ export default function NotesPage() {
     }
   };
 
+  const renderHistoryList = (
+    onOpenNote: (noteId: string) => void,
+    options?: { ignoreCollapsed?: boolean },
+  ) => {
+    if (!historyOpen && !options?.ignoreCollapsed) {
+      return (
+        <div className="rounded-2xl border border-dashed border-muted px-4 py-6 text-center text-xs text-muted-foreground">
+          History hidden.
+        </div>
+      );
+    }
+
+    return (
+      <>
+        {loading ? (
+          <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">
+            Loading notes…
+          </div>
+        ) : error ? (
+          <div className="rounded-2xl border border-dashed border-muted px-4 py-6 text-center text-sm text-muted-foreground">
+            {error}
+          </div>
+        ) : sortedNotes.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-muted px-4 py-8 text-center text-sm text-muted-foreground">
+            No rough notes yet.
+          </div>
+        ) : (
+          <ScrollArea className="h-full max-h-[60vh] space-y-3">
+            <div className="space-y-3">
+              {sortedNotes.map((note) => (
+                <Card
+                  key={note.id}
+                  className={[
+                    "rounded-2xl border bg-background shadow-sm",
+                    note.id === currentNoteId
+                      ? "border-primary"
+                      : "border-transparent",
+                  ].join(" ")}
+                >
+                  <CardHeader className="space-y-1">
+                    <CardTitle className="flex items-center justify-between gap-2 text-base">
+                      <span>{note.title ?? "Untitled note"}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {formatTimestamp(note.updatedAt) ?? ""}
+                      </span>
+                    </CardTitle>
+                    <CardDescription className="text-sm text-muted-foreground line-clamp-3">
+                      {note.preview}
+                    </CardDescription>
+                    <div className="mt-2 flex items-center justify-end gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onOpenNote(note.id)}
+                        disabled={Boolean(loadingNote) || isDeletingNote}
+                      >
+                        {loadingNote === note.id ? "Loading..." : "View"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setNoteToDelete(note)}
+                        disabled={isDeletingNote}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </CardHeader>
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
+        )}
+      </>
+    );
+  };
+
   const handleEditorReady = useCallback((editor: LexicalEditor) => {
     noteEditorRef.current = editor;
   }, []);
 
   const handleClearEditor = useCallback(() => {
     const editor = noteEditorRef.current;
-    if (!editor) return;
-    editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
+    if (editor) {
+      editor.dispatchCommand(CLEAR_EDITOR_COMMAND, undefined);
+    }
     setNoteTitle("");
     setCurrentNoteId(null);
+    setPreviewMarkdown("");
+    setViewMode("edit");
   }, []);
+
+  const handleNewNote = useCallback(() => {
+    handleClearEditor();
+  }, [handleClearEditor]);
+
+  const handleViewModeChange = useCallback(
+    (next: "edit" | "view") => {
+      setViewMode(next);
+      if (next === "view") {
+        refreshPreview();
+      }
+    },
+    [refreshPreview]
+  );
 
   const handleSaveNote = useCallback(async () => {
     const editor = noteEditorRef.current;
@@ -205,171 +353,346 @@ export default function NotesPage() {
     }
   }, [currentNoteId, fetchNotes, noteTitle]);
 
+  const handleDeleteNote = useCallback(
+    async (noteId: string) => {
+      setIsDeletingNote(true);
+      try {
+        const response = await fetch(
+          `/api/notes/${encodeURIComponent(noteId)}`,
+          {
+            method: "DELETE",
+            credentials: "include",
+          }
+        );
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({} as any));
+          throw new Error(
+            typeof data?.error === "string"
+              ? data.error
+              : "Failed to delete rough note."
+          );
+        }
+        setNotes((prev) => prev.filter((note) => note.id !== noteId));
+        if (currentNoteId === noteId) {
+          handleClearEditor();
+        }
+        toast.success("Rough note deleted.");
+      } catch (error: any) {
+        toast.error(error?.message ?? "Failed to delete rough note.");
+      } finally {
+        setIsDeletingNote(false);
+        setNoteToDelete(null);
+      }
+    },
+    [currentNoteId, handleClearEditor]
+  );
+
   useEffect(() => {
     void fetchNotes();
   }, [fetchNotes]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(max-width: 768px)").matches) {
+      setHistoryOpen(false);
+    }
+  }, []);
+
   return (
-    <div className="flex min-h-dvh flex-col bg-background">
-      <div className="sticky top-0 z-40 h-12 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:h-14">
-        <div className="mx-auto flex h-full w-full max-w-7xl items-center justify-between gap-3 px-3 sm:px-6">
-          <div className="flex min-w-0 items-center gap-2">
-            <Logo className="h-5 w-5" />
-            <div className="min-w-0">
-              <div className="truncate text-base font-semibold tracking-tight">
-                Rough Notes
-              </div>
-              <div className="truncate text-[11px] text-muted-foreground">
-                Saved to your Firebase account.
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <AppNavigationSelect
-              value="saved"
-              onChange={(next) => {
-                if (next === "chat") {
-                  window.location.href = "/";
-                } else if (next === "notes") {
-                  window.location.href = "/?view=notes";
-                }
-              }}
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => void fetchNotes()}
-              disabled={loading}
-            >
-              Refresh
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 p-4">
-        <section className="space-y-4 rounded-2xl border bg-card/70 p-4 shadow-sm">
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-foreground">
-                  {currentNoteId ? "Edit current note" : "Create new rough note"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Everything is saved to your Firebase account.
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
+    <div className="flex min-h-dvh flex-col bg-gradient-to-b from-background via-background to-muted/30">
+      <AppNavbar
+        title="Rough Notes"
+        subtitle="Saved to your account."
+        leading={
+          <div className="md:hidden">
+            <Sheet open={historySheetOpen} onOpenChange={setHistorySheetOpen}>
+              <SheetTrigger asChild>
                 <Button
+                  type="button"
                   variant="outline"
-                  size="sm"
-                  onClick={handleClearEditor}
-                  disabled={isSaving}
+                  size="icon"
+                  aria-label="History"
                 >
-                  Clear
+                  <PanelLeft className="h-4 w-4" />
                 </Button>
-                <Button size="sm" onClick={handleSaveNote} disabled={isSaving}>
-                  {isSaving
-                    ? "Saving..."
-                    : currentNoteId
-                    ? "Update note"
-                    : "Save note"}
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[92vw] max-w-[22rem] p-0">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Rough notes history</SheetTitle>
+                </SheetHeader>
+                <AppSidebar
+                  title="History"
+                  actions={
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        handleNewNote();
+                        setHistorySheetOpen(false);
+                      }}
+                    >
+                      New note
+                    </Button>
+                  }
+                  className="h-full w-full rounded-none border-0 shadow-none"
+                  contentClassName="p-0"
+                >
+                  <div className="p-3">
+                    {renderHistoryList(openNoteFromSheet, {
+                      ignoreCollapsed: true,
+                    })}
+                  </div>
+                </AppSidebar>
+              </SheetContent>
+            </Sheet>
+          </div>
+        }
+        trailing={
+          <>
+            <div className="hidden items-center gap-2 md:flex">
+              <AppNavigationSelect
+                value="saved"
+                onChange={(next) => {
+                  if (next === "chat") {
+                    window.location.href = "/";
+                  } else if (next === "notes") {
+                    window.location.href = "/?view=notes";
+                  }
+                }}
+              />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Menu"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Pages</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => (window.location.href = "/")}>
+                    Chat
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => (window.location.href = "/?view=notes")}
+                  >
+                    Notes
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => (window.location.href = "/notes")}
+                  >
+                    Rough notes
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => void fetchNotes()}>
+                    Refresh
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <div className="md:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Menu"
+                  >
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Pages</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => (window.location.href = "/")}>
+                    Chat
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => (window.location.href = "/?view=notes")}
+                  >
+                    Notes
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => (window.location.href = "/notes")}
+                  >
+                    Rough notes
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => void fetchNotes()}>
+                    Refresh
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </>
+        }
+      />
+
+      <AppContent className={APP_CONTENT_HEIGHT}>
+        <div className="h-full py-3 sm:py-4">
+          <main className="flex h-full min-h-0 flex-col gap-6">
+            <div className="grid h-full min-h-0 gap-3 overflow-hidden md:grid-cols-[18rem_1fr] md:gap-4">
+          <AppSidebar
+            title="History"
+            actions={
+              <div className="flex items-center gap-2">
+                <Button size="sm" onClick={handleNewNote}>
+                  New note
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setHistoryOpen((open) => !open)}
+                >
+                  {historyOpen ? "Hide history" : "Show history"}
                 </Button>
               </div>
-            </div>
-            <Input
-              placeholder="Title (optional)"
-              value={noteTitle}
-              onChange={(event) => setNoteTitle(event.target.value)}
-              disabled={isSaving}
-            />
-          </div>
-
-          <div className="flex-1 min-h-[480px] rounded-2xl border border-muted/60 bg-background">
-            <FullFeaturedEditor
-              enableIndexedDBPersistence={false}
-              onEditorReady={handleEditorReady}
-            />
-          </div>
-        </section>
-
-        <section className="space-y-3 rounded-2xl border border-muted/50 bg-card/70 p-4 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-semibold text-foreground">History</p>
+            }
+            className="hidden md:order-1 md:flex"
+            contentClassName="p-0"
+          >
+            <div className="space-y-3 p-4">
               <p className="text-xs text-muted-foreground">
-                Browse saved notes and load them into the editor for viewing
-                or editing.
+                Browse saved notes and load them into the editor for viewing or editing.
               </p>
+              {renderHistoryList(openNote)}
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setHistoryOpen((open) => !open)}
-            >
-              {historyOpen ? "Hide history" : "Show history"}
-            </Button>
-          </div>
+          </AppSidebar>
 
-          {historyOpen && (
-            <>
-              {loading ? (
-                <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">
-                  Loading notes…
+          <section className="order-1 flex h-full min-h-0 flex-col gap-4 overflow-hidden rounded-2xl border bg-background p-3 shadow-sm md:order-2 sm:p-4">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-foreground">
+                    {currentNoteId
+                      ? viewMode === "view"
+                        ? "View current note"
+                        : "Edit current note"
+                      : viewMode === "view"
+                      ? "View rough notes"
+                      : "Create new rough note"}
+                  </p>
+                  <p className="hidden text-xs text-muted-foreground sm:block">
+                    Everything is saved to your account.
+                  </p>
                 </div>
-              ) : error ? (
-                <div className="rounded-2xl border border-dashed border-muted px-4 py-6 text-center text-sm text-muted-foreground">
-                  {error}
+                <div className="flex items-center gap-2 overflow-x-auto sm:flex-wrap sm:overflow-visible">
+                  <div className="inline-flex rounded-full border bg-background p-1">
+                    <Button
+                      size="sm"
+                      variant={viewMode === "edit" ? "default" : "ghost"}
+                      onClick={() => handleViewModeChange("edit")}
+                      className="h-7 px-3"
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={viewMode === "view" ? "default" : "ghost"}
+                      onClick={() => handleViewModeChange("view")}
+                      className="h-7 px-3"
+                    >
+                      View
+                    </Button>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNewNote}
+                    disabled={isSaving}
+                  >
+                    New note
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClearEditor}
+                    disabled={isSaving}
+                  >
+                    Clear
+                  </Button>
+                  <Button size="sm" onClick={handleSaveNote} disabled={isSaving}>
+                    {isSaving
+                      ? "Saving..."
+                      : currentNoteId
+                      ? "Update note"
+                      : "Save note"}
+                  </Button>
                 </div>
-              ) : sortedNotes.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-muted px-4 py-8 text-center text-sm text-muted-foreground">
-                  No rough notes yet.
-                </div>
-              ) : (
-                <ScrollArea className="h-full max-h-[60vh] space-y-3">
-                  <div className="space-y-3">
-                    {sortedNotes.map((note) => (
-                      <Card
-                        key={note.id}
-                        className={[
-                          "rounded-2xl border bg-background shadow-sm",
-                          note.id === currentNoteId
-                            ? "border-primary"
-                            : "border-transparent",
-                        ].join(" ")}
-                      >
-                        <CardHeader className="space-y-1">
-                          <CardTitle className="flex items-center justify-between gap-2 text-base">
-                            <span>{note.title ?? "Untitled note"}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {formatTimestamp(note.updatedAt) ?? ""}
-                            </span>
-                          </CardTitle>
-                          <CardDescription className="text-sm text-muted-foreground line-clamp-3">
-                            {note.preview}
-                          </CardDescription>
-                          <div className="mt-2 flex items-center justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openNote(note.id)}
-                              disabled={Boolean(loadingNote)}
-                            >
-                              {loadingNote === note.id
-                                ? "Loading..."
-                                : "Open in editor"}
-                            </Button>
-                          </div>
-                        </CardHeader>
-                      </Card>
-                    ))}
+              </div>
+              <Input
+                placeholder="Title (optional)"
+                value={noteTitle}
+                onChange={(event) => setNoteTitle(event.target.value)}
+                disabled={isSaving}
+              />
+            </div>
+
+            <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-muted/60 bg-background">
+              <div className={viewMode === "edit" ? "flex min-h-0 flex-1" : "hidden"}>
+                <FullFeaturedEditor
+                  enableIndexedDBPersistence={false}
+                  onEditorReady={handleEditorReady}
+                />
+              </div>
+              <div className={viewMode === "view" ? "flex min-h-0 flex-1" : "hidden"}>
+                <ScrollArea className="h-full w-full">
+                  <div className="p-4 sm:p-6">
+                    {previewMarkdown.trim() ? (
+                      <MarkdownRenderer>{previewMarkdown}</MarkdownRenderer>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Nothing to view yet.
+                      </p>
+                    )}
                   </div>
                 </ScrollArea>
-              )}
-            </>
-          )}
-        </section>
-      </main>
+              </div>
+            </div>
+          </section>
+            </div>
+          </main>
+        </div>
+      </AppContent>
+
+      <AlertDialog
+        open={Boolean(noteToDelete)}
+        onOpenChange={(open) => {
+          if (!open) setNoteToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete rough note?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {noteToDelete?.title
+                ? `Delete "${noteToDelete.title}" and its Cloudinary images?`
+                : "Delete this rough note and its Cloudinary images?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeletingNote}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() =>
+                noteToDelete ? handleDeleteNote(noteToDelete.id) : undefined
+              }
+              disabled={isDeletingNote}
+            >
+              {isDeletingNote ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

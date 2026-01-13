@@ -30,6 +30,7 @@ interface ChatPropsBase {
   handleInputChange: React.ChangeEventHandler<HTMLTextAreaElement>;
   isGenerating: boolean;
   stop?: () => void;
+  onSuggestionSelect?: (suggestion: string) => void;
   onRateResponse?: (
     messageId: string,
     rating: "thumbs-up" | "thumbs-down"
@@ -65,6 +66,7 @@ export function Chat({
   setMessages,
   transcribeAudio,
   allowAttachments,
+  onSuggestionSelect,
 }: ChatProps) {
   const lastMessage = messages.at(-1);
   const isEmpty = messages.length === 0;
@@ -201,6 +203,7 @@ export function Chat({
           label="Try these prompts ✨"
           append={append}
           suggestions={suggestions}
+          onSelect={onSuggestionSelect}
         />
       ) : null}
 

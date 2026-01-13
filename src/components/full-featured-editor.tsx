@@ -114,20 +114,9 @@ import { HistoryToolbarPlugin } from "@/components/editor/plugins/toolbar/histor
 import { LinkToolbarPlugin } from "@/components/editor/plugins/toolbar/link-toolbar-plugin";
 import { SubSuperToolbarPlugin } from "@/components/editor/plugins/toolbar/subsuper-toolbar-plugin";
 import { editorTheme } from "@/components/editor/themes/editor-theme";
-import { EMOJI } from "@/components/editor/transformers/markdown-emoji-transformer";
-import { HR } from "@/components/editor/transformers/markdown-hr-transformer";
-import { IMAGE } from "@/components/editor/transformers/markdown-image-transformer";
-import { TABLE } from "@/components/editor/transformers/markdown-table-transformer";
-import { TWEET } from "@/components/editor/transformers/markdown-tweet-transformer";
+import { MARKDOWN_TRANSFORMERS } from "@/components/editor/markdown-transformers";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
-import {
-  CHECK_LIST,
-  ELEMENT_TRANSFORMERS,
-  MULTILINE_ELEMENT_TRANSFORMERS,
-  TEXT_FORMAT_TRANSFORMERS,
-  TEXT_MATCH_TRANSFORMERS,
-} from "@lexical/markdown";
 import { AutoFocusPlugin } from "@lexical/react/LexicalAutoFocusPlugin";
 import { HistoryPlugin } from "@lexical/react/LexicalHistoryPlugin";
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext";
@@ -142,19 +131,6 @@ type FullFeaturedEditorProps = {
   enableIndexedDBPersistence?: boolean;
   onEditorReady?: (editor: LexicalEditor) => void;
 };
-
-const MARKDOWN_TRANSFORMERS = [
-  TABLE,
-  HR,
-  IMAGE,
-  EMOJI,
-  TWEET,
-  CHECK_LIST,
-  ...ELEMENT_TRANSFORMERS,
-  ...MULTILINE_ELEMENT_TRANSFORMERS,
-  ...TEXT_FORMAT_TRANSFORMERS,
-  ...TEXT_MATCH_TRANSFORMERS,
-];
 
 const componentPickerBaseOptions: ComponentPickerOption[] = [
   ParagraphPickerPlugin(),
@@ -239,57 +215,78 @@ export function FullFeaturedEditor({
   const persistenceKey = storageKey ?? STORAGE_KEY;
 
   return (
-    <div className="bg-card text-card-foreground w-full overflow-hidden rounded-2xl border shadow-sm">
+    <div className="bg-card text-card-foreground flex h-full min-h-0 w-full flex-col overflow-hidden rounded-2xl border shadow-sm">
       <LexicalComposer initialConfig={fullEditorConfig}>
         <TooltipProvider>
-          <div className="flex flex-col gap-4">
+          <div className="flex min-h-0 flex-1 flex-col gap-4">
             <ToolbarPlugin>
               {() => (
-                <div className="border-border/80 border-b bg-muted/30 px-4 py-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <BlockInsertPlugin>
-                      <InsertEmbeds />
-                      <InsertImage />
-                      <InsertHorizontalRule />
-                      <InsertColumnsLayout />
-                      <InsertTable />
-                    </BlockInsertPlugin>
+                <div className="border-border/80 border-b bg-muted/30">
+                <div className="flex items-center gap-2 overflow-x-auto px-3 py-2 md:hidden">
                     <HistoryToolbarPlugin />
                     <Separator orientation="vertical" className="h-6" />
+                    <BlockInsertPlugin>
+                      <InsertImage />
+                      <InsertHorizontalRule />
+                    </BlockInsertPlugin>
                     <BlockFormatDropDown>
                       <FormatParagraph />
-                      <FormatHeading levels={["h1", "h2", "h3"]} />
+                      <FormatHeading levels={["h1", "h2"]} />
                       <FormatNumberedList />
                       <FormatBulletedList />
                       <FormatCheckList />
                       <FormatQuote />
-                      <FormatCodeBlock />
                     </BlockFormatDropDown>
-                    <ElementFormatToolbarPlugin />
                     <FontFormatToolbarPlugin />
-                    <SubSuperToolbarPlugin />
+                    <LinkToolbarPlugin setIsLinkEditMode={setIsLinkEditMode} />
                     <ClearFormattingToolbarPlugin />
                   </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <FontFamilyToolbarPlugin />
-                    <FontSizeToolbarPlugin />
-                    <FontColorToolbarPlugin />
-                    <FontBackgroundToolbarPlugin />
-                    <LinkToolbarPlugin setIsLinkEditMode={setIsLinkEditMode} />
-                    <CodeLanguageToolbarPlugin />
+                  <div className="hidden px-4 py-3 md:block">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <BlockInsertPlugin>
+                        <InsertEmbeds />
+                        <InsertImage />
+                        <InsertHorizontalRule />
+                        <InsertColumnsLayout />
+                        <InsertTable />
+                      </BlockInsertPlugin>
+                      <HistoryToolbarPlugin />
+                      <Separator orientation="vertical" className="h-6" />
+                      <BlockFormatDropDown>
+                        <FormatParagraph />
+                        <FormatHeading levels={["h1", "h2", "h3"]} />
+                        <FormatNumberedList />
+                        <FormatBulletedList />
+                        <FormatCheckList />
+                        <FormatQuote />
+                        <FormatCodeBlock />
+                      </BlockFormatDropDown>
+                      <ElementFormatToolbarPlugin />
+                      <FontFormatToolbarPlugin />
+                      <SubSuperToolbarPlugin />
+                      <ClearFormattingToolbarPlugin />
+                    </div>
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <FontFamilyToolbarPlugin />
+                      <FontSizeToolbarPlugin />
+                      <FontColorToolbarPlugin />
+                      <FontBackgroundToolbarPlugin />
+                      <LinkToolbarPlugin setIsLinkEditMode={setIsLinkEditMode} />
+                      <CodeLanguageToolbarPlugin />
+                    </div>
                   </div>
                 </div>
               )}
             </ToolbarPlugin>
 
-            <div className="relative">
+            <div className="relative min-h-0 flex-1">
               <RichTextPlugin
                 contentEditable={
-                  <div className="relative">
-                    <div ref={setAnchorElem}>
+                  <div className="relative h-full min-h-0">
+                    <div ref={setAnchorElem} className="h-full min-h-0">
                       <ContentEditable
                         placeholder={placeholderText}
-                        className="ContentEditable__root relative block h-[520px] min-h-[520px] w-full overflow-auto px-6 py-4 text-base focus:outline-none"
+                        className="ContentEditable__root relative block h-full min-h-0 w-full overflow-auto px-4 py-4 text-base focus:outline-none sm:px-6"
                       />
                     </div>
                   </div>
@@ -347,29 +344,40 @@ export function FullFeaturedEditor({
             </div>
 
             <ActionsPlugin>
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 bg-muted/20 px-4 py-3 text-sm">
-                <div className="flex flex-wrap items-center gap-2">
-                  <MaxLengthPlugin maxLength={MAX_LENGTH} />
-                  <CharacterLimitPlugin
-                    maxLength={MAX_LENGTH}
-                    charset="UTF-16"
-                  />
-                  <CounterCharacterPlugin />
+              <div className="border-t border-border/70 bg-muted/20 px-4 py-3 text-sm">
+                <div className="flex items-center justify-between gap-3 md:hidden">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <CounterCharacterPlugin />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <SpeechToTextPlugin />
+                    <EditModeTogglePlugin />
+                  </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <SpeechToTextPlugin />
-                  <EditModeTogglePlugin />
-                  <ThemeTogglePlugin />
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <ImportExportPlugin />
-                  <ShareContentPlugin />
-                  <MarkdownTogglePlugin
-                    transformers={MARKDOWN_TRANSFORMERS}
-                    shouldPreserveNewLinesInMarkdown
-                  />
-                  <TreeViewPlugin />
-                  <ClearEditorActionPlugin />
+                <div className="hidden flex-wrap items-center justify-between gap-3 md:flex">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <MaxLengthPlugin maxLength={MAX_LENGTH} />
+                    <CharacterLimitPlugin
+                      maxLength={MAX_LENGTH}
+                      charset="UTF-16"
+                    />
+                    <CounterCharacterPlugin />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <SpeechToTextPlugin />
+                    <EditModeTogglePlugin />
+                    <ThemeTogglePlugin />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <ImportExportPlugin />
+                    <ShareContentPlugin />
+                    <MarkdownTogglePlugin
+                      transformers={MARKDOWN_TRANSFORMERS}
+                      shouldPreserveNewLinesInMarkdown
+                    />
+                    <TreeViewPlugin />
+                    <ClearEditorActionPlugin />
+                  </div>
                 </div>
               </div>
             </ActionsPlugin>

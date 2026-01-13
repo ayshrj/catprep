@@ -154,15 +154,10 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
   renderContent,
   paddingClassName = "p-3",
 }) => {
-  const files = useMemo(() => {
-    return experimental_attachments?.map((attachment) => {
-      const dataArray = dataUrlToUint8Array(attachment.url);
-      const file = new File([dataArray], attachment.name ?? "Unknown", {
-        type: attachment.contentType,
-      });
-      return file;
-    });
-  }, [experimental_attachments]);
+  const attachments = useMemo(
+    () => experimental_attachments ?? [],
+    [experimental_attachments]
+  );
 
   const isUser = role === "user";
   const displayContent = stringifyMessageContent(content);
@@ -184,11 +179,11 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({
       <div
         className={cn("flex flex-col", isUser ? "items-end" : "items-start")}
       >
-        {files ? (
+        {attachments.length > 0 ? (
           <div className="mb-1 flex flex-wrap gap-2">
-            {files.map((file, index) => {
-              return <FilePreview file={file} key={index} />;
-            })}
+            {attachments.map((attachment, index) => (
+              <AttachmentPreview attachment={attachment} key={index} />
+            ))}
           </div>
         ) : null}
 
@@ -300,6 +295,60 @@ function dataUrlToUint8Array(data: string) {
   // Fallback for environments where `atob` isn't available.
   const buf = Buffer.from(base64, "base64");
   return new Uint8Array(buf);
+}
+
+function isDataUrl(url: string) {
+  return url.startsWith("data:");
+}
+
+function attachmentToFile(attachment: Attachment): File | null {
+  if (!isDataUrl(attachment.url)) return null;
+  try {
+    const dataArray = dataUrlToUint8Array(attachment.url);
+    return new File([dataArray], attachment.name ?? "Unknown", {
+      type: attachment.contentType,
+    });
+  } catch {
+    return null;
+  }
+}
+
+function AttachmentPreview({ attachment }: { attachment: Attachment }) {
+  const file = useMemo(() => attachmentToFile(attachment), [attachment]);
+  const isImage =
+    attachment.contentType?.startsWith("image/") ||
+    attachment.url.startsWith("data:image/");
+
+  if (file) {
+    return <FilePreview file={file} />;
+  }
+
+  if (isImage) {
+    return (
+      <div className="relative flex max-w-[240px] items-center gap-2 rounded-md border bg-background p-1.5 pr-2 text-xs">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          alt={attachment.name ?? "Attachment"}
+          className="h-10 w-10 shrink-0 rounded-sm border object-cover"
+          src={attachment.url}
+        />
+        <span className="w-full truncate text-muted-foreground">
+          {attachment.name ?? "Image attachment"}
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <a
+      href={attachment.url}
+      target="_blank"
+      rel="noreferrer"
+      className="flex max-w-[240px] items-center gap-2 rounded-md border bg-background px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+    >
+      <span className="truncate">{attachment.name ?? "Attachment"}</span>
+    </a>
+  );
 }
 
 const ReasoningBlock = ({ part }: { part: ReasoningPart }) => {

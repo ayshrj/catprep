@@ -16,7 +16,6 @@ import {
   Moon,
   RefreshCcw,
   RotateCcw,
-  Settings,
   Sun,
   Trash2,
   PanelLeft,
@@ -24,6 +23,7 @@ import {
   MoreVertical,
 } from "lucide-react";
 import { toast } from "sonner";
+import type { SerializedEditorState } from "lexical";
 
 import { Chat } from "@/components/ui/chat";
 import { type Message } from "@/components/ui/chat-message";
@@ -40,6 +40,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Card,
   CardContent,
@@ -55,7 +56,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -82,18 +82,31 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Notes } from "@/components/notes";
-
-import Logo from "@/lib/logo";
+import { AppNavbar } from "@/components/app-navbar";
+import { AppSidebar } from "@/components/app-sidebar";
+import { AppContent, APP_CONTENT_HEIGHT } from "@/components/app-content";
 
 import {
   coerceStoredMessageContent,
   stringifyMessageContent,
 } from "@/lib/message-content";
+import { uploadImageToCloudinary } from "@/lib/upload-image";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
-import { ModelIcon, MODELS_ICONS } from "./constant/model";
+import { ModelIcon } from "./constant/model";
 import { AppNavigationSelect } from "@/components/app-navigation-select";
+import {
+  isLlmCatCoachResponse,
+  type LlmCatCoachResponse,
+} from "@/types/llm-response";
+import { CAT_KB_PARTS } from "@/lib/cat";
 
 type Attachment = {
   name?: string;
@@ -169,16 +182,71 @@ async function fileToDataUrl(file: File) {
   });
 }
 
-async function filesToAttachments(files?: FileList): Promise<Attachment[]> {
-  if (!files || files.length === 0) return [];
-  const attachments = await Promise.all(
-    Array.from(files).map(async (file) => ({
-      name: file.name,
-      contentType: file.type,
-      url: await fileToDataUrl(file),
-    }))
-  );
-  return attachments;
+function isTextFile(file: File) {
+  if (file.type.startsWith("text/")) return true;
+  const name = file.name.toLowerCase();
+  return name.endsWith(".txt") || name.endsWith(".md") || name.endsWith(".csv");
+}
+
+async function prepareChatAttachments(files?: FileList): Promise<{
+  attachments: Attachment[];
+  extractedText: string;
+}> {
+  if (!files || files.length === 0) {
+    return { attachments: [], extractedText: "" };
+  }
+
+  const extractedChunks: string[] = [];
+  const attachments: Attachment[] = [];
+
+  for (const file of Array.from(files)) {
+    if (file.type.startsWith("image/")) {
+      try {
+        const { url, text, ocr } = await uploadImageToCloudinary(file, {
+          folder: "cat99/chat",
+          ocr: true,
+        });
+        attachments.push({
+          name: file.name,
+          contentType: file.type,
+          url,
+        });
+        if (ocr) {
+          if (text?.trim()) {
+            extractedChunks.push(`From ${file.name}:\n${text.trim()}`);
+          } else {
+            extractedChunks.push(`From ${file.name}:\n(no text detected)`);
+          }
+        }
+      } catch (error: any) {
+        console.error("Image upload failed", error);
+        toast.error(error?.message ?? "Image upload failed.");
+      }
+      continue;
+    }
+
+    if (isTextFile(file)) {
+      try {
+        const text = await file.text();
+        if (text.trim()) {
+          extractedChunks.push(`From ${file.name}:\n${text.trim()}`);
+        }
+        const url = await fileToDataUrl(file);
+        attachments.push({
+          name: file.name,
+          contentType: file.type || "text/plain",
+          url,
+        });
+      } catch (error) {
+        console.error("Failed to read text file", error);
+      }
+    }
+  }
+
+  return {
+    attachments,
+    extractedText: extractedChunks.join("\n\n"),
+  };
 }
 
 function serializeMessageForStorage(message: Message) {
@@ -319,6 +387,7 @@ export function HomeClient() {
   const [openRouterKeyInput, setOpenRouterKeyInput] = useState("");
   const [isSettingsLoading, setIsSettingsLoading] = useState(false);
   const [isSettingsSaving, setIsSettingsSaving] = useState(false);
+  const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
 
   const [models, setModels] = useState<OpenRouterModel[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
@@ -327,14 +396,135 @@ export function HomeClient() {
   const [modelSearch, setModelSearch] = useState("");
 
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [starterDialog, setStarterDialog] = useState<
+    "rescue" | "mock" | "rc" | null
+  >(null);
+  const [starterIntake, setStarterIntake] = useState({
+    attempt: "",
+    weekdayHours: "",
+    weekendHours: "",
+    levels: "",
+    resources: "",
+  });
+  const [mockForm, setMockForm] = useState({
+    overall: "",
+    varc: "",
+    dilr: "",
+    qa: "",
+    attempts: "",
+    accuracy: "",
+    timeLeftValue: "",
+    timeLeftUnit: "weeks",
+    mistakes: "",
+  });
+  const [onboardingKeyError, setOnboardingKeyError] = useState("");
+  const [isSavingActionPlan, setIsSavingActionPlan] = useState(false);
+  const [actionChecklist, setActionChecklist] = useState<Record<string, boolean>>(
+    {}
+  );
 
   const suggestions = useMemo(
     () => [
-      "Summarize what this UI can do.",
-      "Write a short markdown message with a code block.",
-      "Pretend you are a helpful assistant for this chat app.",
+      "Give me a 14-day rescue plan.",
+      "Diagnose my last mock.",
+      "Fix RC accuracy.",
     ],
     []
+  );
+
+  const needsOpenRouterKey = Boolean(sessionUser && !openRouterStatus.hasKey);
+  const needsOpenRouterModel = Boolean(sessionUser && !openRouterModel.trim());
+  const showOnboarding =
+    Boolean(sessionUser) &&
+    !isSessionLoading &&
+    hasLoadedSettings &&
+    (needsOpenRouterKey || needsOpenRouterModel);
+  const showChatControls = homeMode === "chat";
+  const showNotesNavigation = homeMode === "notes";
+
+  const buildQuickIntakeLines = useCallback(() => {
+    const attempt = starterIntake.attempt.trim() || "CAT 2026 (assumed)";
+    const weekday = starterIntake.weekdayHours.trim() || "unknown";
+    const weekend = starterIntake.weekendHours.trim() || "unknown";
+    const levels = starterIntake.levels.trim() || "unknown";
+    const resources = starterIntake.resources.trim() || "unknown";
+    return [
+      `CAT attempt: ${attempt}`,
+      `Weekly study hours: ${weekday} weekday + ${weekend} weekend`,
+      `Current level by section: ${levels}`,
+      `Mocks/resources: ${resources}`,
+    ];
+  }, [starterIntake]);
+
+  const buildQuickIntakeBlock = useCallback(() => {
+    return buildQuickIntakeLines().map((line) => `- ${line}`).join("\n");
+  }, [buildQuickIntakeLines]);
+
+  const buildLexicalPayload = useCallback(
+    (lines: string[]): SerializedEditorState => {
+      return {
+        root: {
+          type: "root",
+          version: 1,
+          format: "",
+          indent: 0,
+          direction: "ltr",
+          children: lines.map((line) => ({
+            type: "paragraph",
+            version: 1,
+            format: "",
+            indent: 0,
+            direction: "ltr",
+            children: [
+              {
+                type: "text",
+                version: 1,
+                text: line,
+                detail: 0,
+                format: 0,
+                mode: "normal",
+                style: "",
+              },
+            ],
+          })),
+        },
+      };
+    },
+    []
+  );
+
+  const latestCoachResponse = useMemo<LlmCatCoachResponse | null>(() => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const message = messages[i];
+      if (message?.role === "assistant" && isLlmCatCoachResponse(message.content)) {
+        return message.content;
+      }
+    }
+    return null;
+  }, [messages]);
+
+  const actionItems = useMemo(() => {
+    if (!latestCoachResponse) return [];
+    const today = latestCoachResponse.nextActions.today
+      .filter((item) => item?.trim())
+      .map((item, index) => ({
+        id: `today-${index}`,
+        label: item,
+        bucket: "Today",
+      }));
+    const thisWeek = latestCoachResponse.nextActions.thisWeek
+      .filter((item) => item?.trim())
+      .map((item, index) => ({
+        id: `week-${index}`,
+        label: item,
+        bucket: "This Week",
+      }));
+    return [...today, ...thisWeek];
+  }, [latestCoachResponse]);
+
+  const actionSignature = useMemo(
+    () => actionItems.map((item) => `${item.id}:${item.label}`).join("|"),
+    [actionItems]
   );
 
   const loadSession = useCallback(async () => {
@@ -403,12 +593,17 @@ export function HomeClient() {
       toast.error(error?.message ?? "Failed to load settings.");
     } finally {
       setIsSettingsLoading(false);
+      setHasLoadedSettings(true);
     }
   }, [sessionUser]);
 
   useEffect(() => {
     loadSession();
   }, [loadSession]);
+
+  useEffect(() => {
+    setHasLoadedSettings(false);
+  }, [sessionUser]);
 
   useEffect(() => {
     if (!sessionUser) {
@@ -434,6 +629,10 @@ export function HomeClient() {
       pendingReplyTimeoutRef.current = null;
     }
   }, [chatIdFromUrl]);
+
+  useEffect(() => {
+    setActionChecklist({});
+  }, [actionSignature]);
 
   useEffect(() => {
     if (!sessionUser) return;
@@ -566,16 +765,26 @@ export function HomeClient() {
         pendingReplyTimeoutRef.current = null;
       }
 
-      const attachments = await filesToAttachments(files);
+      const { attachments, extractedText } = await prepareChatAttachments(files);
+      let nextContent = content.trim();
+      if (extractedText.trim()) {
+        nextContent = nextContent
+          ? `${nextContent}\n\nExtracted text:\n${extractedText.trim()}`
+          : `Extracted text:\n${extractedText.trim()}`;
+      }
+      if (!nextContent) {
+        nextContent = "Attached files for review.";
+      }
+
       const existingChatId = activeChatIdRef.current ?? chatIdFromUrl;
       const isNewSession = !existingChatId;
-      const chatId = existingChatId ?? (await createChatSession(content));
+      const chatId = existingChatId ?? (await createChatSession(nextContent));
 
       const userMessage: Message = {
         id: createId(),
         role: "user",
         createdAt: new Date(),
-        content,
+        content: nextContent,
         experimental_attachments:
           attachments.length > 0 ? (attachments as any) : undefined,
       };
@@ -632,8 +841,125 @@ export function HomeClient() {
     [sendUserMessage]
   );
 
+  const saveActionPlan = useCallback(async () => {
+    if (!latestCoachResponse || actionItems.length === 0) {
+      toast.error("No actions to save yet.");
+      return;
+    }
+
+    const todayItems = actionItems.filter((item) => item.bucket === "Today");
+    const weekItems = actionItems.filter((item) => item.bucket === "This Week");
+    const lines: string[] = [];
+
+    if (todayItems.length > 0) {
+      lines.push("Today:");
+      todayItems.forEach((item) => {
+        const checked = actionChecklist[item.id];
+        lines.push(`${checked ? "[x]" : "[ ]"} ${item.label}`);
+      });
+      lines.push("");
+    }
+
+    if (weekItems.length > 0) {
+      lines.push("This Week:");
+      weekItems.forEach((item) => {
+        const checked = actionChecklist[item.id];
+        lines.push(`${checked ? "[x]" : "[ ]"} ${item.label}`);
+      });
+    }
+
+    const preview = lines.join(" ").replace(/\s+/g, " ").trim();
+    if (!preview) {
+      toast.error("No actions to save yet.");
+      return;
+    }
+
+    setIsSavingActionPlan(true);
+    try {
+      const payload = buildLexicalPayload(lines);
+      const title = `Action plan - ${new Date().toLocaleDateString()}`;
+      await apiJson<{ noteId: string }>("/api/notes", {
+        method: "POST",
+        body: JSON.stringify({
+          title,
+          preview: preview.slice(0, 240),
+          payload,
+        }),
+      });
+      toast.success("Saved to rough notes.");
+    } catch (error: any) {
+      toast.error(error?.message ?? "Failed to save action plan.");
+    } finally {
+      setIsSavingActionPlan(false);
+    }
+  }, [
+    actionChecklist,
+    actionItems,
+    buildLexicalPayload,
+    latestCoachResponse,
+  ]);
+
   const handleInputChange: React.ChangeEventHandler<HTMLTextAreaElement> =
     useCallback((event) => setInput(event.target.value), []);
+
+  const handleSuggestionSelect = useCallback((suggestion: string) => {
+    if (suggestion === "Give me a 14-day rescue plan.") {
+      setStarterDialog("rescue");
+      return;
+    }
+    if (suggestion === "Diagnose my last mock.") {
+      setStarterDialog("mock");
+      return;
+    }
+    if (suggestion === "Fix RC accuracy.") {
+      setStarterDialog("rc");
+      return;
+    }
+  }, []);
+
+  const sendQuickStarter = useCallback(
+    async (basePrompt: string) => {
+      const intake = buildQuickIntakeBlock();
+      const message = `${basePrompt}\n\nQuick intake:\n${intake}`;
+      await sendUserMessage(message, undefined);
+    },
+    [buildQuickIntakeBlock, sendUserMessage]
+  );
+
+  const handleRescueSubmit = useCallback(async () => {
+    await sendQuickStarter("Give me a 14-day rescue plan.");
+    setStarterDialog(null);
+  }, [sendQuickStarter]);
+
+  const handleRcSubmit = useCallback(async () => {
+    await sendQuickStarter("Fix RC accuracy.");
+    setStarterDialog(null);
+  }, [sendQuickStarter]);
+
+  const handleMockSubmit = useCallback(async () => {
+    const lines: string[] = ["Diagnose my last mock."];
+    if (mockForm.overall.trim()) lines.push(`Overall: ${mockForm.overall}`);
+    if (mockForm.varc.trim()) lines.push(`VARC: ${mockForm.varc}`);
+    if (mockForm.dilr.trim()) lines.push(`DILR: ${mockForm.dilr}`);
+    if (mockForm.qa.trim()) lines.push(`QA: ${mockForm.qa}`);
+    if (mockForm.attempts.trim()) lines.push(`Attempts: ${mockForm.attempts}`);
+    if (mockForm.accuracy.trim()) {
+      lines.push(`Accuracy: ${mockForm.accuracy}%`);
+    }
+    if (mockForm.timeLeftValue.trim()) {
+      lines.push(
+        `Time left: ${mockForm.timeLeftValue} ${mockForm.timeLeftUnit} left`
+      );
+    }
+    if (mockForm.mistakes.trim()) {
+      lines.push(`What went wrong: ${mockForm.mistakes.trim()}`);
+    }
+
+    const intake = buildQuickIntakeBlock();
+    const message = `${lines.join("\n")}\n\nQuick intake:\n${intake}`;
+    await sendUserMessage(message, undefined);
+    setStarterDialog(null);
+  }, [buildQuickIntakeBlock, mockForm, sendUserMessage]);
 
   const handleAuthSubmit = useCallback(
     async (event: React.FormEvent) => {
@@ -740,6 +1066,22 @@ export function HomeClient() {
     }
   }, [loadOpenRouterSettings, openRouterKeyInput]);
 
+  const handleOnboardingSaveKey = useCallback(async () => {
+    const key = openRouterKeyInput.trim();
+    if (!key) {
+      setOnboardingKeyError("OpenRouter key is required.");
+      return;
+    }
+    setOnboardingKeyError("");
+    await saveOpenRouterKey();
+  }, [openRouterKeyInput, saveOpenRouterKey]);
+
+  useEffect(() => {
+    if (onboardingKeyError && openRouterKeyInput.trim()) {
+      setOnboardingKeyError("");
+    }
+  }, [onboardingKeyError, openRouterKeyInput]);
+
   const removeOpenRouterKey = useCallback(async () => {
     setIsSettingsSaving(true);
     try {
@@ -819,6 +1161,19 @@ export function HomeClient() {
       setModelsLoading(false);
     }
   }, [canFetchModels, modelsLoading, openRouterModel, saveOpenRouterModel]);
+
+  useEffect(() => {
+    if (!showOnboarding) return;
+    if (!openRouterStatus.hasKey) return;
+    if (models.length > 0 || modelsLoading) return;
+    fetchModels();
+  }, [
+    fetchModels,
+    models.length,
+    modelsLoading,
+    openRouterStatus.hasKey,
+    showOnboarding,
+  ]);
 
   const setArchived = useCallback(
     async (chatId: string, archived: boolean) => {
@@ -975,49 +1330,81 @@ export function HomeClient() {
     });
   };
 
-  const CONTENT_H = "h-[calc(100dvh-49px)] md:h-[calc(100dvh-57px)]";
+  const handleNotesSectionClick = useCallback((sectionId: string) => {
+    if (typeof window !== "undefined") {
+      const hash = sectionId.startsWith("#") ? sectionId : `#${sectionId}`;
+      if (window.location.hash !== hash) {
+        window.history.replaceState(null, "", hash);
+        window.dispatchEvent(new Event("hashchange"));
+      }
+    }
+    setHistoryOpen(false);
+  }, []);
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-zinc-50 dark:bg-black">
-      <div className="sticky top-0 z-40 h-12 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:h-14">
-        <div className="mx-auto flex h-full w-full max-w-7xl items-center justify-between gap-3 px-3 sm:px-6">
-          <div className="flex min-w-0 items-center gap-2">
-            {sessionUser ? (
-              <div className="md:hidden">
-                <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
-                  <SheetTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      aria-label="History"
-                    >
-                      <PanelLeft className="h-4 w-4" />
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent
-                    side="left"
-                    className="w-[92vw] max-w-[22rem] p-0"
+    <div className="flex h-dvh flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/30">
+      <AppNavbar
+        title="Cat99"
+        subtitle={sessionUser ? sessionUser.email ?? sessionUser.uid : undefined}
+        leading={
+          sessionUser && (showChatControls || showNotesNavigation) ? (
+            <div className="md:hidden">
+              <Sheet open={historyOpen} onOpenChange={setHistoryOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label={showNotesNavigation ? "Chapters" : "History"}
                   >
-                    <div className="flex h-dvh flex-col">
-                      <SheetHeader className="border-b px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <SheetTitle className="text-base">History</SheetTitle>
+                    <PanelLeft className="h-4 w-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-[92vw] max-w-[22rem] p-0">
+                  <SheetHeader className="sr-only">
+                    <SheetTitle>
+                      {showNotesNavigation ? "Chapters" : "History"}
+                    </SheetTitle>
+                  </SheetHeader>
+                  {showNotesNavigation ? (
+                    <AppSidebar
+                      title="Chapters"
+                      className="h-full w-full rounded-none border-0 shadow-none"
+                      contentClassName="p-0"
+                    >
+                      <ScrollArea className="h-full">
+                        <div className="space-y-4 p-4">
+                          {CAT_KB_PARTS.map((part) => (
+                            <div key={part.id} className="space-y-2">
+                              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                {part.title}
+                              </p>
+                              <div className="space-y-1">
+                                {part.sections.map((section) => (
+                                  <button
+                                    key={section.id}
+                                    type="button"
+                                    onClick={() =>
+                                      handleNotesSectionClick(section.id)
+                                    }
+                                    className="w-full rounded-lg px-2 py-1 text-left text-xs text-muted-foreground transition hover:bg-muted/70 hover:text-foreground"
+                                  >
+                                    {section.title}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {historyActions}
-                        </div>
-                      </SheetHeader>
-
-                      <div className="min-h-0 flex-1 px-3 py-3">
-                        <ScrollArea className="h-full">
-                          <div className="space-y-1 pr-2">
-                            {renderSessionItems({ compact: true })}
-                          </div>
-                        </ScrollArea>
-                      </div>
-
-                      <div className="border-t p-3">
+                      </ScrollArea>
+                    </AppSidebar>
+                  ) : (
+                    <AppSidebar
+                      title="History"
+                      actions={historyActions}
+                      className="h-full w-full rounded-none border-0 shadow-none"
+                      contentClassName="p-0"
+                      footer={
                         <Button
                           className="w-full"
                           type="button"
@@ -1025,149 +1412,107 @@ export function HomeClient() {
                         >
                           New chat
                         </Button>
-                      </div>
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </div>
-            ) : null}
-
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <Logo className="h-5 w-5" />
-                <div className="truncate text-base font-semibold tracking-tight">
-                  Cat99
-                </div>
-              </div>
-              {sessionUser ? (
-                <div className="truncate text-[11px] text-muted-foreground">
-                  {sessionUser.email ?? sessionUser.uid}
-                </div>
-              ) : null}
+                      }
+                    >
+                      <ScrollArea className="h-full">
+                        <div className="space-y-1 p-3 pr-2">
+                          {renderSessionItems({ compact: true })}
+                        </div>
+                      </ScrollArea>
+                    </AppSidebar>
+                  )}
+                </SheetContent>
+              </Sheet>
             </div>
-          </div>
-
-          {sessionUser ? (
-            <div className="flex items-center gap-2">
+          ) : null
+        }
+        trailing={
+          sessionUser ? (
+            <>
               <div className="hidden items-center gap-2 md:flex">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setModelPickerOpen(true)}
-                  disabled={models.length === 0 || isSettingsSaving}
-                  className="min-w-0 max-w-full shrink truncate md:max-w-[18rem]"
-                >
-                  <ModelIcon model={openRouterModel} />
-                  {openRouterModel ? openRouterModel : "Select Model"}
-                </Button>
+                {showChatControls ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setModelPickerOpen(true)}
+                      disabled={models.length === 0 || isSettingsSaving}
+                      className="min-w-0 max-w-full shrink truncate md:max-w-[18rem]"
+                    >
+                      <ModelIcon model={openRouterModel} />
+                      {openRouterModel ? openRouterModel : "Select Model"}
+                    </Button>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={fetchModels}
-                  disabled={modelsLoading || isSettingsSaving}
-                >
-                  <RefreshCcw
-                    className={
-                      modelsLoading
-                        ? "mr-2 h-4 w-4 animate-spin"
-                        : "mr-2 h-4 w-4"
-                    }
-                  />
-                  Select
-                </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      aria-label="Fetch models"
+                      onClick={fetchModels}
+                      disabled={modelsLoading || isSettingsSaving}
+                    >
+                      <RefreshCcw
+                        className={
+                          modelsLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"
+                        }
+                      />
+                    </Button>
+                  </>
+                ) : null}
 
                 <AppNavigationSelect
                   value={navigationValue}
                   onChange={handleNavigationChange}
                 />
 
-                <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-                  <DialogTrigger asChild>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                     <Button
                       type="button"
                       variant="outline"
                       size="icon"
-                      aria-label="Settings"
+                      aria-label="Menu"
                     >
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Settings</DialogTitle>
-                      <DialogDescription>
-                        Saved to your Firebase account.
-                      </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <Label htmlFor="openrouter-key">
-                          OpenRouter API key
-                        </Label>
-                        {openRouterStatus.hasKey ? (
-                          <span className="text-xs text-muted-foreground">
-                            saved
-                            {openRouterStatus.last4
-                              ? ` ••••${openRouterStatus.last4}`
-                              : ""}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            not set
-                          </span>
-                        )}
+                      <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Pages</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleNavigationChange("chat")}>
+                    Chat
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleNavigationChange("notes")}
+                  >
+                    Notes
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleNavigationChange("saved")}
+                  >
+                    Rough notes
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
+                    Settings
+                  </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleNewChat}>
+                      New chat
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout}>
+                      Logout
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                      <div className="flex w-full items-center justify-between">
+                        <span>Theme</span>
+                        <ThemeToggleButton />
                       </div>
-
-                      <Input
-                        id="openrouter-key"
-                        type="password"
-                        placeholder="sk-or-..."
-                        value={openRouterKeyInput}
-                        onChange={(e) => setOpenRouterKeyInput(e.target.value)}
-                        disabled={isSettingsLoading || isSettingsSaving}
-                      />
-
-                      <Alert>
-                        <AlertDescription>
-                          Stored server-side. It is not displayed back in full.
-                        </AlertDescription>
-                      </Alert>
-                    </div>
-
-                    <DialogFooter>
-                      {openRouterStatus.hasKey ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setSettingsOpen(false);
-                            setConfirmAction({ type: "remove-openrouter-key" });
-                          }}
-                          disabled={isSettingsSaving}
-                        >
-                          Remove key
-                        </Button>
-                      ) : null}
-                      <Button
-                        type="button"
-                        onClick={saveOpenRouterKey}
-                        disabled={isSettingsLoading || isSettingsSaving}
-                      >
-                        {isSettingsSaving ? "Saving..." : "Save"}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-
-                <ThemeToggleButton />
-                <Button type="button" variant="outline" onClick={handleNewChat}>
-                  New chat
-                </Button>
-                <Button type="button" variant="outline" onClick={handleLogout}>
-                  Logout
-                </Button>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
               <div className="md:hidden">
@@ -1183,40 +1528,46 @@ export function HomeClient() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuLabel>Pages</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-
-                    <DropdownMenuItem
-                      onClick={() => setModelPickerOpen(true)}
-                      disabled={models.length === 0 || isSettingsSaving}
-                    >
-                      Select model
+                    <DropdownMenuItem onClick={() => handleNavigationChange("chat")}>
+                      Chat
                     </DropdownMenuItem>
-
                     <DropdownMenuItem
-                      onClick={fetchModels}
-                      disabled={modelsLoading || isSettingsSaving}
-                    >
-                      {modelsLoading ? "Fetching models..." : "Fetch models"}
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setNavigationValue("notes");
-                        setHomeMode("notes");
-                      }}
+                      onClick={() => handleNavigationChange("notes")}
                     >
                       Notes
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => {
-                        setNavigationValue("saved");
-                        router.push("/notes");
-                      }}
+                      onClick={() => handleNavigationChange("saved")}
                     >
-                      Saved notes
+                      Rough notes
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
 
+                    {showChatControls ? (
+                      <>
+                        <DropdownMenuLabel>Model</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => setModelPickerOpen(true)}
+                          disabled={models.length === 0 || isSettingsSaving}
+                        >
+                          Select model
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          onClick={fetchModels}
+                          disabled={modelsLoading || isSettingsSaving}
+                        >
+                          {modelsLoading ? "Fetching models..." : "Fetch models"}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    ) : null}
+
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
                       Settings
                     </DropdownMenuItem>
@@ -1237,82 +1588,13 @@ export function HomeClient() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-
-                <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Settings</DialogTitle>
-                      <DialogDescription>
-                        Saved to your Firebase account.
-                      </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <Label htmlFor="openrouter-key-mobile">
-                          OpenRouter API key
-                        </Label>
-                        {openRouterStatus.hasKey ? (
-                          <span className="text-xs text-muted-foreground">
-                            saved
-                            {openRouterStatus.last4
-                              ? ` ••••${openRouterStatus.last4}`
-                              : ""}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">
-                            not set
-                          </span>
-                        )}
-                      </div>
-
-                      <Input
-                        id="openrouter-key-mobile"
-                        type="password"
-                        placeholder="sk-or-..."
-                        value={openRouterKeyInput}
-                        onChange={(e) => setOpenRouterKeyInput(e.target.value)}
-                        disabled={isSettingsLoading || isSettingsSaving}
-                      />
-
-                      <Alert>
-                        <AlertDescription>
-                          Stored server-side. It is not displayed back in full.
-                        </AlertDescription>
-                      </Alert>
-                    </div>
-
-                    <DialogFooter>
-                      {openRouterStatus.hasKey ? (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setSettingsOpen(false);
-                            setConfirmAction({ type: "remove-openrouter-key" });
-                          }}
-                          disabled={isSettingsSaving}
-                        >
-                          Remove key
-                        </Button>
-                      ) : null}
-                      <Button
-                        type="button"
-                        onClick={saveOpenRouterKey}
-                        disabled={isSettingsLoading || isSettingsSaving}
-                      >
-                        {isSettingsSaving ? "Saving..." : "Save"}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
               </div>
-            </div>
-          ) : null}
-        </div>
-      </div>
+            </>
+          ) : null
+        }
+      />
 
-      <div className={cn("mx-auto w-full max-w-7xl px-3 sm:px-6", CONTENT_H)}>
+      <AppContent className={APP_CONTENT_HEIGHT}>
         <div className="h-full py-3 sm:py-4">
           {isSessionLoading ? (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
@@ -1325,18 +1607,18 @@ export function HomeClient() {
               </div>
             ) : (
               <section className="grid h-full grid-cols-1 gap-3 overflow-hidden md:grid-cols-[18rem_1fr] md:gap-4">
-                <aside className="hidden h-full flex-col gap-2 overflow-hidden rounded-2xl border bg-background p-3 shadow-sm md:flex">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-foreground">
-                      History
-                    </p>
-                    {historyActions}
-                  </div>
-
-                  <ScrollArea className="min-h-0 flex-1">
-                    <div className="space-y-1 pr-2">{renderSessionItems()}</div>
+                <AppSidebar
+                  title="History"
+                  actions={historyActions}
+                  className="hidden h-full md:flex"
+                  contentClassName="p-0"
+                >
+                  <ScrollArea className="h-full">
+                    <div className="space-y-1 p-3 pr-2">
+                      {renderSessionItems()}
+                    </div>
                   </ScrollArea>
-                </aside>
+                </AppSidebar>
 
                 <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border bg-background shadow-sm">
                   <div className="flex items-center justify-between gap-2 border-b px-3 py-2 sm:px-4">
@@ -1369,21 +1651,92 @@ export function HomeClient() {
                   </div>
 
                   <div className="min-h-0 flex-1">
-                    <Chat
-                      className="h-full px-2 pt-2"
-                      messages={messages}
-                      input={input}
-                      handleInputChange={handleInputChange}
-                      handleSubmit={handleSubmit}
-                      isGenerating={isGenerating}
-                      stop={stop}
-                      setMessages={setMessages}
-                      append={append}
-                      suggestions={suggestions}
-                      onRateResponse={(messageId, rating) => {
-                        toast.success(`Rated ${rating} on ${messageId}`);
-                      }}
-                    />
+                    <div className="flex h-full flex-col">
+                      {actionItems.length > 0 && (
+                        <div className="border-b bg-muted/20 px-3 py-3">
+                          <div className="flex flex-wrap items-start justify-between gap-2">
+                            <div>
+                              <p className="text-xs font-semibold text-foreground">
+                                Action board
+                              </p>
+                              <p className="text-[11px] text-muted-foreground">
+                                Track today and this week, then save to rough
+                                notes.
+                              </p>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={saveActionPlan}
+                              disabled={isSavingActionPlan}
+                            >
+                              {isSavingActionPlan
+                                ? "Saving..."
+                                : "Save to rough notes"}
+                            </Button>
+                          </div>
+                          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            {["Today", "This Week"].map((bucket) => {
+                              const items = actionItems.filter(
+                                (item) => item.bucket === bucket
+                              );
+                              if (items.length === 0) return null;
+                              return (
+                                <div
+                                  key={bucket}
+                                  className="rounded-xl border bg-background p-3"
+                                >
+                                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                    {bucket}
+                                  </p>
+                                  <div className="mt-2 space-y-2">
+                                    {items.map((item) => (
+                                      <label
+                                        key={item.id}
+                                        className="flex items-start gap-2 text-xs text-foreground"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          className="mt-0.5 h-4 w-4 rounded border"
+                                          checked={Boolean(
+                                            actionChecklist[item.id]
+                                          )}
+                                          onChange={(event) => {
+                                            setActionChecklist((current) => ({
+                                              ...current,
+                                              [item.id]: event.target.checked,
+                                            }));
+                                          }}
+                                        />
+                                        <span>{item.label}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      <Chat
+                        className="flex-1 px-2 pt-2"
+                        messages={messages}
+                        input={input}
+                        handleInputChange={handleInputChange}
+                        handleSubmit={handleSubmit}
+                        isGenerating={isGenerating}
+                        stop={stop}
+                        setMessages={setMessages}
+                        append={append}
+                        suggestions={suggestions}
+                        onSuggestionSelect={handleSuggestionSelect}
+                        allowAttachments
+                        onRateResponse={(messageId, rating) => {
+                          toast.success(`Rated ${rating} on ${messageId}`);
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
               </section>
@@ -1398,7 +1751,7 @@ export function HomeClient() {
                         {authMode === "login" ? "Sign in" : "Create account"}
                       </CardTitle>
                       <CardDescription>
-                        Email + password (Firebase Auth).
+                        Email + password.
                       </CardDescription>
                     </div>
                     <ThemeToggleButton />
@@ -1486,7 +1839,541 @@ export function HomeClient() {
             </div>
           )}
         </div>
-      </div>
+      </AppContent>
+
+      <Dialog
+        open={starterDialog !== null}
+        onOpenChange={(open) => {
+          if (!open) setStarterDialog(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {starterDialog === "mock"
+                ? "Mock diagnostic helper"
+                : starterDialog === "rc"
+                ? "Fix RC accuracy"
+                : "14-day rescue plan"}
+            </DialogTitle>
+            <DialogDescription>
+              {starterDialog === "mock"
+                ? "Share your scores + what went wrong. We'll build a clean diagnostic prompt."
+                : "Answer quick intake questions so the coach can skip follow-ups."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {starterDialog === "mock" ? (
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="space-y-1">
+                  <Label>Overall</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={mockForm.overall}
+                    onChange={(event) =>
+                      setMockForm((prev) => ({
+                        ...prev,
+                        overall: event.target.value,
+                      }))
+                    }
+                    placeholder="e.g. 64"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>VARC</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={mockForm.varc}
+                    onChange={(event) =>
+                      setMockForm((prev) => ({
+                        ...prev,
+                        varc: event.target.value,
+                      }))
+                    }
+                    placeholder="e.g. 28"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>DILR</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={mockForm.dilr}
+                    onChange={(event) =>
+                      setMockForm((prev) => ({
+                        ...prev,
+                        dilr: event.target.value,
+                      }))
+                    }
+                    placeholder="e.g. 18"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>QA</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={mockForm.qa}
+                    onChange={(event) =>
+                      setMockForm((prev) => ({
+                        ...prev,
+                        qa: event.target.value,
+                      }))
+                    }
+                    placeholder="e.g. 18"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Attempts</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={mockForm.attempts}
+                    onChange={(event) =>
+                      setMockForm((prev) => ({
+                        ...prev,
+                        attempts: event.target.value,
+                      }))
+                    }
+                    placeholder="e.g. 48"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Accuracy %</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={mockForm.accuracy}
+                    onChange={(event) =>
+                      setMockForm((prev) => ({
+                        ...prev,
+                        accuracy: event.target.value,
+                      }))
+                    }
+                    placeholder="e.g. 78"
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-[1fr_140px]">
+                <div className="space-y-1">
+                  <Label>Time left</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={mockForm.timeLeftValue}
+                    onChange={(event) =>
+                      setMockForm((prev) => ({
+                        ...prev,
+                        timeLeftValue: event.target.value,
+                      }))
+                    }
+                    placeholder="e.g. 10"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Unit</Label>
+                  <Select
+                    value={mockForm.timeLeftUnit}
+                    onValueChange={(value) =>
+                      setMockForm((prev) => ({
+                        ...prev,
+                        timeLeftUnit: value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="weeks">weeks</SelectItem>
+                      <SelectItem value="months">months</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label>What went wrong</Label>
+                <Textarea
+                  value={mockForm.mistakes}
+                  onChange={(event) =>
+                    setMockForm((prev) => ({
+                      ...prev,
+                      mistakes: event.target.value,
+                    }))
+                  }
+                  placeholder="Time sinks, silly mistakes, panic, weak topics..."
+                  rows={4}
+                />
+              </div>
+
+              <div className="rounded-xl border bg-muted/20 p-3">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Quick intake (optional)
+                </p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <Label>CAT attempt</Label>
+                    <Input
+                      value={starterIntake.attempt}
+                      onChange={(event) =>
+                        setStarterIntake((prev) => ({
+                          ...prev,
+                          attempt: event.target.value,
+                        }))
+                      }
+                      placeholder="CAT 2026"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Current level by section</Label>
+                    <Input
+                      value={starterIntake.levels}
+                      onChange={(event) =>
+                        setStarterIntake((prev) => ({
+                          ...prev,
+                          levels: event.target.value,
+                        }))
+                      }
+                      placeholder="QA weak, VARC avg, DILR strong"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Weekday study hours</Label>
+                    <Input
+                      value={starterIntake.weekdayHours}
+                      onChange={(event) =>
+                        setStarterIntake((prev) => ({
+                          ...prev,
+                          weekdayHours: event.target.value,
+                        }))
+                      }
+                      placeholder="e.g. 1.5"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Weekend study hours</Label>
+                    <Input
+                      value={starterIntake.weekendHours}
+                      onChange={(event) =>
+                        setStarterIntake((prev) => ({
+                          ...prev,
+                          weekendHours: event.target.value,
+                        }))
+                      }
+                      placeholder="e.g. 5"
+                    />
+                  </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <Label>Mock series / resources</Label>
+                    <Input
+                      value={starterIntake.resources}
+                      onChange={(event) =>
+                        setStarterIntake((prev) => ({
+                          ...prev,
+                          resources: event.target.value,
+                        }))
+                      }
+                      placeholder="e.g. IMS + Arun Sharma"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStarterDialog(null)}
+                >
+                  Cancel
+                </Button>
+                <Button type="button" onClick={handleMockSubmit}>
+                  Send to coach
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label>CAT attempt</Label>
+                  <Input
+                    value={starterIntake.attempt}
+                    onChange={(event) =>
+                      setStarterIntake((prev) => ({
+                        ...prev,
+                        attempt: event.target.value,
+                      }))
+                    }
+                    placeholder="CAT 2026"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Current level by section</Label>
+                  <Input
+                    value={starterIntake.levels}
+                    onChange={(event) =>
+                      setStarterIntake((prev) => ({
+                        ...prev,
+                        levels: event.target.value,
+                      }))
+                    }
+                    placeholder="QA weak, VARC avg, DILR strong"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Weekday study hours</Label>
+                  <Input
+                    value={starterIntake.weekdayHours}
+                    onChange={(event) =>
+                      setStarterIntake((prev) => ({
+                        ...prev,
+                        weekdayHours: event.target.value,
+                      }))
+                    }
+                    placeholder="e.g. 1.5"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label>Weekend study hours</Label>
+                  <Input
+                    value={starterIntake.weekendHours}
+                    onChange={(event) =>
+                      setStarterIntake((prev) => ({
+                        ...prev,
+                        weekendHours: event.target.value,
+                      }))
+                    }
+                    placeholder="e.g. 5"
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label>Mock series / resources</Label>
+                  <Input
+                    value={starterIntake.resources}
+                    onChange={(event) =>
+                      setStarterIntake((prev) => ({
+                        ...prev,
+                        resources: event.target.value,
+                      }))
+                    }
+                    placeholder="e.g. IMS + Arun Sharma"
+                  />
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStarterDialog(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onClick={
+                    starterDialog === "rc" ? handleRcSubmit : handleRescueSubmit
+                  }
+                >
+                  Send to coach
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showOnboarding} onOpenChange={() => {}}>
+        <DialogContent showCloseButton={false} className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Welcome to Cat99</DialogTitle>
+            <DialogDescription>
+              Finish these steps once so you never hit key/model errors.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              {[
+                { label: "Sign in", done: Boolean(sessionUser) },
+                {
+                  label: "Paste OpenRouter key",
+                  done: openRouterStatus.hasKey,
+                },
+                {
+                  label: "Pick a model (recommended preselected)",
+                  done: Boolean(openRouterModel.trim()),
+                },
+              ].map((step) => (
+                <div
+                  key={step.label}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  <span
+                    className={cn(
+                      "flex h-5 w-5 items-center justify-center rounded-full border text-xs",
+                      step.done
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-muted-foreground/30 text-muted-foreground"
+                    )}
+                  >
+                    {step.done ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                  </span>
+                  <span
+                    className={cn(
+                      step.done ? "text-foreground" : "text-muted-foreground"
+                    )}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-xl border bg-muted/20 p-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="onboarding-key">OpenRouter API key</Label>
+                {openRouterStatus.hasKey ? (
+                  <span className="text-xs text-muted-foreground">
+                    saved{openRouterStatus.last4 ? ` ••••${openRouterStatus.last4}` : ""}
+                  </span>
+                ) : null}
+              </div>
+              <Input
+                id="onboarding-key"
+                type="password"
+                placeholder="sk-or-..."
+                value={openRouterKeyInput}
+                onChange={(event) => setOpenRouterKeyInput(event.target.value)}
+                className="mt-2"
+                disabled={openRouterStatus.hasKey || isSettingsSaving}
+              />
+              {onboardingKeyError ? (
+                <p className="mt-1 text-xs text-destructive">
+                  {onboardingKeyError}
+                </p>
+              ) : null}
+              <Button
+                size="sm"
+                className="mt-3"
+                onClick={handleOnboardingSaveKey}
+                disabled={openRouterStatus.hasKey || isSettingsSaving}
+              >
+                {openRouterStatus.hasKey ? "Saved" : "Save key"}
+              </Button>
+            </div>
+
+            <div className="rounded-xl border bg-muted/20 p-3">
+              <div className="flex items-center justify-between">
+                <Label>Model</Label>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={fetchModels}
+                  disabled={!openRouterStatus.hasKey || modelsLoading}
+                >
+                  {modelsLoading ? "Fetching..." : "Fetch models"}
+                </Button>
+              </div>
+              <div className="mt-2 space-y-2">
+                <Select
+                  value={openRouterModel}
+                  onValueChange={(value) => void saveOpenRouterModel(value)}
+                  disabled={!openRouterStatus.hasKey || models.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue
+                      placeholder={
+                        models.length === 0 ? "No models loaded" : "Select model"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {models.map((model) => (
+                      <SelectItem key={model.id} value={model.id}>
+                        {model.name || model.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {models[0]?.id && !openRouterModel.trim() ? (
+                  <p className="text-xs text-muted-foreground">
+                    Recommended: {models[0].name || models[0].id}
+                  </p>
+                ) : null}
+                {modelsError ? (
+                  <p className="text-xs text-destructive">{modelsError}</p>
+                ) : null}
+                {needsOpenRouterModel && models.length > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Pick a model to start chatting.
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Settings</DialogTitle>
+            <DialogDescription>Saved to your account.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="openrouter-key">OpenRouter API key</Label>
+              {openRouterStatus.hasKey ? (
+                <span className="text-xs text-muted-foreground">
+                  saved
+                  {openRouterStatus.last4 ? ` ••••${openRouterStatus.last4}` : ""}
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">not set</span>
+              )}
+            </div>
+
+            <Input
+              id="openrouter-key"
+              type="password"
+              placeholder="sk-or-..."
+              value={openRouterKeyInput}
+              onChange={(e) => setOpenRouterKeyInput(e.target.value)}
+              disabled={isSettingsLoading || isSettingsSaving}
+            />
+
+            <Alert>
+              <AlertDescription>
+                Stored server-side. It is not displayed back in full.
+              </AlertDescription>
+            </Alert>
+          </div>
+
+          <DialogFooter>
+            {openRouterStatus.hasKey ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setSettingsOpen(false);
+                  setConfirmAction({ type: "remove-openrouter-key" });
+                }}
+                disabled={isSettingsSaving}
+              >
+                Remove key
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              onClick={saveOpenRouterKey}
+              disabled={isSettingsLoading || isSettingsSaving}
+            >
+              {isSettingsSaving ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <CommandDialog
         open={modelPickerOpen}

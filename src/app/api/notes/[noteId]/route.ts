@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import cloudinary from "@/lib/cloudinary";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { getAuthenticatedUserId } from "../../auth/utils";
 import type { SerializedEditorState } from "lexical";
@@ -21,6 +22,10 @@ const globalAny = globalThis as typeof globalThis & {
   __roughNoteStore?: MemoryStore;
 };
 
+const CLOUDINARY_HOST = "res.cloudinary.com";
+const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
+const CLOUDINARY_NOTES_PREFIX = "cat99/notes";
+
 function getMemoryStore(userId: string) {
   if (!globalAny.__roughNoteStore) {
     globalAny.__roughNoteStore = new Map();
@@ -36,6 +41,77 @@ function normalizeNoteId(raw: string) {
   if (!trimmed) return null;
   const sanitized = trimmed.replaceAll("/", "");
   return sanitized.slice(0, 128);
+}
+
+function collectImageSources(payload: SerializedEditorState): string[] {
+  const sources = new Set<string>();
+
+  const visit = (value: unknown) => {
+    if (!value || typeof value !== "object") return;
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+
+    const record = value as Record<string, unknown>;
+    if (record.type === "image" && typeof record.src === "string") {
+      sources.add(record.src);
+    }
+
+    Object.values(record).forEach(visit);
+  };
+
+  visit(payload);
+  return Array.from(sources);
+}
+
+function extractCloudinaryPublicId(src: string): string | null {
+  try {
+    const url = new URL(src);
+    if (url.hostname !== CLOUDINARY_HOST) return null;
+
+    const segments = url.pathname.split("/").filter(Boolean);
+    if (segments.length < 4) return null;
+
+    const [cloudName, resourceType, uploadType, ...rest] = segments;
+    if (CLOUDINARY_CLOUD_NAME && cloudName !== CLOUDINARY_CLOUD_NAME) {
+      return null;
+    }
+    if (resourceType !== "image" || uploadType !== "upload") {
+      return null;
+    }
+    if (rest.length === 0) return null;
+
+    const versionIndex = rest.findIndex((segment) => /^v\d+$/.test(segment));
+    const publicParts = versionIndex >= 0 ? rest.slice(versionIndex + 1) : rest;
+    if (publicParts.length === 0) return null;
+
+    let publicId = decodeURIComponent(publicParts.join("/"));
+    const lastSlash = publicId.lastIndexOf("/");
+    const lastDot = publicId.lastIndexOf(".");
+    if (lastDot > lastSlash) {
+      publicId = publicId.slice(0, lastDot);
+    }
+
+    if (!publicId.startsWith(CLOUDINARY_NOTES_PREFIX)) {
+      return null;
+    }
+
+    return publicId;
+  } catch {
+    return null;
+  }
+}
+
+function extractNoteImagePublicIds(payload: SerializedEditorState): string[] {
+  const publicIds = new Set<string>();
+  collectImageSources(payload).forEach((src) => {
+    const publicId = extractCloudinaryPublicId(src);
+    if (publicId) {
+      publicIds.add(publicId);
+    }
+  });
+  return Array.from(publicIds);
 }
 
 async function loadFromFirestore(userId: string, noteId: string) {
@@ -204,4 +280,65 @@ export async function PATCH(
   const store = getMemoryStore(userId);
   store.set(noteId, stored);
   return NextResponse.json({ noteId });
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ noteId: string }> },
+) {
+  const userId = await getAuthenticatedUserId();
+  if (!userId) {
+    return NextResponse.json({ error: "Not authenticated." }, { status: 401 });
+  }
+
+  const { noteId: rawNoteId } = await params;
+  const noteId = normalizeNoteId(rawNoteId);
+  if (!noteId) {
+    return NextResponse.json({ error: "Invalid noteId." }, { status: 400 });
+  }
+
+  const store = getMemoryStore(userId);
+  const fallbackNote = store.get(noteId) ?? null;
+  const note = (await loadFromFirestore(userId, noteId)) ?? fallbackNote;
+  if (!note) {
+    return NextResponse.json({ error: "Note not found." }, { status: 404 });
+  }
+
+  const publicIds = extractNoteImagePublicIds(note.payload);
+  if (publicIds.length > 0) {
+    try {
+      await Promise.allSettled(
+        publicIds.map((publicId) =>
+          cloudinary.uploader.destroy(publicId, { invalidate: true })
+        )
+      );
+    } catch (error) {
+      console.error("Failed to delete Cloudinary images for note", error);
+    }
+  }
+
+  const db = getAdminDb();
+  if (db) {
+    try {
+      await db
+        .collection("users")
+        .doc(userId)
+        .collection("notes")
+        .doc(noteId)
+        .delete();
+    } catch (error) {
+      console.error("Failed to delete rough note from Firestore", error);
+      return NextResponse.json(
+        { error: "Failed to delete rough note." },
+        { status: 500 }
+      );
+    }
+  }
+
+  store.delete(noteId);
+  return NextResponse.json({
+    ok: true,
+    noteId,
+    deletedImages: publicIds.length,
+  });
 }

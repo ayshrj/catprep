@@ -17,19 +17,38 @@ export function useAudioRecording({
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [audioStream, setAudioStream] = useState<MediaStream | null>(null)
   const activeRecordingRef = useRef<any>(null)
+  const recognitionRef = useRef<any>(null)
+  const speechRecognitionSupported =
+    typeof window !== "undefined" &&
+    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)
 
   useEffect(() => {
     const checkSpeechSupport = async () => {
       const hasMediaDevices = !!(
         navigator.mediaDevices && navigator.mediaDevices.getUserMedia
       )
-      setIsSpeechSupported(hasMediaDevices && !!transcribeAudio)
+      setIsSpeechSupported(
+        (hasMediaDevices && !!transcribeAudio) || speechRecognitionSupported
+      )
     }
 
     checkSpeechSupport()
-  }, [transcribeAudio])
+  }, [speechRecognitionSupported, transcribeAudio])
+
+  const stopSpeechRecognition = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
+      recognitionRef.current = null
+    }
+    setIsListening(false)
+  }
 
   const stopRecording = async () => {
+    if (!transcribeAudio && speechRecognitionSupported) {
+      stopSpeechRecognition()
+      return
+    }
+
     setIsRecording(false)
     setIsTranscribing(true)
     try {
@@ -55,6 +74,44 @@ export function useAudioRecording({
   }
 
   const toggleListening = async () => {
+    if (!transcribeAudio && speechRecognitionSupported) {
+      if (!isListening) {
+        try {
+          const SpeechRecognition =
+            // @ts-expect-error missing type
+            window.SpeechRecognition || window.webkitSpeechRecognition
+          const recognition = new SpeechRecognition()
+          recognitionRef.current = recognition
+          recognition.continuous = false
+          recognition.interimResults = false
+          recognition.onresult = (event: any) => {
+            const results = Array.from(event.results || [])
+            const transcript = results
+              .map((result: any) => result?.[0]?.transcript ?? "")
+              .join(" ")
+              .trim()
+            if (transcript) {
+              onTranscriptionComplete?.(transcript)
+            }
+          }
+          recognition.onerror = () => {
+            setIsListening(false)
+          }
+          recognition.onend = () => {
+            setIsListening(false)
+          }
+          setIsListening(true)
+          recognition.start()
+        } catch (error) {
+          console.error("Speech recognition error:", error)
+          setIsListening(false)
+        }
+      } else {
+        stopSpeechRecognition()
+      }
+      return
+    }
+
     if (!isListening) {
       try {
         setIsListening(true)

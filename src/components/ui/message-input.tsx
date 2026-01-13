@@ -170,6 +170,9 @@ export function MessageInput({
 
   const showFileList =
     props.allowAttachments && props.files && props.files.length > 0
+  const hasAttachments =
+    props.allowAttachments && props.files && props.files.length > 0
+  const isSendDisabled = isGenerating || (!props.value && !hasAttachments)
 
   useAutosizeTextArea({
     ref: textAreaRef,
@@ -287,7 +290,7 @@ export function MessageInput({
             size="icon"
             className="h-8 w-8 transition-opacity"
             aria-label="Send message"
-            disabled={props.value === "" || isGenerating}
+            disabled={isSendDisabled}
           >
             <ArrowUp className="h-5 w-5" />
           </Button>
@@ -337,7 +340,7 @@ function showFileUploadDialog() {
 
   input.type = "file"
   input.multiple = true
-  input.accept = "*/*"
+  input.accept = "image/*,text/*"
   input.click()
 
   return new Promise<File[] | null>((resolve) => {

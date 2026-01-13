@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   try {
     if (!API_KEY) {
       return NextResponse.json(
-        { error: "Firebase API key missing." },
+        { error: "Authentication is not configured." },
         { status: 500 }
       )
     }
@@ -82,4 +82,3 @@ export async function POST(request: NextRequest) {
     )
   }
 }
-
