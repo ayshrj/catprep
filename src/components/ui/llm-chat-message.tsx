@@ -2,8 +2,8 @@
 import { motion } from "framer-motion";
 import React from "react";
 
-import { SCENARIO_COLORS } from "@/app/constant/llm-chat";
 import { ChatMessage, type ChatMessageProps } from "@/components/ui/chat-message";
+import { SCENARIO_COLORS } from "@/constant/llm-chat";
 import { CatCoachIntentLabels, CatCoachResponseModeLabels, CatScenarioCode } from "@/lib/cat-tools";
 import { cn } from "@/lib/utils";
 import { type LlmCatCoachResponse, LlmMainAnswerTypeLabels } from "@/types/llm-response";

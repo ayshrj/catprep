@@ -75,7 +75,7 @@ import { uploadImageToCloudinary } from "@/lib/upload-image";
 import { cn } from "@/lib/utils";
 import { isLlmCatCoachResponse, type LlmCatCoachResponse } from "@/types/llm-response";
 
-import { ModelIcon } from "./constant/model";
+import { ModelIcon } from "../constant/model";
 
 type Attachment = {
   name?: string;
