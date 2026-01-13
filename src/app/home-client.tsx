@@ -13,9 +13,7 @@ import {
   Archive,
   Check,
   Laptop,
-  MessageSquare,
   Moon,
-  Notebook,
   RefreshCcw,
   RotateCcw,
   Settings,
@@ -84,8 +82,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
 import { Notes } from "@/components/notes";
+
 import Logo from "@/lib/logo";
 
 import {
@@ -93,6 +91,9 @@ import {
   stringifyMessageContent,
 } from "@/lib/message-content";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { ModelIcon, MODELS_ICONS } from "./constant/model";
+import { AppNavigationSelect } from "@/components/app-navigation-select";
 
 type Attachment = {
   name?: string;
@@ -253,7 +254,36 @@ export function HomeClient() {
 
   const chatIdFromUrl = searchParams.get("chatId")?.trim() || null;
 
-  const [showNotes, setShowNotes] = useState(false);
+  const initialMode =
+    searchParams.get("view") === "notes"
+      ? ("notes" as const)
+      : ("chat" as const);
+  const [homeMode, setHomeMode] = useState<"chat" | "notes">(initialMode);
+  const [navigationValue, setNavigationValue] = useState<
+    "chat" | "notes" | "saved"
+  >(initialMode);
+  const handleNavigationChange = useCallback(
+    (target: "chat" | "notes" | "saved") => {
+      setNavigationValue(target);
+      if (target === "chat") {
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete("view");
+        const suffix = params.toString();
+        router.push(suffix ? `/?${suffix}` : "/");
+        setHomeMode("chat");
+      } else if (target === "notes") {
+        const params = new URLSearchParams(searchParams.toString());
+        params.set("view", "notes");
+        const suffix = params.toString();
+        router.push(suffix ? `/?${suffix}` : "/");
+        setHomeMode("notes");
+      } else if (target === "saved") {
+        router.push("/notes");
+      }
+    },
+    [router, searchParams]
+  );
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -673,6 +703,8 @@ export function HomeClient() {
     activeChatIdRef.current = null;
     setMessages([]);
     setIsGenerating(false);
+    setHomeMode("chat");
+    setNavigationValue("chat");
   }, [router, searchParams]);
 
   const openChat = useCallback(
@@ -1025,6 +1057,7 @@ export function HomeClient() {
                   disabled={models.length === 0 || isSettingsSaving}
                   className="min-w-0 max-w-full shrink truncate md:max-w-[18rem]"
                 >
+                  <ModelIcon model={openRouterModel} />
                   {openRouterModel ? openRouterModel : "Select Model"}
                 </Button>
 
@@ -1044,19 +1077,10 @@ export function HomeClient() {
                   Select
                 </Button>
 
-                <Button
-                  onClick={() => setShowNotes((notes) => !notes)}
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  aria-label={showNotes ? "Show chat" : "Show notes"}
-                >
-                  {!showNotes ? (
-                    <Notebook className="h-4 w-4" />
-                  ) : (
-                    <MessageSquare className="h-4 w-4" />
-                  )}
-                </Button>
+                <AppNavigationSelect
+                  value={navigationValue}
+                  onChange={handleNavigationChange}
+                />
 
                 <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
                   <DialogTrigger asChild>
@@ -1176,8 +1200,21 @@ export function HomeClient() {
                       {modelsLoading ? "Fetching models..." : "Fetch models"}
                     </DropdownMenuItem>
 
-                    <DropdownMenuItem onClick={() => setShowNotes((v) => !v)}>
-                      {showNotes ? "Show chat" : "Show notes"}
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setNavigationValue("notes");
+                        setHomeMode("notes");
+                      }}
+                    >
+                      Notes
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        setNavigationValue("saved");
+                        router.push("/notes");
+                      }}
+                    >
+                      Saved notes
                     </DropdownMenuItem>
 
                     <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
@@ -1282,7 +1319,7 @@ export function HomeClient() {
               Loading...
             </div>
           ) : sessionUser ? (
-            showNotes ? (
+            homeMode === "notes" ? (
               <div className="h-full min-h-0 overflow-hidden rounded-2xl border bg-background shadow-sm">
                 <Notes />
               </div>
@@ -1479,35 +1516,40 @@ export function HomeClient() {
           ) : null}
 
           <CommandGroup heading="Models">
-            {models.map((model) => (
-              <CommandItem
-                key={model.id}
-                value={`${model.name ?? ""} ${model.id}`}
-                onSelect={() => {
-                  void saveOpenRouterModel(model.id);
-                  setModelPickerOpen(false);
-                }}
-              >
-                <Check
-                  className={
-                    model.id === openRouterModel
-                      ? "h-4 w-4"
-                      : "h-4 w-4 opacity-0"
-                  }
-                />
-                <div className="min-w-0">
-                  <div className="truncate font-medium">
-                    {model.name || model.id}
+            {models.map((model) => {
+              return (
+                <CommandItem
+                  key={model.id}
+                  value={`${model.name ?? ""} ${model.id}`}
+                  onSelect={() => {
+                    void saveOpenRouterModel(model.id);
+                    setModelPickerOpen(false);
+                  }}
+                >
+                  <Check
+                    className={
+                      model.id === openRouterModel
+                        ? "h-4 w-4"
+                        : "h-4 w-4 opacity-0"
+                    }
+                  />
+                  <div className="ml-2 flex items-center gap-2 justify-between w-full">
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">
+                        {model.name || model.id}
+                      </div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {model.id}
+                        {model.contextLength
+                          ? ` • ${model.contextLength.toLocaleString()} ctx`
+                          : ""}
+                      </div>
+                    </div>
+                    <ModelIcon model={model.id} />
                   </div>
-                  <div className="truncate text-xs text-muted-foreground">
-                    {model.id}
-                    {model.contextLength
-                      ? ` • ${model.contextLength.toLocaleString()} ctx`
-                      : ""}
-                  </div>
-                </div>
-              </CommandItem>
-            ))}
+                </CommandItem>
+              );
+            })}
           </CommandGroup>
         </CommandList>
       </CommandDialog>
