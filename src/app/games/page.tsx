@@ -1,7 +1,7 @@
 "use client";
 
 import { SelectValue } from "@radix-ui/react-select";
-import { MoreVertical } from "lucide-react";
+import { Calendar, MoreVertical, Search, Trophy, Zap } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useState } from "react";
 
@@ -21,11 +21,19 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import gameRegistry from "@/games/core/registry";
 import { getGameStats } from "@/games/core/storage";
 import { formatTime } from "@/games/core/timer";
 
 const ALL = "__all__";
+
+const sectionConfig = {
+  dilr: { label: "DILR", variant: "default" as const },
+  qa: { label: "QA", variant: "secondary" as const },
+  varc: { label: "VARC", variant: "outline" as const },
+  hybrid: { label: "Hybrid", variant: "destructive" as const },
+};
 
 export default function DashboardPage() {
   const allGames = Object.values(gameRegistry);
@@ -92,32 +100,26 @@ export default function DashboardPage() {
       <AppContent className={APP_CONTENT_HEIGHT}>
         <div className="h-full min-h-0 overflow-y-auto py-3 sm:py-4">
           <div className="game-panel game-panel-padded mb-6 flex flex-wrap items-center gap-3">
-            <Input
-              type="text"
-              placeholder="Search games..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="max-w-xs"
-            />
-            <Select
-              value={filterSection ?? ""}
-              onValueChange={val => setFilterSection((val === "__all__" ? "" : val) || null)}
-            >
-              <SelectTrigger>
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Search games..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={filterSection ?? ALL} onValueChange={val => setFilterSection(val === ALL ? null : val)}>
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="All Sections" />
               </SelectTrigger>
               <SelectContent>
-                {[
-                  { value: ALL, label: "All Sections" },
-                  { value: "dilr", label: "DILR" },
-                  { value: "qa", label: "QA" },
-                  { value: "varc", label: "VARC" },
-                  { value: "hybrid", label: "Hybrid" },
-                ].map((val, idx) => (
-                  <SelectItem key={idx} value={val.value}>
-                    {val.label}
-                  </SelectItem>
-                ))}
+                <SelectItem value={ALL}>All Sections</SelectItem>
+                <SelectItem value="dilr">DILR</SelectItem>
+                <SelectItem value="qa">QA</SelectItem>
+                <SelectItem value="varc">VARC</SelectItem>
+                <SelectItem value="hybrid">Hybrid</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -131,34 +133,54 @@ export default function DashboardPage() {
                 streakDays: 0,
                 lastPlayedAt: null,
               };
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              const accuracy = stats.attempts ? Math.round((stats.solves / stats.attempts) * 100) : 0;
               const lastPlayed = stats.lastPlayedAt ? new Date(stats.lastPlayedAt).toLocaleDateString() : "Never";
+
               return (
-                <Card key={game.id} className="game-panel">
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center justify-between">
-                      {game.title}
-                      <Badge className="ml-2">{game.section.toUpperCase()}</Badge>
-                    </CardTitle>
-                    <CardDescription className="text-sm">Last played: {lastPlayed}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="flex flex-wrap gap-2">
-                    {game.skillTags.map(tag => (
-                      <Badge key={tag} variant="secondary">
-                        {tag}
+                <Card key={game.id} className="flex flex-col transition-shadow hover:shadow-md">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <CardTitle className="text-lg leading-tight">{game.title}</CardTitle>
+                      <Badge variant={sectionConfig[game.section as keyof typeof sectionConfig]?.variant || "default"}>
+                        {game.section.toUpperCase()}
                       </Badge>
-                    ))}
-                  </CardContent>
-                  <CardFooter className="flex items-center justify-between text-sm">
-                    <div className="text-muted-foreground">
-                      Best: {stats.bestTimeSeconds != null ? formatTime(stats.bestTimeSeconds) : "--:--"} | Streak:{" "}
-                      {stats.streakDays} day
-                      {stats.streakDays === 1 ? "" : "s"}
                     </div>
-                    <Link href={`/games/${game.id}`}>
-                      <Button size="sm" variant="secondary">
-                        Play
+                    <CardDescription className="flex items-center gap-1.5 text-xs">
+                      <Calendar className="h-3 w-3" />
+                      Last played: {lastPlayed}
+                    </CardDescription>
+                  </CardHeader>
+
+                  <CardContent className="flex-1 pb-3">
+                    <div className="flex flex-wrap gap-1.5">
+                      {game.skillTags.map(tag => (
+                        <Badge key={tag} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+
+                  <Separator />
+
+                  <CardFooter className="flex-col items-stretch gap-3 pt-4">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Trophy className="h-4 w-4" />
+                        <span className="font-medium">
+                          {stats.bestTimeSeconds != null ? formatTime(stats.bestTimeSeconds) : "--:--"}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Zap className="h-4 w-4" />
+                        <span className="font-medium">
+                          {stats.streakDays} day{stats.streakDays === 1 ? "" : "s"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <Link href={`/games/${game.id}`} className="w-full">
+                      <Button className="w-full" size="sm">
+                        Play Now
                       </Button>
                     </Link>
                   </CardFooter>
