@@ -285,13 +285,9 @@ export function HomeClient() {
         router.push(suffix ? `/?${suffix}` : "/");
         setHomeMode("chat");
       } else if (target === "notes") {
-        const params = new URLSearchParams(searchParams.toString());
-        params.set("view", "notes");
-        const suffix = params.toString();
-        router.push(suffix ? `/?${suffix}` : "/");
-        setHomeMode("notes");
-      } else if (target === "saved") {
         router.push("/notes");
+      } else if (target === "saved") {
+        router.push("/rough-notes");
       }
     },
     [router, searchParams]

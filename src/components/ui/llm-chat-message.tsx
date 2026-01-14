@@ -79,12 +79,9 @@ function getCheatsheetSection(content: LlmCatCoachResponse) {
 
 function buildNotesHref(sectionId: string) {
   if (typeof window === "undefined") {
-    return `/?view=notes#${sectionId}`;
+    return `/notes#${sectionId}`;
   }
-  const params = new URLSearchParams(window.location.search);
-  params.set("view", "notes");
-  const query = params.toString();
-  return `/?${query}#${sectionId}`;
+  return `/notes#${sectionId}`;
 }
 
 function CompactList({ items }: { items: string[] }) {
