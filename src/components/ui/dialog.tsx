@@ -109,6 +109,75 @@ function DialogDescription({ className, ...props }: React.ComponentProps<typeof 
   );
 }
 
+// Responsive dialog shell with sticky header/footer and a single scrollable body.
+// Works across iOS/Android/desktop, dark mode, and small screens.
+type DialogShellProps = React.ComponentProps<typeof DialogContent> & {
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  footer?: React.ReactNode;
+  bodyClassName?: string;
+  headerClassName?: string;
+  contentClassName?: string;
+  descriptionClassName?: string;
+  footerClassName?: string;
+  withSeparator?: boolean;
+};
+
+function DialogShell({
+  title,
+  description,
+  footer,
+  children,
+  className,
+  bodyClassName,
+  headerClassName,
+  contentClassName,
+  descriptionClassName,
+  footerClassName,
+  withSeparator = true,
+  ...props
+}: DialogShellProps) {
+  const showDividers = withSeparator !== false;
+
+  return (
+    <DialogContent {...props} className={cn("p-0 overflow-hidden w-[96vw] sm:w-auto sm:max-w-2xl", className)}>
+      <div
+        className={cn(
+          "flex max-h-[min(92dvh,720px)] flex-col bg-linear-to-b from-background via-background to-background/95",
+          contentClassName
+        )}
+      >
+        <DialogHeader
+          className={cn(
+            "sticky top-0 z-20 bg-background/90 px-6 py-4 text-left backdrop-blur supports-backdrop-filter:bg-background/75",
+            showDividers ? "border-b border-border/60 shadow-[0_1px_0_rgba(15,23,42,0.08)]" : null,
+            headerClassName
+          )}
+        >
+          {title ? <DialogTitle>{title}</DialogTitle> : null}
+          {description ? (
+            <DialogDescription className={cn("mt-1", descriptionClassName)}>{description}</DialogDescription>
+          ) : null}
+        </DialogHeader>
+
+        <div className={cn("flex-1 overflow-y-auto", bodyClassName)}>{children}</div>
+
+        {(footer ?? null) && (
+          <DialogFooter
+            className={cn(
+              "sticky bottom-0 z-20 bg-muted/40! px-6 py-4 backdrop-blur supports-backdrop-filter:bg-background/75",
+              showDividers ? "border-t border-border/60 shadow-[0_-1px_0_rgba(15,23,42,0.08)]" : null,
+              footerClassName
+            )}
+          >
+            {footer}
+          </DialogFooter>
+        )}
+      </div>
+    </DialogContent>
+  );
+}
+
 export {
   Dialog,
   DialogClose,
@@ -118,6 +187,7 @@ export {
   DialogHeader,
   DialogOverlay,
   DialogPortal,
+  DialogShell,
   DialogTitle,
   DialogTrigger,
 };

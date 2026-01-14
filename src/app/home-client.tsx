@@ -47,14 +47,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogFooter, DialogShell } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -357,6 +350,7 @@ export function HomeClient() {
   const [onboardingKeyError, setOnboardingKeyError] = useState("");
   const [isSavingActionPlan, setIsSavingActionPlan] = useState(false);
   const [actionChecklist, setActionChecklist] = useState<Record<string, boolean>>({});
+  const [isActionBoardOpen, setIsActionBoardOpen] = useState(false);
 
   const suggestions = useMemo(
     () => ["Give me a 14-day rescue plan.", "Diagnose my last mock.", "Fix RC accuracy."],
@@ -450,6 +444,7 @@ export function HomeClient() {
   }, [latestCoachResponse]);
 
   const actionSignature = useMemo(() => actionItems.map(item => `${item.id}:${item.label}`).join("|"), [actionItems]);
+  const actionBoardCountRef = useRef(0);
 
   const loadSession = useCallback(async () => {
     setIsSessionLoading(true);
@@ -554,6 +549,15 @@ export function HomeClient() {
   useEffect(() => {
     setActionChecklist({});
   }, [actionSignature]);
+
+  useEffect(() => {
+    if (actionItems.length === 0) {
+      setIsActionBoardOpen(false);
+    } else if (actionBoardCountRef.current === 0) {
+      setIsActionBoardOpen(true);
+    }
+    actionBoardCountRef.current = actionItems.length;
+  }, [actionItems.length]);
 
   useEffect(() => {
     if (!sessionUser) return;
@@ -1204,6 +1208,39 @@ export function HomeClient() {
     setHistoryOpen(false);
   }, []);
 
+  const starterDialogTitle =
+    starterDialog === "mock"
+      ? "Mock diagnostic helper"
+      : starterDialog === "rc"
+        ? "Fix RC accuracy"
+        : "14-day rescue plan";
+
+  const starterDialogDescription =
+    starterDialog === "mock"
+      ? "Share your scores + what went wrong. We'll build a clean diagnostic prompt."
+      : "Answer quick intake questions so the coach can skip follow-ups.";
+
+  const starterDialogFooter =
+    starterDialog === "mock" ? (
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={() => setStarterDialog(null)}>
+          Cancel
+        </Button>
+        <Button type="button" onClick={handleMockSubmit}>
+          Send to coach
+        </Button>
+      </DialogFooter>
+    ) : starterDialog ? (
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={() => setStarterDialog(null)}>
+          Cancel
+        </Button>
+        <Button type="button" onClick={starterDialog === "rc" ? handleRcSubmit : handleRescueSubmit}>
+          Send to coach
+        </Button>
+      </DialogFooter>
+    ) : null;
+
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/30">
       <AppNavbar
@@ -1449,9 +1486,9 @@ export function HomeClient() {
                   </div>
 
                   <div className="min-h-0 flex-1">
-                    <div className="flex h-full flex-col">
+                    <div className="flex h-full min-h-0 flex-col">
                       {actionItems.length > 0 && (
-                        <div className="border-b bg-muted/20 px-3 py-3">
+                        <div className="flex-shrink-0 space-y-2 border-b bg-muted/20 px-3 pt-3 pb-3">
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <div>
                               <p className="text-xs font-semibold text-foreground">Action board</p>
@@ -1459,46 +1496,67 @@ export function HomeClient() {
                                 Track today and this week, then save to rough notes.
                               </p>
                             </div>
-                            <Button size="sm" variant="outline" onClick={saveActionPlan} disabled={isSavingActionPlan}>
-                              {isSavingActionPlan ? "Saving..." : "Save to rough notes"}
-                            </Button>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setIsActionBoardOpen(open => !open)}
+                                aria-expanded={isActionBoardOpen}
+                              >
+                                {isActionBoardOpen ? "Hide action board" : "Show action board"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={saveActionPlan}
+                                disabled={isSavingActionPlan}
+                              >
+                                {isSavingActionPlan ? "Saving..." : "Save to rough notes"}
+                              </Button>
+                            </div>
                           </div>
-                          <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                            {["Today", "This Week"].map(bucket => {
-                              const items = actionItems.filter(item => item.bucket === bucket);
-                              if (items.length === 0) return null;
-                              return (
-                                <div key={bucket} className="rounded-xl border bg-background p-3">
-                                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                    {bucket}
-                                  </p>
-                                  <div className="mt-2 space-y-2">
-                                    {items.map(item => (
-                                      <label key={item.id} className="flex items-start gap-2 text-xs text-foreground">
-                                        <input
-                                          type="checkbox"
-                                          className="mt-0.5 h-4 w-4 rounded border"
-                                          checked={Boolean(actionChecklist[item.id])}
-                                          onChange={event => {
-                                            setActionChecklist(current => ({
-                                              ...current,
-                                              [item.id]: event.target.checked,
-                                            }));
-                                          }}
-                                        />
-                                        <span>{item.label}</span>
-                                      </label>
-                                    ))}
+                          {isActionBoardOpen ? (
+                            <div className="mt-3 grid gap-3 sm:grid-cols-2 max-h-[min(28rem,35dvh)] overflow-y-auto pr-1">
+                              {["Today", "This Week"].map(bucket => {
+                                const items = actionItems.filter(item => item.bucket === bucket);
+                                if (items.length === 0) return null;
+                                return (
+                                  <div key={bucket} className="rounded-xl border bg-background p-3">
+                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                      {bucket}
+                                    </p>
+                                    <div className="mt-2 space-y-2">
+                                      {items.map(item => (
+                                        <label key={item.id} className="flex items-start gap-2 text-xs text-foreground">
+                                          <input
+                                            type="checkbox"
+                                            className="mt-0.5 h-4 w-4 rounded border"
+                                            checked={Boolean(actionChecklist[item.id])}
+                                            onChange={event => {
+                                              setActionChecklist(current => ({
+                                                ...current,
+                                                [item.id]: event.target.checked,
+                                              }));
+                                            }}
+                                          />
+                                          <span>{item.label}</span>
+                                        </label>
+                                      ))}
+                                    </div>
                                   </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              Action board is hidden. Expand it to review the list.
+                            </p>
+                          )}
                         </div>
                       )}
 
                       <Chat
-                        className="flex-1 px-2 pt-2"
+                        className="flex-1 min-h-0 px-2 pt-2"
                         messages={messages}
                         input={input}
                         handleInputChange={handleInputChange}
@@ -1603,22 +1661,12 @@ export function HomeClient() {
           if (!open) setStarterDialog(null);
         }}
       >
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>
-              {starterDialog === "mock"
-                ? "Mock diagnostic helper"
-                : starterDialog === "rc"
-                  ? "Fix RC accuracy"
-                  : "14-day rescue plan"}
-            </DialogTitle>
-            <DialogDescription>
-              {starterDialog === "mock"
-                ? "Share your scores + what went wrong. We'll build a clean diagnostic prompt."
-                : "Answer quick intake questions so the coach can skip follow-ups."}
-            </DialogDescription>
-          </DialogHeader>
-
+        <DialogShell
+          className="sm:max-w-2xl"
+          title={starterDialogTitle}
+          description={starterDialogDescription}
+          footer={starterDialogFooter}
+        >
           {starterDialog === "mock" ? (
             <div className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-3">
@@ -1830,15 +1878,6 @@ export function HomeClient() {
                   </div>
                 </div>
               </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setStarterDialog(null)}>
-                  Cancel
-                </Button>
-                <Button type="button" onClick={handleMockSubmit}>
-                  Send to coach
-                </Button>
-              </DialogFooter>
             </div>
           ) : (
             <div className="space-y-4">
@@ -1909,27 +1948,18 @@ export function HomeClient() {
                   />
                 </div>
               </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setStarterDialog(null)}>
-                  Cancel
-                </Button>
-                <Button type="button" onClick={starterDialog === "rc" ? handleRcSubmit : handleRescueSubmit}>
-                  Send to coach
-                </Button>
-              </DialogFooter>
             </div>
           )}
-        </DialogContent>
+        </DialogShell>
       </Dialog>
 
       <Dialog open={showOnboarding} onOpenChange={() => {}}>
-        <DialogContent showCloseButton={false} className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Welcome to Cat99</DialogTitle>
-            <DialogDescription>Finish these steps once so you never hit key/model errors.</DialogDescription>
-          </DialogHeader>
-
+        <DialogShell
+          showCloseButton={false}
+          className="sm:max-w-xl"
+          title="Welcome to Cat99"
+          description="Finish these steps once so you never hit key/model errors."
+        >
           <div className="space-y-4">
             <div className="space-y-2">
               {[
@@ -2028,16 +2058,35 @@ export function HomeClient() {
               </div>
             </div>
           </div>
-        </DialogContent>
+        </DialogShell>
       </Dialog>
 
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Settings</DialogTitle>
-            <DialogDescription>Saved to your account.</DialogDescription>
-          </DialogHeader>
-
+        <DialogShell
+          className="sm:max-w-xl"
+          title="Settings"
+          description="Saved to your account."
+          footer={
+            <DialogFooter>
+              {openRouterStatus.hasKey ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setSettingsOpen(false);
+                    setConfirmAction({ type: "remove-openrouter-key" });
+                  }}
+                  disabled={isSettingsSaving}
+                >
+                  Remove key
+                </Button>
+              ) : null}
+              <Button type="button" onClick={saveOpenRouterKey} disabled={isSettingsLoading || isSettingsSaving}>
+                {isSettingsSaving ? "Saving..." : "Save"}
+              </Button>
+            </DialogFooter>
+          }
+        >
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
               <Label htmlFor="openrouter-key">OpenRouter API key</Label>
@@ -2064,26 +2113,7 @@ export function HomeClient() {
               <AlertDescription>Stored server-side. It is not displayed back in full.</AlertDescription>
             </Alert>
           </div>
-
-          <DialogFooter>
-            {openRouterStatus.hasKey ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setSettingsOpen(false);
-                  setConfirmAction({ type: "remove-openrouter-key" });
-                }}
-                disabled={isSettingsSaving}
-              >
-                Remove key
-              </Button>
-            ) : null}
-            <Button type="button" onClick={saveOpenRouterKey} disabled={isSettingsLoading || isSettingsSaving}>
-              {isSettingsSaving ? "Saving..." : "Save"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
+        </DialogShell>
       </Dialog>
 
       <CommandDialog
