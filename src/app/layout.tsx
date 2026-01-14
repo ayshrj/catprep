@@ -1,19 +1,28 @@
 import "./globals.css";
+import "./globals.css";
 
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { JetBrains_Mono, Source_Sans_3, Space_Grotesk } from "next/font/google";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const sourceSans = Source_Sans_3({
   subsets: ["latin"],
+  variable: "--font-source-sans",
+  display: "swap",
+});
+
+const jetBrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -28,7 +37,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${spaceGrotesk.variable} ${sourceSans.variable} ${jetBrainsMono.variable}`}>
+        {" "}
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Toaster />
           {children}

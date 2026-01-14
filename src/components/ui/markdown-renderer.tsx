@@ -74,6 +74,7 @@ function childrenTakeAllStringContents(element: any): string {
 }
 
 // Make TS happy: always return a React component (not void), and merge className safely.
+
 function withClass(tag: keyof React.JSX.IntrinsicElements, classes: string): React.FC<any> {
   const Component: React.FC<any> =
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -413,6 +413,8 @@ export default function NotesPage() {
                     window.location.href = "/";
                   } else if (next === "notes") {
                     window.location.href = "/notes";
+                  } else if (next === "games") {
+                    window.location.href = "/games";
                   }
                 }}
               />
@@ -430,6 +432,7 @@ export default function NotesPage() {
                   <DropdownMenuItem onClick={() => (window.location.href = "/rough-notes")}>
                     Rough notes
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => (window.location.href = "/games")}>Games</DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -452,6 +455,7 @@ export default function NotesPage() {
                   <DropdownMenuItem onClick={() => (window.location.href = "/rough-notes")}>
                     Rough notes
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => (window.location.href = "/games")}>Games</DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuLabel>Actions</DropdownMenuLabel>
                   <DropdownMenuSeparator />

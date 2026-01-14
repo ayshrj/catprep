@@ -83,6 +83,7 @@ function normalizeScenario(value: unknown): LlmCatCoachResponse["scenario"] {
   const reason = normalizeString(value.reason);
   return {
     code: VALID_SCENARIO_CODES.has(code) ? (code as any) : "unknown",
+
     confidence: confidence === "low" || confidence === "med" || confidence === "high" ? (confidence as any) : "low",
     reason,
   };
@@ -148,10 +149,12 @@ function normalizeAssistantJson(raw: unknown): LlmCatCoachResponse {
 
   return {
     intent: VALID_INTENTS.has(intent) ? (intent as any) : "other",
+
     responseMode: VALID_RESPONSE_MODES.has(responseMode) ? (responseMode as any) : "normal_coaching",
     shouldAskQuickQuestions: Boolean(raw.shouldAskQuickQuestions),
     quickQuestions: normalizeStringArray(raw.quickQuestions),
     scenario: normalizeScenario(raw.scenario),
+
     section: section === "QA" || section === "VARC" || section === "DILR" ? (section as any) : null,
     topicTag: topicTag || null,
     whatUserNeedsNow: normalizeString(raw.whatUserNeedsNow),

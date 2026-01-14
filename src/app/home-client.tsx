@@ -274,9 +274,9 @@ export function HomeClient() {
 
   const initialMode = searchParams.get("view") === "notes" ? ("notes" as const) : ("chat" as const);
   const [homeMode, setHomeMode] = useState<"chat" | "notes">(initialMode);
-  const [navigationValue, setNavigationValue] = useState<"chat" | "notes" | "saved">(initialMode);
+  const [navigationValue, setNavigationValue] = useState<"chat" | "notes" | "saved" | "games">(initialMode);
   const handleNavigationChange = useCallback(
-    (target: "chat" | "notes" | "saved") => {
+    (target: "chat" | "notes" | "saved" | "games") => {
       setNavigationValue(target);
       if (target === "chat") {
         const params = new URLSearchParams(searchParams.toString());
@@ -288,6 +288,8 @@ export function HomeClient() {
         router.push("/notes");
       } else if (target === "saved") {
         router.push("/rough-notes");
+      } else if (target === "games") {
+        router.push("/games");
       }
     },
     [router, searchParams]
@@ -1321,6 +1323,7 @@ export function HomeClient() {
                     <DropdownMenuItem onClick={() => handleNavigationChange("chat")}>Chat</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleNavigationChange("notes")}>Notes</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleNavigationChange("saved")}>Rough notes</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleNavigationChange("games")}>Games</DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -1351,6 +1354,7 @@ export function HomeClient() {
                     <DropdownMenuItem onClick={() => handleNavigationChange("chat")}>Chat</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleNavigationChange("notes")}>Notes</DropdownMenuItem>
                     <DropdownMenuItem onClick={() => handleNavigationChange("saved")}>Rough notes</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleNavigationChange("games")}>Games</DropdownMenuItem>
                     <DropdownMenuSeparator />
 
                     {showChatControls ? (

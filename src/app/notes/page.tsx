@@ -31,6 +31,8 @@ export default function NotesPage() {
                   window.location.href = "/";
                 } else if (next === "saved") {
                   window.location.href = "/rough-notes";
+                } else if (next === "games") {
+                  window.location.href = "/games";
                 }
               }}
             />
@@ -46,6 +48,7 @@ export default function NotesPage() {
                 <DropdownMenuItem onClick={() => (window.location.href = "/")}>Chat</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => (window.location.href = "/notes")}>Notes</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => (window.location.href = "/rough-notes")}>Rough notes</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => (window.location.href = "/games")}>Games</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
