@@ -1,19 +1,7 @@
 "use client";
 
 import type { SerializedEditorState } from "lexical";
-import {
-  Archive,
-  Check,
-  Laptop,
-  Moon,
-  MoreVertical,
-  PanelLeft,
-  RefreshCcw,
-  RotateCcw,
-  Sun,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Archive, Check, Laptop, Moon, PanelLeft, RefreshCcw, RotateCcw, Sun, Trash2, X } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -21,7 +9,7 @@ import { toast } from "sonner";
 
 import { APP_CONTENT_HEIGHT, AppContent } from "@/components/app-content";
 import { AppNavbar } from "@/components/app-navbar";
-import { AppNavigationSelect } from "@/components/app-navigation-select";
+import { AppNavbarActions } from "@/components/app-navbar-actions";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Notes } from "@/components/notes";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -48,14 +36,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Dialog, DialogFooter, DialogShell } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -1241,6 +1222,63 @@ export function HomeClient() {
       </DialogFooter>
     ) : null;
 
+  const navbarInlineExtras = showChatControls ? (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setModelPickerOpen(true)}
+        disabled={models.length === 0 || isSettingsSaving}
+        className="min-w-0 max-w-full shrink truncate md:max-w-[18rem]"
+      >
+        <ModelIcon model={openRouterModel} />
+        {openRouterModel ? openRouterModel : "Select model"}
+      </Button>
+
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        aria-label="Fetch models"
+        onClick={fetchModels}
+        disabled={modelsLoading || isSettingsSaving}
+      >
+        <RefreshCcw className={modelsLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+      </Button>
+    </>
+  ) : null;
+
+  const navbarMenuExtras = (
+    <>
+      {showChatControls ? (
+        <>
+          <DropdownMenuLabel>Model</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setModelPickerOpen(true)} disabled={models.length === 0 || isSettingsSaving}>
+            Select model
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={fetchModels} disabled={modelsLoading || isSettingsSaving}>
+            {modelsLoading ? "Fetching models..." : "Fetch models"}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+        </>
+      ) : null}
+
+      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onClick={() => setSettingsOpen(true)}>Settings</DropdownMenuItem>
+      <DropdownMenuItem onClick={handleNewChat}>New chat</DropdownMenuItem>
+      <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onSelect={e => e.preventDefault()}>
+        <div className="flex w-full items-center justify-between">
+          <span>Theme</span>
+          <ThemeToggleButton />
+        </div>
+      </DropdownMenuItem>
+    </>
+  );
+
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/30">
       <AppNavbar
@@ -1318,118 +1356,12 @@ export function HomeClient() {
         }
         trailing={
           sessionUser ? (
-            <>
-              <div className="hidden items-center gap-2 md:flex">
-                {showChatControls ? (
-                  <>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setModelPickerOpen(true)}
-                      disabled={models.length === 0 || isSettingsSaving}
-                      className="min-w-0 max-w-full shrink truncate md:max-w-[18rem]"
-                    >
-                      <ModelIcon model={openRouterModel} />
-                      {openRouterModel ? openRouterModel : "Select Model"}
-                    </Button>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      aria-label="Fetch models"
-                      onClick={fetchModels}
-                      disabled={modelsLoading || isSettingsSaving}
-                    >
-                      <RefreshCcw className={modelsLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
-                    </Button>
-                  </>
-                ) : null}
-
-                <AppNavigationSelect value={navigationValue} onChange={handleNavigationChange} />
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button type="button" variant="outline" size="icon" aria-label="Menu">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Pages</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => handleNavigationChange("chat")}>Chat</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleNavigationChange("notes")}>Notes</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleNavigationChange("saved")}>Rough notes</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleNavigationChange("games")}>Games</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setSettingsOpen(true)}>Settings</DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleNewChat}>New chat</DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                      <div className="flex w-full items-center justify-between">
-                        <span>Theme</span>
-                        <ThemeToggleButton />
-                      </div>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              <div className="md:hidden">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button type="button" variant="outline" size="icon" aria-label="Menu">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuLabel>Pages</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => handleNavigationChange("chat")}>Chat</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleNavigationChange("notes")}>Notes</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleNavigationChange("saved")}>Rough notes</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleNavigationChange("games")}>Games</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-
-                    {showChatControls ? (
-                      <>
-                        <DropdownMenuLabel>Model</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => setModelPickerOpen(true)}
-                          disabled={models.length === 0 || isSettingsSaving}
-                        >
-                          Select model
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem onClick={fetchModels} disabled={modelsLoading || isSettingsSaving}>
-                          {modelsLoading ? "Fetching models..." : "Fetch models"}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                      </>
-                    ) : null}
-
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setSettingsOpen(true)}>Settings</DropdownMenuItem>
-
-                    <DropdownMenuItem onClick={handleNewChat}>New chat</DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
-
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={e => e.preventDefault()}>
-                      <div className="flex w-full items-center justify-between">
-                        <span>Theme</span>
-                        <ThemeToggleButton />
-                      </div>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </>
+            <AppNavbarActions
+              value={navigationValue}
+              onChange={handleNavigationChange}
+              inlineExtras={navbarInlineExtras}
+              menuExtras={navbarMenuExtras}
+            />
           ) : null
         }
       />

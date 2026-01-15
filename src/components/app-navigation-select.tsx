@@ -6,7 +6,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 type NavValue = "chat" | "notes" | "saved" | "games";
 
-export function AppNavigationSelect({ value, onChange }: { value: NavValue; onChange: (value: NavValue) => void }) {
+export function AppNavigationSelect({
+  value,
+  onChange,
+  size = "sm",
+  className,
+}: {
+  value: NavValue;
+  onChange: (value: NavValue) => void;
+  size?: "sm" | "default";
+  className?: string;
+}) {
   const handleChange = useCallback(
     (next: string) => {
       if (next === "chat" || next === "notes" || next === "saved" || next === "games") {
@@ -18,8 +28,12 @@ export function AppNavigationSelect({ value, onChange }: { value: NavValue; onCh
 
   return (
     <Select value={value} onValueChange={handleChange}>
-      <SelectTrigger aria-label="Navigate between Chat, Notes, Rough notes, and Games">
-        <SelectValue placeholder="Navigate" />
+      <SelectTrigger
+        size={size}
+        className={className}
+        aria-label="Navigate between Chat, Notes, Rough notes, and Games"
+      >
+        <SelectValue placeholder="Pages" />
       </SelectTrigger>
       <SelectContent align="end">
         <SelectItem value="chat">Chat</SelectItem>

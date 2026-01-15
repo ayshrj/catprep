@@ -3,13 +3,13 @@
 import { $convertToMarkdownString } from "@lexical/markdown";
 import { parseISO } from "date-fns";
 import { $getRoot, CLEAR_EDITOR_COMMAND, type LexicalEditor, type SerializedEditorState } from "lexical";
-import { MoreVertical, PanelLeft } from "lucide-react";
+import { PanelLeft } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { APP_CONTENT_HEIGHT, AppContent } from "@/components/app-content";
 import { AppNavbar } from "@/components/app-navbar";
-import { AppNavigationSelect } from "@/components/app-navigation-select";
+import { AppNavbarActions } from "@/components/app-navbar-actions";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MARKDOWN_TRANSFORMERS } from "@/components/editor/markdown-transformers";
 import { FullFeaturedEditor } from "@/components/full-featured-editor";
@@ -25,18 +25,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import MarkdownRenderer from "@/components/ui/markdown-renderer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
 
 type RoughNote = {
   id: string;
@@ -53,7 +47,7 @@ export default function NotesPage() {
   const [noteTitle, setNoteTitle] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [currentNoteId, setCurrentNoteId] = useState<string | null>(null);
-  const [historyOpen, setHistoryOpen] = useState(true);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [loadingNote, setLoadingNote] = useState<string | null>(null);
   const [historySheetOpen, setHistorySheetOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"edit" | "view">("edit");
@@ -404,101 +398,69 @@ export default function NotesPage() {
           </div>
         }
         trailing={
-          <>
-            <div className="hidden items-center gap-2 md:flex">
-              <AppNavigationSelect
-                value="saved"
-                onChange={next => {
-                  if (next === "chat") {
-                    window.location.href = "/";
-                  } else if (next === "notes") {
-                    window.location.href = "/notes";
-                  } else if (next === "games") {
-                    window.location.href = "/games";
-                  }
-                }}
-              />
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button type="button" variant="outline" size="icon" aria-label="Menu">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Pages</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => (window.location.href = "/")}>Chat</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => (window.location.href = "/notes")}>Notes</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => (window.location.href = "/rough-notes")}>
-                    Rough notes
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => (window.location.href = "/games")}>Games</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => void fetchNotes()}>Refresh</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <div className="md:hidden">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button type="button" variant="outline" size="icon" aria-label="Menu">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Pages</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => (window.location.href = "/")}>Chat</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => (window.location.href = "/notes")}>Notes</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => (window.location.href = "/rough-notes")}>
-                    Rough notes
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => (window.location.href = "/games")}>Games</DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => void fetchNotes()}>Refresh</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </>
+          <AppNavbarActions
+            value="saved"
+            onChange={next => {
+              if (next === "chat") {
+                window.location.href = "/";
+              } else if (next === "notes") {
+                window.location.href = "/notes";
+              } else if (next === "saved") {
+                window.location.href = "/rough-notes";
+              } else if (next === "games") {
+                window.location.href = "/games";
+              }
+            }}
+            menuExtras={
+              <>
+                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => void fetchNotes()}>Refresh</DropdownMenuItem>
+              </>
+            }
+          />
         }
       />
 
       <AppContent className={APP_CONTENT_HEIGHT}>
         <div className="h-full py-3 sm:py-4">
           <main className="flex h-full min-h-0 flex-col gap-6">
-            <div className="grid h-full min-h-0 gap-3 overflow-hidden md:grid-cols-[18rem_1fr] md:gap-4">
-              <AppSidebar
-                title="History"
-                actions={
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" onClick={handleNewNote}>
-                      New note
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => setHistoryOpen(open => !open)}>
-                      {historyOpen ? "Hide history" : "Show history"}
-                    </Button>
+            <div
+              className={cn(
+                "grid h-full min-h-0 gap-3 overflow-hidden md:gap-4",
+                historyOpen ? "md:grid-cols-[18rem_1fr]" : "md:grid-cols-[minmax(0,1fr)]"
+              )}
+            >
+              {historyOpen ? (
+                <AppSidebar
+                  title="History"
+                  actions={
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" onClick={handleNewNote}>
+                        New note
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setHistoryOpen(open => !open)}>
+                        {historyOpen ? "Hide history" : "Show history"}
+                      </Button>
+                    </div>
+                  }
+                  className="hidden md:order-1 md:flex"
+                  contentClassName="p-0"
+                >
+                  <div className="space-y-3 p-4">
+                    <p className="text-xs text-muted-foreground">
+                      Browse saved notes and load them into the editor for viewing or editing.
+                    </p>
+                    {renderHistoryList(openNote)}
                   </div>
-                }
-                className="hidden md:order-1 md:flex"
-                contentClassName="p-0"
-              >
-                <div className="space-y-3 p-4">
-                  <p className="text-xs text-muted-foreground">
-                    Browse saved notes and load them into the editor for viewing or editing.
-                  </p>
-                  {renderHistoryList(openNote)}
-                </div>
-              </AppSidebar>
+                </AppSidebar>
+              ) : null}
 
-              <section className="order-1 flex h-full min-h-0 flex-col gap-4 overflow-hidden rounded-2xl border bg-background p-3 shadow-sm md:order-2 sm:p-4">
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <section className="order-1 flex h-full min-h-0 flex-col gap-3 overflow-hidden rounded-2xl border bg-background p-2 shadow-sm md:order-2 sm:gap-4 sm:p-4">
+                <div className="flex flex-col gap-2 sm:gap-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                     <div className="space-y-1">
-                      <p className="text-sm font-semibold text-foreground">
+                      <p className="text-xs font-semibold leading-tight text-foreground sm:text-sm">
                         {currentNoteId
                           ? viewMode === "view"
                             ? "View current note"
@@ -511,13 +473,22 @@ export default function NotesPage() {
                         Everything is saved to your account.
                       </p>
                     </div>
-                    <div className="flex items-center gap-2 overflow-x-auto sm:flex-wrap sm:overflow-visible">
-                      <div className="inline-flex rounded-full border bg-background p-1">
+                    <div className="flex items-center gap-1.5 overflow-x-auto sm:flex-wrap sm:gap-2 sm:overflow-visible">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setHistoryOpen(open => !open)}
+                        className="hidden md:inline-flex"
+                      >
+                        <PanelLeft className="h-4 w-4" />
+                        {historyOpen ? "Hide history" : "Show history"}
+                      </Button>
+                      <div className="inline-flex rounded-full border bg-background p-0.5 sm:p-1">
                         <Button
                           size="sm"
                           variant={viewMode === "edit" ? "default" : "ghost"}
                           onClick={() => handleViewModeChange("edit")}
-                          className="h-7 px-3"
+                          className="h-6 px-2 text-xs sm:h-7 sm:px-3 sm:text-sm"
                         >
                           Edit
                         </Button>
@@ -525,18 +496,35 @@ export default function NotesPage() {
                           size="sm"
                           variant={viewMode === "view" ? "default" : "ghost"}
                           onClick={() => handleViewModeChange("view")}
-                          className="h-7 px-3"
+                          className="h-6 px-2 text-xs sm:h-7 sm:px-3 sm:text-sm"
                         >
                           View
                         </Button>
                       </div>
-                      <Button variant="outline" size="sm" onClick={handleNewNote} disabled={isSaving}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleNewNote}
+                        disabled={isSaving}
+                        className="h-7 px-2 text-xs sm:h-8 sm:px-3 sm:text-sm"
+                      >
                         New note
                       </Button>
-                      <Button variant="outline" size="sm" onClick={handleClearEditor} disabled={isSaving}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleClearEditor}
+                        disabled={isSaving}
+                        className="h-7 px-2 text-xs sm:h-8 sm:px-3 sm:text-sm"
+                      >
                         Clear
                       </Button>
-                      <Button size="sm" onClick={handleSaveNote} disabled={isSaving}>
+                      <Button
+                        size="sm"
+                        onClick={handleSaveNote}
+                        disabled={isSaving}
+                        className="h-7 px-2 text-xs sm:h-8 sm:px-3 sm:text-sm"
+                      >
                         {isSaving ? "Saving..." : currentNoteId ? "Update note" : "Save note"}
                       </Button>
                     </div>
@@ -546,6 +534,7 @@ export default function NotesPage() {
                     value={noteTitle}
                     onChange={event => setNoteTitle(event.target.value)}
                     disabled={isSaving}
+                    className="h-9 text-sm sm:h-10 sm:text-base"
                   />
                 </div>
 

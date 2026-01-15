@@ -83,7 +83,7 @@ export const OddSentenceOutUI: React.FC<{
             </Button>
 
             {submitted && selectedIndex !== null && (
-              <div className="ml-auto flex items-center">
+              <div className="flex items-center">
                 {selectedIndex === puzzle.oddIndex ? (
                   <Badge>Correct</Badge>
                 ) : (

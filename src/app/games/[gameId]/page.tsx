@@ -1,21 +1,25 @@
 ﻿"use client";
 
-import { MoreVertical } from "lucide-react";
+import { Check, RefreshCcw, Sparkles } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
-import { APP_CONTENT_HEIGHT, AppContent } from "@/components/app-content";
 import { AppNavbar } from "@/components/app-navbar";
-import { AppNavigationSelect } from "@/components/app-navigation-select";
+import { AppNavbarActions } from "@/components/app-navbar-actions";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import { DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { ModelIcon } from "@/constant/model";
+import { isLlmGame } from "@/games/core/game-generation";
+import { useOpenRouterModels } from "@/hooks/use-openrouter-models";
 
 const GameRunner = dynamic(() => import("@/games/game-runner"), {
   ssr: false,
@@ -28,6 +32,27 @@ export default function GamePage() {
   const params = useParams<{ gameId?: string | string[] }>();
   const raw = params?.gameId;
   const gameId = typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : "";
+  const showModelPicker = isLlmGame(gameId);
+
+  const {
+    openRouterModel,
+    hasKey,
+    models,
+    modelsLoading,
+    modelsError,
+    settingsSaving,
+    fetchModels,
+    saveOpenRouterModel,
+  } = useOpenRouterModels({ enabled: showModelPicker });
+  const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [modelSearch, setModelSearch] = useState("");
+
+  useEffect(() => {
+    if (!showModelPicker) return;
+    if (!modelPickerOpen) return;
+    if (models.length > 0 || modelsLoading || !hasKey) return;
+    void fetchModels();
+  }, [fetchModels, hasKey, modelPickerOpen, models.length, modelsLoading, showModelPicker]);
 
   if (!gameId) {
     return (
@@ -35,49 +60,120 @@ export default function GamePage() {
     );
   }
 
+  const modelLabel = hasKey ? (openRouterModel ? openRouterModel : "Select model") : "Add key in Settings";
+
+  const inlineModelControls = showModelPicker ? (
+    <>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => setModelPickerOpen(true)}
+        disabled={!hasKey || settingsSaving}
+        className="min-w-0 max-w-[16rem] gap-2 truncate"
+      >
+        {openRouterModel ? <ModelIcon model={openRouterModel} /> : <Sparkles className="h-4 w-4" />}
+        <span className="truncate">{modelLabel}</span>
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="icon"
+        aria-label="Fetch models"
+        onClick={fetchModels}
+        disabled={!hasKey || modelsLoading || settingsSaving}
+      >
+        <RefreshCcw className={modelsLoading ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+      </Button>
+    </>
+  ) : null;
+
+  const menuExtras = showModelPicker ? (
+    <>
+      <DropdownMenuLabel>Model</DropdownMenuLabel>
+      <DropdownMenuSeparator />
+      <DropdownMenuItem onClick={() => setModelPickerOpen(true)} disabled={!hasKey || settingsSaving}>
+        {hasKey ? "Select model" : "Add OpenRouter key in Settings"}
+      </DropdownMenuItem>
+      <DropdownMenuItem onClick={fetchModels} disabled={!hasKey || modelsLoading || settingsSaving}>
+        {modelsLoading ? "Fetching models..." : "Fetch models"}
+      </DropdownMenuItem>
+    </>
+  ) : null;
+
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/30">
       <AppNavbar
         title="Cat99"
         subtitle="Games"
         trailing={
-          <div className="flex items-center gap-2">
-            <AppNavigationSelect
-              value="games"
-              onChange={next => {
-                if (next === "chat") {
-                  window.location.href = "/";
-                } else if (next === "notes") {
-                  window.location.href = "/notes";
-                } else if (next === "saved") {
-                  window.location.href = "/rough-notes";
-                }
-              }}
-            />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button type="button" variant="outline" size="icon" aria-label="Menu">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>Pages</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => (window.location.href = "/")}>Chat</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => (window.location.href = "/notes")}>Notes</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => (window.location.href = "/rough-notes")}>Rough notes</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => (window.location.href = "/games")}>Games</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <AppNavbarActions
+            value="games"
+            onChange={next => {
+              if (next === "chat") {
+                window.location.href = "/";
+              } else if (next === "notes") {
+                window.location.href = "/notes";
+              } else if (next === "saved") {
+                window.location.href = "/rough-notes";
+              } else if (next === "games") {
+                window.location.href = "/games";
+              }
+            }}
+            inlineExtras={inlineModelControls}
+            menuExtras={menuExtras}
+          />
         }
       />
 
-      <AppContent className={APP_CONTENT_HEIGHT}>
-        <div className="h-full min-h-0 overflow-y-auto py-3 sm:py-4">
-          <GameRunner gameId={gameId} />
-        </div>
-      </AppContent>
+      <GameRunner gameId={gameId} />
+
+      {showModelPicker ? (
+        <CommandDialog
+          open={modelPickerOpen}
+          onOpenChange={open => {
+            setModelPickerOpen(open);
+            if (!open) setModelSearch("");
+          }}
+          title="OpenRouter model"
+          description="Search and select a model."
+        >
+          <CommandInput placeholder="Search models..." value={modelSearch} onValueChange={setModelSearch} />
+          <CommandList>
+            <CommandEmpty>
+              {models.length === 0 ? "No models loaded. Click Fetch models." : "No models found."}
+            </CommandEmpty>
+
+            {modelsError ? <div className="px-3 py-2 text-xs text-destructive">{modelsError}</div> : null}
+
+            <CommandGroup heading="Models">
+              {models.map(model => {
+                return (
+                  <CommandItem
+                    key={model.id}
+                    value={`${model.name ?? ""} ${model.id}`}
+                    onSelect={() => {
+                      void saveOpenRouterModel(model.id);
+                      setModelPickerOpen(false);
+                    }}
+                  >
+                    <Check className={model.id === openRouterModel ? "h-4 w-4" : "h-4 w-4 opacity-0"} />
+                    <div className="ml-2 flex w-full items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="truncate font-medium">{model.name || model.id}</div>
+                        <div className="truncate text-xs text-muted-foreground">
+                          {model.id}
+                          {model.contextLength ? ` • ${model.contextLength.toLocaleString()} ctx` : ""}
+                        </div>
+                      </div>
+                      <ModelIcon model={model.id} />
+                    </div>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </CommandList>
+        </CommandDialog>
+      ) : null}
     </div>
   );
 }

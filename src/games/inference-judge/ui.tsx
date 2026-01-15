@@ -87,9 +87,7 @@ export const InferenceJudgeUI: React.FC<{
             </Button>
 
             {state.submitted && correct !== null && (
-              <div className="ml-auto">
-                {correct ? <Badge>Correct</Badge> : <Badge variant="destructive">Incorrect</Badge>}
-              </div>
+              <div>{correct ? <Badge>Correct</Badge> : <Badge variant="destructive">Incorrect</Badge>}</div>
             )}
           </div>
 

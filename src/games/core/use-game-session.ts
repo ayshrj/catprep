@@ -1,6 +1,8 @@
 "use client";
-import { useEffect, useMemo, useReducer, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 
+import { LLM_FALLBACK_TO_LOCAL, shouldUseLlmGeneration } from "./game-generation";
+import { fetchLlmPuzzle } from "./puzzle-api";
 import gameRegistry from "./registry";
 import {
   clearGameSession,
@@ -15,6 +17,9 @@ export function useGameSession(gameId: string, initialDifficulty: number = 1) {
   const gameModule = gameRegistry[gameId];
 
   const [initialized, setInitialized] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+  const generationAbortRef = useRef<AbortController | null>(null);
 
   // Seed with a placeholder puzzle/state; real data is loaded (and hydrated from cloud) in an effect below.
   const [puzzle, setPuzzle] = useState(() =>
@@ -24,11 +29,69 @@ export function useGameSession(gameId: string, initialDifficulty: number = 1) {
   const [stats, setStats] = useState(() => getGameStats(gameId));
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+  const createLocalPuzzle = useCallback(
+    (difficulty: number) => {
+      const seed = Date.now();
+      const newPuzzle = gameModule.createPuzzle({ seed, difficulty });
+      const newState = gameModule.getInitialState(newPuzzle);
+      return { puzzle: newPuzzle, state: newState };
+    },
+    [gameModule]
+  );
+
+  const generatePuzzle = useCallback(
+    async (difficulty: number) => {
+      if (!shouldUseLlmGeneration(gameId)) {
+        generationAbortRef.current?.abort();
+        setIsGenerating(false);
+        setGenerationError(null);
+        return { ...createLocalPuzzle(difficulty), source: "local" as const };
+      }
+
+      generationAbortRef.current?.abort();
+      const controller = new AbortController();
+      generationAbortRef.current = controller;
+
+      setIsGenerating(true);
+      setGenerationError(null);
+
+      try {
+        const data = await fetchLlmPuzzle(gameId, difficulty, controller.signal);
+        if (controller.signal.aborted) return null;
+        const newPuzzle = data.puzzle;
+        return {
+          puzzle: newPuzzle,
+          state: gameModule.getInitialState(newPuzzle),
+          source: "llm" as const,
+        };
+      } catch (error) {
+        if (controller.signal.aborted) return null;
+        const message = error instanceof Error ? error.message : "Failed to generate puzzle.";
+        if (LLM_FALLBACK_TO_LOCAL) {
+          setGenerationError(`${message} Using a local puzzle for now.`);
+          return { ...createLocalPuzzle(difficulty), source: "local" as const };
+        }
+        setGenerationError(message);
+        return null;
+      } finally {
+        if (generationAbortRef.current === controller) {
+          generationAbortRef.current = null;
+          setIsGenerating(false);
+        }
+      }
+    },
+    [createLocalPuzzle, gameId, gameModule]
+  );
+
   // Initialize session from local storage, then hydrate from cloud if enabled.
   useEffect(() => {
     let cancelled = false;
 
     const initialize = async () => {
+      setInitialized(false);
+      setIsGenerating(false);
+      setGenerationError(null);
+
       const localSession = getGameSession(gameId);
       const localStats = getGameStats(gameId);
 
@@ -40,10 +103,9 @@ export function useGameSession(gameId: string, initialDifficulty: number = 1) {
       const workingStats = { ...baseStats };
 
       if (!workingSession) {
-        const seed = Date.now();
-        const newPuzzle = gameModule.createPuzzle({ seed, difficulty: initialDifficulty });
-        const newState = gameModule.getInitialState(newPuzzle);
-        workingSession = { puzzle: newPuzzle, state: newState };
+        const generated = await generatePuzzle(initialDifficulty);
+        if (cancelled || !generated) return;
+        workingSession = { puzzle: generated.puzzle, state: generated.state };
         workingStats.attempts += 1;
       }
 
@@ -64,21 +126,22 @@ export function useGameSession(gameId: string, initialDifficulty: number = 1) {
 
     return () => {
       cancelled = true;
+      generationAbortRef.current?.abort();
     };
-  }, [gameId, gameModule, initialDifficulty]);
+  }, [gameId, generatePuzzle, initialDifficulty]);
 
   // Evaluate puzzle state on each change
   const evaluation = useMemo(() => gameModule.evaluate(puzzle, state), [gameModule, puzzle, state]);
 
   // Persist session state on each change
   useEffect(() => {
-    if (!initialized) return;
+    if (!initialized || isGenerating) return;
     setGameSession(gameId, { puzzle, state });
-  }, [gameId, initialized, puzzle, state]);
+  }, [gameId, initialized, isGenerating, puzzle, state]);
 
   // Timer effect: start/stop interval based on game status
   useEffect(() => {
-    if (!initialized) return;
+    if (!initialized || isGenerating) return;
     let timerId: any;
     if (evaluation.status === "inProgress") {
       timerId = setInterval(() => {
@@ -88,16 +151,17 @@ export function useGameSession(gameId: string, initialDifficulty: number = 1) {
     return () => {
       if (timerId) clearInterval(timerId);
     };
-  }, [evaluation.status, initialized, puzzle]);
+  }, [evaluation.status, initialized, isGenerating, puzzle]);
 
   // Handle end-of-game events (solved or failed) to update stats
   useEffect(() => {
-    if (!initialized) return;
-    if (evaluation.status === "solved" || evaluation.status === "failed") {
-      const newStats = { ...stats };
+    if (!initialized || isGenerating) return;
+    if (evaluation.status !== "solved" && evaluation.status !== "failed") return;
+
+    setStats(prev => {
+      const newStats = { ...prev };
       if (evaluation.status === "solved") {
         newStats.solves += 1;
-        // Update streak count
         const today = new Date().toDateString();
         if (newStats.lastSolvedDate) {
           const last = new Date(newStats.lastSolvedDate).toDateString();
@@ -112,26 +176,23 @@ export function useGameSession(gameId: string, initialDifficulty: number = 1) {
           newStats.streakDays = 1;
         }
         newStats.lastSolvedDate = today;
-        // Update best time if this solve is fastest
         if (newStats.bestTimeSeconds === null || elapsedSeconds < newStats.bestTimeSeconds) {
           newStats.bestTimeSeconds = elapsedSeconds;
         }
       }
       newStats.lastPlayedAt = new Date().toISOString();
-      setStats(newStats);
       setGameStats(gameId, newStats);
-      clearGameSession(gameId); // clear session storage as puzzle is complete
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [evaluation.status, initialized]);
+      return newStats;
+    });
+    clearGameSession(gameId);
+  }, [elapsedSeconds, evaluation.status, gameId, initialized, isGenerating]);
 
   // Start a new puzzle (optionally with a different difficulty)
-  const startNewPuzzle = (newDifficulty?: number) => {
+  const startNewPuzzle = async (newDifficulty?: number) => {
     if (!initialized) return;
     const difficulty = newDifficulty ?? gameModule.difficulties[0].id;
-    const seed = Date.now();
-    const newPuzzle = gameModule.createPuzzle({ seed, difficulty });
-    const newState = gameModule.getInitialState(newPuzzle);
+    const generated = await generatePuzzle(difficulty);
+    if (!generated) return;
     // Update stats for a new attempt
     const updatedStats = { ...stats };
     updatedStats.attempts += 1;
@@ -139,16 +200,16 @@ export function useGameSession(gameId: string, initialDifficulty: number = 1) {
     setStats(updatedStats);
     setGameStats(gameId, updatedStats);
     // Initialize new puzzle session
-    setPuzzle(newPuzzle);
+    setPuzzle(generated.puzzle);
     setElapsedSeconds(0);
 
-    dispatch({ type: "__RESET__", newState } as any);
-    setGameSession(gameId, { puzzle: newPuzzle, state: newState });
+    dispatch({ type: "__RESET__", newState: generated.state } as any);
+    setGameSession(gameId, { puzzle: generated.puzzle, state: generated.state });
   };
 
   // Reset current puzzle to its initial state (without counting a new attempt)
   const resetPuzzle = () => {
-    if (!initialized) return;
+    if (!initialized || isGenerating) return;
     const newState = gameModule.getInitialState(puzzle);
 
     dispatch({ type: "__RESET__", newState } as any);
@@ -163,6 +224,9 @@ export function useGameSession(gameId: string, initialDifficulty: number = 1) {
     evaluation,
     stats,
     elapsedSeconds,
+    initialized,
+    isGenerating,
+    generationError,
     startNewPuzzle,
     resetPuzzle,
   };
