@@ -217,7 +217,7 @@ const COMPONENTS = {
     children,
     ...props
   }: any) => (
-    <div className="my-4 w-full overflow-hidden rounded-lg border border-foreground/20">
+    <div className="my-4 w-full overflow-x-auto rounded-lg border border-foreground/20">
       <table className={cn("w-full border-collapse", className)} {...props}>
         {children}
       </table>
