@@ -4,6 +4,8 @@ import { motion } from "framer-motion";
 import { FileIcon, X } from "lucide-react";
 import React, { useEffect } from "react";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 interface FilePreviewProps {
   file: File;
   onRemove?: () => void;
@@ -80,9 +82,15 @@ const TextFilePreview = React.forwardRef<HTMLDivElement, FilePreviewProps>(({ fi
     >
       <div className="flex w-full items-center space-x-2">
         <div className="grid h-10 w-10 shrink-0 place-items-center rounded-sm border bg-muted p-0.5">
-          <div className="h-full w-full overflow-hidden text-[6px] leading-none text-muted-foreground">
-            {preview || "Loading..."}
-          </div>
+          {preview ? (
+            <div className="h-full w-full overflow-hidden text-[6px] leading-none text-muted-foreground">{preview}</div>
+          ) : (
+            <div className="flex h-full w-full flex-col justify-center gap-1 p-1">
+              <Skeleton className="h-1.5 w-full" />
+              <Skeleton className="h-1.5 w-4/5" />
+              <Skeleton className="h-1.5 w-3/5" />
+            </div>
+          )}
         </div>
         <span className="w-full truncate text-muted-foreground">{file.name}</span>
       </div>

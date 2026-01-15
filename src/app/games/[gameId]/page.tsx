@@ -17,6 +17,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ModelIcon } from "@/constant/model";
 import { isLlmGame } from "@/games/core/game-generation";
 import { useOpenRouterModels } from "@/hooks/use-openrouter-models";
@@ -24,7 +25,13 @@ import { useOpenRouterModels } from "@/hooks/use-openrouter-models";
 const GameRunner = dynamic(() => import("@/games/game-runner"), {
   ssr: false,
   loading: () => (
-    <div className="flex min-h-[40vh] items-center justify-center text-sm text-muted-foreground">Loading game...</div>
+    <div className="flex min-h-[40vh] items-center justify-center px-6">
+      <div className="w-full max-w-4xl space-y-3">
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-[32vh] w-full rounded-2xl" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    </div>
   ),
 });
 

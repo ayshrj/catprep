@@ -42,6 +42,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { CAT_KB_PARTS } from "@/lib/cat";
 import { coerceStoredMessageContent, stringifyMessageContent } from "@/lib/message-content";
@@ -1369,7 +1370,23 @@ export function HomeClient() {
       <AppContent className={APP_CONTENT_HEIGHT}>
         <div className="h-full py-3 sm:py-4">
           {isSessionLoading ? (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Loading...</div>
+            <div className="grid h-full grid-cols-1 gap-3 md:grid-cols-[18rem_1fr] md:gap-4">
+              <div className="hidden h-full flex-col gap-3 rounded-2xl border bg-background p-3 md:flex">
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-9 w-full" />
+                <div className="space-y-2">
+                  {Array.from({ length: 6 }).map((_, idx) => (
+                    <Skeleton key={`history-skel-${idx}`} className="h-8 w-full" />
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex h-full flex-col gap-3 rounded-2xl border bg-background p-3">
+                <Skeleton className="h-5 w-40" />
+                <Skeleton className="h-9 w-full" />
+                <Skeleton className="h-[45vh] w-full rounded-2xl" />
+              </div>
+            </div>
           ) : sessionUser ? (
             homeMode === "notes" ? (
               <div className="h-full min-h-0 overflow-hidden rounded-2xl border bg-background shadow-sm">

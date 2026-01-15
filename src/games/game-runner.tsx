@@ -1,5 +1,5 @@
 "use client";
-import { ChevronLeft, Lightbulb, Loader2, RotateCcw, Sparkles } from "lucide-react";
+import { ChevronLeft, Lightbulb, RotateCcw, Sparkles } from "lucide-react";
 import Link from "next/link";
 import React, { useMemo, useState } from "react";
 
@@ -8,6 +8,7 @@ import type { BottomBarActions, HelpSheetContent } from "@/components/game-shell
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { isLlmGame } from "@/games/core/game-generation";
 import gameRegistry from "@/games/core/registry";
@@ -104,10 +105,15 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
   const endOfRound = evaluation.status === "solved" || evaluation.status === "failed";
 
   const primaryCard = showLoading ? (
-    <div className="flex min-h-[320px] items-center justify-center sm:min-h-[360px] lg:min-h-[460px]">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        Generating puzzle...
+    <div className="min-h-[320px] sm:min-h-[360px] lg:min-h-[460px]">
+      <div className="space-y-3">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-[240px] w-full rounded-2xl sm:h-[260px] lg:h-[320px]" />
+        <div className="grid grid-cols-3 gap-2">
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+          <Skeleton className="h-9 w-full" />
+        </div>
       </div>
     </div>
   ) : (

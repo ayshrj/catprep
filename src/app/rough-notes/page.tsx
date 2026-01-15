@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import MarkdownRenderer from "@/components/ui/markdown-renderer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 type RoughNote = {
@@ -184,7 +185,27 @@ export default function NotesPage() {
     return (
       <>
         {loading ? (
-          <div className="flex items-center justify-center py-20 text-sm text-muted-foreground">Loading notes…</div>
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, idx) => (
+              <Card key={`note-skel-${idx}`} className="rounded-2xl border bg-background shadow-sm">
+                <CardHeader className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <Skeleton className="h-4 w-2/3" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                  <div className="space-y-1">
+                    <Skeleton className="h-3 w-full" />
+                    <Skeleton className="h-3 w-5/6" />
+                    <Skeleton className="h-3 w-2/3" />
+                  </div>
+                  <div className="mt-2 flex items-center justify-end gap-2">
+                    <Skeleton className="h-8 w-16" />
+                    <Skeleton className="h-8 w-16" />
+                  </div>
+                </CardHeader>
+              </Card>
+            ))}
+          </div>
         ) : error ? (
           <div className="rounded-2xl border border-dashed border-muted px-4 py-6 text-center text-sm text-muted-foreground">
             {error}
@@ -219,7 +240,7 @@ export default function NotesPage() {
                         onClick={() => onOpenNote(note.id)}
                         disabled={Boolean(loadingNote) || isDeletingNote}
                       >
-                        {loadingNote === note.id ? "Loading..." : "View"}
+                        {loadingNote === note.id ? <Skeleton className="h-4 w-10" /> : "View"}
                       </Button>
                       <Button
                         size="sm"

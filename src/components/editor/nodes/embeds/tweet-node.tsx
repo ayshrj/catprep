@@ -14,6 +14,8 @@ import type {
 import * as React from "react";
 import { JSX, useCallback, useEffect, useRef, useState } from "react";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 const WIDGET_SCRIPT_URL = "https://platform.twitter.com/widgets.js";
 
 type TweetComponentProps = Readonly<{
@@ -186,7 +188,14 @@ export class TweetNode extends DecoratorBlockNode {
       <TweetComponent
         className={className}
         format={this.__format}
-        loadingComponent="Loading..."
+        loadingComponent={
+          <div className="w-full max-w-[550px] space-y-2 rounded-xl border border-border/60 bg-background/70 p-3">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-3 w-full" />
+            <Skeleton className="h-3 w-11/12" />
+            <Skeleton className="h-3 w-10/12" />
+          </div>
+        }
         nodeKey={this.getKey()}
         tweetID={this.__id}
       />
