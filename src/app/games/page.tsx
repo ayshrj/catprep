@@ -3,7 +3,7 @@
 import { SelectValue } from "@radix-ui/react-select";
 import { Calendar, MoreVertical, Search, Trophy, Zap } from "lucide-react";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { APP_CONTENT_HEIGHT, AppContent } from "@/components/app-content";
 import { AppNavbar } from "@/components/app-navbar";
@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import gameRegistry from "@/games/core/registry";
-import { getGameStats } from "@/games/core/storage";
+import { fetchCloudGameData, getGameStats } from "@/games/core/storage";
 import { formatTime } from "@/games/core/timer";
 
 const ALL = "__all__";
@@ -36,22 +36,38 @@ const sectionConfig = {
 };
 
 export default function DashboardPage() {
-  const allGames = Object.values(gameRegistry);
+  const allGames = useMemo(() => Object.values(gameRegistry), []);
   const [filterSection, setFilterSection] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   const [statsMap, setStatsMap] = useState<{ [gameId: string]: any }>({});
 
   useEffect(() => {
-    // Load stats for each game from localStorage
-
+    // Load stats for each game from localStorage, then hydrate from Firebase when available.
     const stats: { [id: string]: any } = {};
     allGames.forEach(game => {
       stats[game.id] = getGameStats(game.id);
     });
     setStatsMap(stats);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+
+    let cancelled = false;
+    const hydrateFromCloud = async () => {
+      await Promise.all(
+        allGames.map(async game => {
+          const cloud = await fetchCloudGameData(game.id);
+          if (!cancelled && cloud?.stats) {
+            setStatsMap(current => ({ ...current, [game.id]: cloud.stats }));
+          }
+        })
+      );
+    };
+
+    void hydrateFromCloud();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [allGames]);
 
   const filteredGames = allGames.filter(game => {
     if (filterSection && game.section !== filterSection) return false;
