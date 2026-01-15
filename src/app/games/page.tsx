@@ -17,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import gameRegistry from "@/games/core/registry";
 import { fetchCloudGameData, getGameStats } from "@/games/core/storage";
 import { formatTime } from "@/games/core/timer";
+import { useAuthAndTheme } from "@/hooks/use-auth-and-theme";
 
 const ALL = "__all__";
 
@@ -28,6 +29,7 @@ const sectionConfig = {
 };
 
 export default function DashboardPage() {
+  const { handleLogout, handleThemeToggle } = useAuthAndTheme();
   const allGames = useMemo(() => Object.values(gameRegistry), []);
   const [filterSection, setFilterSection] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -136,6 +138,8 @@ export default function DashboardPage() {
                 window.location.href = "/games";
               }
             }}
+            onLogout={handleLogout}
+            onThemeToggle={handleThemeToggle}
           />
         }
       />

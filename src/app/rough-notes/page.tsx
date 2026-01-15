@@ -31,6 +31,7 @@ import MarkdownRenderer from "@/components/ui/markdown-renderer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuthAndTheme } from "@/hooks/use-auth-and-theme";
 import { cn } from "@/lib/utils";
 
 type RoughNote = {
@@ -55,6 +56,7 @@ export default function NotesPage() {
   const [previewMarkdown, setPreviewMarkdown] = useState("");
   const [noteToDelete, setNoteToDelete] = useState<RoughNote | null>(null);
   const [isDeletingNote, setIsDeletingNote] = useState(false);
+  const { handleLogout, handleThemeToggle } = useAuthAndTheme();
 
   const noteEditorRef = useRef<LexicalEditor | null>(null);
 
@@ -439,6 +441,8 @@ export default function NotesPage() {
                 <DropdownMenuItem onClick={() => void fetchNotes()}>Refresh</DropdownMenuItem>
               </>
             }
+            onLogout={handleLogout}
+            onThemeToggle={handleThemeToggle}
           />
         }
       />

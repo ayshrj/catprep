@@ -11,10 +11,12 @@ import { Notes } from "@/components/notes";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { useAuthAndTheme } from "@/hooks/use-auth-and-theme";
 import { CAT_KB_PARTS } from "@/lib/cat";
 
 export default function NotesPage() {
   const [chaptersOpen, setChaptersOpen] = useState(false);
+  const { handleLogout, handleThemeToggle } = useAuthAndTheme();
 
   const handleSectionClick = useCallback((sectionId: string) => {
     if (typeof window !== "undefined") {
@@ -93,6 +95,8 @@ export default function NotesPage() {
                 window.location.href = "/games";
               }
             }}
+            onLogout={handleLogout}
+            onThemeToggle={handleThemeToggle}
           />
         }
       />

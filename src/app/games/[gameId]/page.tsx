@@ -20,6 +20,7 @@ import { DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/co
 import { Skeleton } from "@/components/ui/skeleton";
 import { ModelIcon } from "@/constant/model";
 import { isLlmGame } from "@/games/core/game-generation";
+import { useAuthAndTheme } from "@/hooks/use-auth-and-theme";
 import { useOpenRouterModels } from "@/hooks/use-openrouter-models";
 
 const GameRunner = dynamic(() => import("@/games/game-runner"), {
@@ -53,6 +54,7 @@ export default function GamePage() {
   } = useOpenRouterModels({ enabled: showModelPicker });
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [modelSearch, setModelSearch] = useState("");
+  const { handleLogout, handleThemeToggle } = useAuthAndTheme();
 
   useEffect(() => {
     if (!showModelPicker) return;
@@ -128,6 +130,8 @@ export default function GamePage() {
             }}
             inlineExtras={inlineModelControls}
             menuExtras={menuExtras}
+            onLogout={handleLogout}
+            onThemeToggle={handleThemeToggle}
           />
         }
       />

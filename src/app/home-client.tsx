@@ -44,6 +44,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { useAuthAndTheme } from "@/hooks/use-auth-and-theme";
 import { CAT_KB_PARTS } from "@/lib/cat";
 import { coerceStoredMessageContent, stringifyMessageContent } from "@/lib/message-content";
 import { uploadImageToCloudinary } from "@/lib/upload-image";
@@ -1269,14 +1270,6 @@ export function HomeClient() {
       <DropdownMenuSeparator />
       <DropdownMenuItem onClick={() => setSettingsOpen(true)}>Settings</DropdownMenuItem>
       <DropdownMenuItem onClick={handleNewChat}>New chat</DropdownMenuItem>
-      <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
-      <DropdownMenuSeparator />
-      <DropdownMenuItem onSelect={e => e.preventDefault()}>
-        <div className="flex w-full items-center justify-between">
-          <span>Theme</span>
-          <ThemeToggleButton />
-        </div>
-      </DropdownMenuItem>
     </>
   );
 
@@ -1362,6 +1355,8 @@ export function HomeClient() {
               onChange={handleNavigationChange}
               inlineExtras={navbarInlineExtras}
               menuExtras={navbarMenuExtras}
+              onLogout={handleLogout}
+              onThemeToggle={() => <ThemeToggleButton />}
             />
           ) : null
         }
