@@ -186,6 +186,25 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
     </div>
   );
 
+  const reviewErrors = showLoading ? [] : evaluation.errors.filter(error => error.type !== "inProgress");
+  const reviewCard =
+    reviewErrors.length > 0 ? (
+      <Card className="shadow-sm">
+        <CardContent className="space-y-2 p-3 text-sm">
+          <div className="flex items-center justify-between">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">What went wrong</div>
+            <Badge variant="destructive">{reviewErrors.length}</Badge>
+          </div>
+          <ul className="space-y-1 text-xs text-destructive">
+            {reviewErrors.map((error, idx) => (
+              <li key={`${error.type}-${idx}`}>{error.message}</li>
+            ))}
+          </ul>
+          <p className="text-xs text-muted-foreground">Review and fix these before the next round.</p>
+        </CardContent>
+      </Card>
+    ) : null;
+
   const secondaryCard = endOfRound ? (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2">
@@ -228,6 +247,7 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
           </CardContent>
         </Card>
       </div>
+      {reviewCard}
       <details className="rounded-md border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
         <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Explanation
@@ -235,7 +255,9 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
         <div className="pt-2">{gameModule.description}</div>
       </details>
     </div>
-  ) : null;
+  ) : (
+    reviewCard
+  );
 
   const helpContent = getGameHelpContent(gameModule.id, gameModule.description);
   const helpSheetContent: HelpSheetContent = {
@@ -304,11 +326,11 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
           </div>
         </div>
       ) : null}
-      {evaluation.errors.length > 0 ? (
+      {reviewErrors.length > 0 ? (
         <div className="space-y-2">
           <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Errors</div>
           <ul className="space-y-1 text-xs text-destructive">
-            {evaluation.errors.map((error, idx) => (
+            {reviewErrors.map((error, idx) => (
               <li key={`${error.type}-${idx}`}>{error.message}</li>
             ))}
           </ul>
