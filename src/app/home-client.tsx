@@ -258,7 +258,7 @@ export function HomeClient() {
         const params = new URLSearchParams(searchParams.toString());
         params.delete("view");
         const suffix = params.toString();
-        router.push(suffix ? `/?${suffix}` : "/");
+        router.push(suffix ? `/chat?${suffix}` : "/chat");
         setHomeMode("chat");
       } else if (target === "notes") {
         router.push("/notes");
@@ -696,7 +696,7 @@ export function HomeClient() {
 
         const params = new URLSearchParams(searchParams.toString());
         params.set("chatId", chatId);
-        router.replace(`/?${params.toString()}`);
+        router.replace(`/chat?${params.toString()}`);
       }
 
       setIsGenerating(true);
@@ -903,7 +903,7 @@ export function HomeClient() {
     const params = new URLSearchParams(searchParams.toString());
     params.delete("chatId");
     const suffix = params.toString();
-    router.push(suffix ? `/?${suffix}` : "/");
+    router.push(suffix ? `/chat?${suffix}` : "/chat");
     setActiveChatId(null);
     activeChatIdRef.current = null;
     setMessages([]);
@@ -916,7 +916,7 @@ export function HomeClient() {
     (chatId: string) => {
       const params = new URLSearchParams(searchParams.toString());
       params.set("chatId", chatId);
-      router.push(`/?${params.toString()}`);
+      router.push(`/chat?${params.toString()}`);
       setHistoryOpen(false);
     },
     [router, searchParams]
@@ -1412,26 +1412,38 @@ export function HomeClient() {
                       )}
                     </p>
 
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        if (!activeChatId) return;
-                        setConfirmAction({
-                          type: "clear-chat",
-                          chatId: activeChatId,
-                        });
-                      }}
-                      disabled={!activeChatId}
-                    >
-                      Clear
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {actionItems.length > 0 ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setIsActionBoardOpen(open => !open)}
+                          aria-expanded={isActionBoardOpen}
+                        >
+                          {isActionBoardOpen ? "Hide action board" : "Show action board"}
+                        </Button>
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (!activeChatId) return;
+                          setConfirmAction({
+                            type: "clear-chat",
+                            chatId: activeChatId,
+                          });
+                        }}
+                        disabled={!activeChatId}
+                      >
+                        Clear
+                      </Button>
+                    </div>
                   </div>
 
                   <div className="min-h-0 flex-1">
                     <div className="flex h-full min-h-0 flex-col">
-                      {actionItems.length > 0 && (
+                      {actionItems.length > 0 && isActionBoardOpen ? (
                         <div className="flex-shrink-0 space-y-2 border-b bg-muted/20 px-3 pt-3 pb-3">
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <div>
@@ -1443,14 +1455,6 @@ export function HomeClient() {
                             <div className="flex flex-wrap items-center gap-2">
                               <Button
                                 size="sm"
-                                variant="ghost"
-                                onClick={() => setIsActionBoardOpen(open => !open)}
-                                aria-expanded={isActionBoardOpen}
-                              >
-                                {isActionBoardOpen ? "Hide action board" : "Show action board"}
-                              </Button>
-                              <Button
-                                size="sm"
                                 variant="outline"
                                 onClick={saveActionPlan}
                                 disabled={isSavingActionPlan}
@@ -1459,45 +1463,39 @@ export function HomeClient() {
                               </Button>
                             </div>
                           </div>
-                          {isActionBoardOpen ? (
-                            <div className="mt-3 grid gap-3 sm:grid-cols-2 max-h-[min(28rem,35dvh)] overflow-y-auto pr-1">
-                              {["Today", "This Week"].map(bucket => {
-                                const items = actionItems.filter(item => item.bucket === bucket);
-                                if (items.length === 0) return null;
-                                return (
-                                  <div key={bucket} className="rounded-xl border bg-background p-3">
-                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                                      {bucket}
-                                    </p>
-                                    <div className="mt-2 space-y-2">
-                                      {items.map(item => (
-                                        <label key={item.id} className="flex items-start gap-2 text-xs text-foreground">
-                                          <input
-                                            type="checkbox"
-                                            className="mt-0.5 h-4 w-4 rounded border"
-                                            checked={Boolean(actionChecklist[item.id])}
-                                            onChange={event => {
-                                              setActionChecklist(current => ({
-                                                ...current,
-                                                [item.id]: event.target.checked,
-                                              }));
-                                            }}
-                                          />
-                                          <span>{item.label}</span>
-                                        </label>
-                                      ))}
-                                    </div>
+                          <div className="mt-3 grid max-h-[min(28rem,35dvh)] gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
+                            {["Today", "This Week"].map(bucket => {
+                              const items = actionItems.filter(item => item.bucket === bucket);
+                              if (items.length === 0) return null;
+                              return (
+                                <div key={bucket} className="rounded-xl border bg-background p-3">
+                                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                    {bucket}
+                                  </p>
+                                  <div className="mt-2 space-y-2">
+                                    {items.map(item => (
+                                      <label key={item.id} className="flex items-start gap-2 text-xs text-foreground">
+                                        <input
+                                          type="checkbox"
+                                          className="mt-0.5 h-4 w-4 rounded border"
+                                          checked={Boolean(actionChecklist[item.id])}
+                                          onChange={event => {
+                                            setActionChecklist(current => ({
+                                              ...current,
+                                              [item.id]: event.target.checked,
+                                            }));
+                                          }}
+                                        />
+                                        <span>{item.label}</span>
+                                      </label>
+                                    ))}
                                   </div>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-muted-foreground">
-                              Action board is hidden. Expand it to review the list.
-                            </p>
-                          )}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      )}
+                      ) : null}
 
                       <Chat
                         className="flex-1 min-h-0 px-2 pt-2"

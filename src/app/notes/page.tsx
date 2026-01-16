@@ -86,7 +86,7 @@ export default function NotesPage() {
             value="notes"
             onChange={next => {
               if (next === "chat") {
-                window.location.href = "/";
+                window.location.href = "/chat";
               } else if (next === "notes") {
                 window.location.href = "/notes";
               } else if (next === "saved") {

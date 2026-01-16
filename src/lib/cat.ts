@@ -579,145 +579,38 @@ export const CAT_KB_SECTIONS = CAT_KB_PARTS.flatMap(part => part.sections);
 export const COMPLETE_MARKDOWN = CAT_KB_SECTIONS.map(section => section.content.trim()).join("\n\n---\n\n");
 
 export const GAMES = {
-  goal: "CAT 2026 skill-building via games (DILR + QA heavy, VARC included)",
-  baseline_ratio_by_section: {
-    DILR: 0.5,
-    QA: 0.3,
-    VARC: 0.2,
-  },
-  recommended_games_ranked: {
-    do_most: [
-      {
-        name: "Logic Grid Puzzles (Zebra/Einstein style)",
-        section: "DILR",
-        weight: 0.18,
-        why: "Closest to CAT LR: constraints -> table -> deductions",
-      },
-      {
-        name: "Sudoku (9x9 + variants)",
-        section: "DILR",
-        weight: 0.17,
-        why: "Constraint discipline + no-guessing habit",
-      },
-      {
-        name: "KenKen / Calcudoku",
-        section: "DILR+QA",
-        weight: 0.15,
-        why: "Constraints + arithmetic fluency under time",
-      },
-      {
-        name: "Minesweeper",
-        section: "DILR",
-        weight: 0.1,
-        why: "Inference + marking + avoiding random clicks",
-      },
-      {
-        name: "24 Game (make 24 using + - × ÷)",
-        section: "QA",
-        weight: 0.12,
-        why: "Fast operations + flexible arithmetic",
-      },
-      {
-        name: "Mental-math timed drills (as a game)",
-        section: "QA",
-        weight: 0.12,
-        why: "Speed + accuracy; reduces silly mistakes",
-      },
-    ],
-    do_some: [
-      {
-        name: "SET (pattern card game)",
-        section: "DILR",
-        weight: 0.06,
-        why: "Pattern recognition + speed",
-      },
-      {
-        name: "Nonograms (Picross)",
-        section: "DILR",
-        weight: 0.05,
-        why: "Constraint tracking + clean notation",
-      },
-      {
-        name: "Reading + 2-line summary (daily)",
-        section: "VARC",
-        weight: 0.08,
-        why: "RC structure + retention",
-      },
-      {
-        name: "Inference mini-drill (must be true?)",
-        section: "VARC",
-        weight: 0.07,
-        why: "CAT-style inference discipline",
-      },
-    ],
-    do_minimal_or_skip: [
-      {
-        name: "Reflex-only games (aim/reaction)",
-        reason: "Low transfer to CAT skills",
-      },
-      {
-        name: "Long grind RPGs / open-world time sinks",
-        reason: "Kills consistency; low ROI per minute",
-      },
-      {
-        name: "Tilt-heavy competitive multiplayer",
-        reason: "High time cost + inconsistent routine",
-      },
-    ],
-  },
-  daily_time_budget_minutes: {
-    weekday: 30,
-    weekend: 60,
-    max_if_busy: 20,
-  },
-  weekly_plan_template: {
-    weekday_sessions: [
-      {
-        days_per_week: 3,
-        minutes: 30,
-        focus: "DILR",
-        games: ["Logic Grid Puzzles", "Sudoku"],
-      },
-      {
-        days_per_week: 2,
-        minutes: 30,
-        focus: "QA",
-        games: ["24 Game", "Mental-math timed drills"],
-      },
-      {
-        days_per_week: 2,
-        minutes: 20,
-        focus: "VARC",
-        games: ["Reading + 2-line summary", "Inference mini-drill"],
-      },
-    ],
-    weekend_sessions: [
-      {
-        days_per_week: 2,
-        minutes: 60,
-        focus: "DILR+QA",
-        games: ["KenKen/Calcudoku", "Logic Grid Puzzles", "24 Game"],
-      },
-    ],
-  },
-  adjustment_rules: {
-    if_DILR_is_weakest: {
-      new_ratio_by_section: { DILR: 0.6, QA: 0.25, VARC: 0.15 },
-      move_time_from: ["QA drills", "VARC drills"],
-      move_time_to: ["Logic Grid Puzzles", "Sudoku", "KenKen"],
+  weightageModel: "balancedCatPrepGames",
+  notes: {
+    meaning: "Share of your total game-practice time per week.",
+    totalWeight: 1.0,
+    sectionSplit: {
+      dilr: 0.5,
+      qa: 0.3,
+      varc: 0.2,
     },
-    if_QA_is_weakest: {
-      new_ratio_by_section: { DILR: 0.45, QA: 0.4, VARC: 0.15 },
-      move_time_to: ["24 Game", "Mental-math timed drills", "KenKen"],
-    },
-    if_VARC_is_weakest: {
-      new_ratio_by_section: { DILR: 0.45, QA: 0.25, VARC: 0.3 },
-      move_time_to: ["Reading + 2-line summary", "Inference mini-drill"],
-    },
+    example: "If you do 200 minutes/week of games, multiply each weight by 200 to get minutes.",
   },
-  progress_metrics: {
-    DILR: ["finish 1 logic grid in <= 25 min with clean table", "reduce 'random trial' to near zero"],
-    QA: ["24-game success rate >= 70% within 2 minutes", "mental math accuracy >= 90%"],
-    VARC: ["2-line summaries reflect main idea + author tone correctly", "inference errors decreasing week over week"],
-  },
+  games: [
+    { id: "diCaseletTrainer", section: "dilr", weight: 0.06, percent: 6 },
+    { id: "estimationDuel", section: "qa", weight: 0.04, percent: 4 },
+    { id: "inferenceJudge", section: "varc", weight: 0.04, percent: 4 },
+    { id: "kenken", section: "dilrQa", weight: 0.05, percent: 5 },
+    { id: "logicGrid", section: "dilr", weight: 0.07, percent: 7 },
+    { id: "mentalMath", section: "qa", weight: 0.09, percent: 9 },
+    { id: "minesweeper", section: "dilr", weight: 0.03, percent: 3 },
+    { id: "nonogram", section: "dilr", weight: 0.02, percent: 2 },
+    { id: "oddSentenceOut", section: "varc", weight: 0.02, percent: 2 },
+    { id: "paraJumble", section: "varc", weight: 0.03, percent: 3 },
+    { id: "paraSummary", section: "varc", weight: 0.03, percent: 3 },
+    { id: "pointsTable", section: "dilr", weight: 0.05, percent: 5 },
+    { id: "ratioMixer", section: "qa", weight: 0.04, percent: 4 },
+    { id: "rcDaily", section: "varc", weight: 0.06, percent: 6 },
+    { id: "routesPuzzle", section: "dilr", weight: 0.04, percent: 4 },
+    { id: "schedulingPuzzle", section: "dilr", weight: 0.05, percent: 5 },
+    { id: "setSelectionSimulator", section: "dilr", weight: 0.07, percent: 7 },
+    { id: "sudoku", section: "dilr", weight: 0.06, percent: 6 },
+    { id: "targetNumber", section: "qa", weight: 0.06, percent: 6 },
+    { id: "twentyFour", section: "qa", weight: 0.07, percent: 7 },
+    { id: "twoLineSummary", section: "varc", weight: 0.02, percent: 2 },
+  ],
 };
