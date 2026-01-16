@@ -52,7 +52,8 @@ export const MinesweeperUI: React.FC<Props> = ({ puzzle, state, dispatch }) => {
     else dispatch({ type: "reveal", r, c });
   };
 
-  const cellPx = puzzle.width <= 9 ? "w-9 h-9" : puzzle.width <= 12 ? "w-8 h-8" : "w-7 h-7";
+  const iconSize = "h-[clamp(12px,2.4vw,18px)] w-[clamp(12px,2.4vw,18px)]";
+  const numberSize = "text-[clamp(10px,2.4vw,16px)]";
 
   return (
     <div ref={rootRef} tabIndex={0} onKeyDown={onKeyDown} className="game-panel game-panel-padded outline-none">
@@ -64,58 +65,62 @@ export const MinesweeperUI: React.FC<Props> = ({ puzzle, state, dispatch }) => {
       </div>
 
       <div className="game-grid-wrap">
-        <div
-          role="grid"
-          aria-label="Minesweeper grid"
-          className="inline-grid"
-          style={{
-            gridTemplateColumns: `repeat(${puzzle.width}, minmax(0, 1fr))`,
-          }}
-        >
-          {Array.from({ length: puzzle.height }).map((_, r) =>
-            Array.from({ length: puzzle.width }).map((__, c) => {
-              const isSel = state.selected.r === r && state.selected.c === c;
-              const revealed = state.revealed[r][c];
-              const flagged = state.flagged[r][c];
-              const mine = state.initialized ? state.mines[r][c] : false;
-              const num = state.initialized ? state.numbers[r][c] : 0;
+        <div className="mx-auto w-full max-w-[520px] sm:max-w-[600px] md:max-w-[680px]">
+          <div className="aspect-square w-full">
+            <div
+              role="grid"
+              aria-label="Minesweeper grid"
+              className="grid h-full w-full gap-[1px] sm:gap-[2px]"
+              style={{
+                gridTemplateColumns: `repeat(${puzzle.width}, minmax(0, 1fr))`,
+                gridTemplateRows: `repeat(${puzzle.height}, minmax(0, 1fr))`,
+              }}
+            >
+              {Array.from({ length: puzzle.height }).map((_, r) =>
+                Array.from({ length: puzzle.width }).map((__, c) => {
+                  const isSel = state.selected.r === r && state.selected.c === c;
+                  const revealed = state.revealed[r][c];
+                  const flagged = state.flagged[r][c];
+                  const mine = state.initialized ? state.mines[r][c] : false;
+                  const num = state.initialized ? state.numbers[r][c] : 0;
 
-              let content: React.ReactNode = null;
-              if (revealed) {
-                if (mine) content = <Bomb className="w-4 h-4" aria-hidden />;
-                else if (num > 0) content = <span className="text-xs font-semibold">{num}</span>;
-                else content = <Square className="w-3 h-3 opacity-20" aria-hidden />;
-              } else if (flagged) {
-                content = <Flag className="w-4 h-4" aria-hidden />;
-              }
+                  let content: React.ReactNode = null;
+                  if (revealed) {
+                    if (mine) content = <Bomb className={iconSize} aria-hidden />;
+                    else if (num > 0) content = <span className={`font-semibold ${numberSize}`}>{num}</span>;
+                    else content = <Square className={`${iconSize} opacity-20`} aria-hidden />;
+                  } else if (flagged) {
+                    content = <Flag className={iconSize} aria-hidden />;
+                  }
 
-              return (
-                <button
-                  key={`${r}-${c}`}
-                  role="gridcell"
-                  aria-label={`Row ${r + 1} Column ${c + 1} ${
-                    revealed ? "revealed" : "hidden"
-                  }${flagged ? " flagged" : ""}`}
-                  className={[
-                    "m-0.5 rounded-md border flex items-center justify-center",
-                    cellPx,
-                    revealed ? "bg-muted" : "bg-background hover:bg-muted/40",
-                    isSel ? "border-primary/60" : "",
-                    isSel && !revealed ? "bg-accent/30" : "",
-                    state.status !== "inProgress" ? "opacity-90" : "",
-                  ].join(" ")}
-                  onClick={() => handleCellClick(r, c)}
-                  onContextMenu={e => {
-                    e.preventDefault();
-                    dispatch({ type: "select", r, c });
-                    dispatch({ type: "toggleFlag", r, c });
-                  }}
-                >
-                  {content}
-                </button>
-              );
-            })
-          )}
+                  return (
+                    <button
+                      key={`${r}-${c}`}
+                      role="gridcell"
+                      aria-label={`Row ${r + 1} Column ${c + 1} ${
+                        revealed ? "revealed" : "hidden"
+                      }${flagged ? " flagged" : ""}`}
+                      className={[
+                        "aspect-square w-full h-full rounded-md border flex items-center justify-center",
+                        revealed ? "bg-muted" : "bg-background hover:bg-muted/40",
+                        isSel ? "border-primary/60" : "",
+                        isSel && !revealed ? "bg-accent/30" : "",
+                        state.status !== "inProgress" ? "opacity-90" : "",
+                      ].join(" ")}
+                      onClick={() => handleCellClick(r, c)}
+                      onContextMenu={e => {
+                        e.preventDefault();
+                        dispatch({ type: "select", r, c });
+                        dispatch({ type: "toggleFlag", r, c });
+                      }}
+                    >
+                      {content}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

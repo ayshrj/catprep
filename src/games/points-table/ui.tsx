@@ -47,7 +47,7 @@ export const PointsTableUI: React.FC<{
             <CardTitle className="text-base">Matches</CardTitle>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[360px] pr-3">
+            <ScrollArea className="h-[280px] sm:h-[360px] pr-3">
               <div className="space-y-2">
                 {puzzle.matches.map(m => {
                   const fixed = !!puzzle.fixedOutcomes[m.id];

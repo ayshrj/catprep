@@ -15,11 +15,11 @@ type Props = {
   dispatch: React.Dispatch<LogicGridAction>;
 };
 
-function iconFor(mark: LogicCellMark) {
-  if (mark === "yes") return <Check className="w-4 h-4" aria-hidden />;
-  if (mark === "no") return <X className="w-4 h-4" aria-hidden />;
-  if (mark === "maybe") return <HelpCircle className="w-4 h-4" aria-hidden />;
-  return <Minus className="w-4 h-4 opacity-30" aria-hidden />;
+function iconFor(mark: LogicCellMark, className: string) {
+  if (mark === "yes") return <Check className={className} aria-hidden />;
+  if (mark === "no") return <X className={className} aria-hidden />;
+  if (mark === "maybe") return <HelpCircle className={className} aria-hidden />;
+  return <Minus className={`${className} opacity-30`} aria-hidden />;
 }
 
 export const LogicGridUI: React.FC<Props> = ({ puzzle, state, dispatch }) => {
@@ -28,6 +28,8 @@ export const LogicGridUI: React.FC<Props> = ({ puzzle, state, dispatch }) => {
 
   const R = puzzle.rowCategory.items.length;
   const C = puzzle.colCategory.items.length;
+  const cellStyle = { width: "clamp(28px, 8vw, 44px)", height: "clamp(28px, 8vw, 44px)" };
+  const iconClass = "w-[clamp(12px,2.4vw,16px)] h-[clamp(12px,2.4vw,16px)]";
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     const { r, c } = state.selected;
@@ -71,11 +73,11 @@ export const LogicGridUI: React.FC<Props> = ({ puzzle, state, dispatch }) => {
           <table className="border-collapse min-w-full">
             <thead>
               <tr>
-                <th className="text-left text-xs text-muted-foreground p-2">
+                <th className="text-left text-[clamp(10px,2.2vw,12px)] text-muted-foreground p-2">
                   {puzzle.rowCategory.name} \ {puzzle.colCategory.name}
                 </th>
                 {puzzle.colCategory.items.map((col, ci) => (
-                  <th key={ci} className="text-xs p-2 text-left">
+                  <th key={ci} className="text-[clamp(10px,2.2vw,12px)] p-2 text-left">
                     {col}
                   </th>
                 ))}
@@ -84,7 +86,7 @@ export const LogicGridUI: React.FC<Props> = ({ puzzle, state, dispatch }) => {
             <tbody>
               {puzzle.rowCategory.items.map((row, ri) => (
                 <tr key={ri} className="border-t">
-                  <td className="p-2 text-sm font-medium">{row}</td>
+                  <td className="p-2 text-[clamp(11px,2.4vw,14px)] font-medium">{row}</td>
                   {puzzle.colCategory.items.map((_, ci) => {
                     const isSel = state.selected.r === ri && state.selected.c === ci;
                     const mark = state.marks[ri][ci];
@@ -99,12 +101,13 @@ export const LogicGridUI: React.FC<Props> = ({ puzzle, state, dispatch }) => {
                             dispatch({ type: "cycle", r: ri, c: ci });
                           }}
                           className={[
-                            "w-10 h-10 rounded-md border border-border/70 flex items-center justify-center",
+                            "rounded-md border border-border/70 flex items-center justify-center",
                             "bg-background",
                             isSel ? "border-primary/60 bg-accent/30" : "",
                           ].join(" ")}
+                          style={cellStyle}
                         >
-                          {iconFor(mark)}
+                          {iconFor(mark, iconClass)}
                         </button>
                       </td>
                     );

@@ -69,7 +69,7 @@ export const SetSelectionSimulatorUI: React.FC<{
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Left: set cards */}
             <div className="flex-1">
-              <ScrollArea className="h-[360px] pr-3">
+              <ScrollArea className="h-[280px] sm:h-[360px] pr-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {puzzle.sets.map(s => {
                     const isFocused = state.focusedSetId === s.id;

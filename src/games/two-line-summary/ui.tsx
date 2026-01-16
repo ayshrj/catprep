@@ -39,7 +39,7 @@ export const TwoLineSummaryUI: React.FC<{
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <ScrollArea className="h-44 rounded-xl border border-border/60 bg-background/70 p-3">
+          <ScrollArea className="h-36 sm:h-44 rounded-xl border border-border/60 bg-background/70 p-3">
             <p className="text-sm leading-6">{puzzle.passage}</p>
           </ScrollArea>
 

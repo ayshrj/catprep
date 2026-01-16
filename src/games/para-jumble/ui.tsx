@@ -51,7 +51,7 @@ export const ParaJumbleUI: React.FC<{
 
           <Separator />
 
-          <ScrollArea className="h-72 pr-2">
+          <ScrollArea className="h-[260px] sm:h-72 pr-2">
             <div className="space-y-2">
               {orderedSentences.map((s, pos) => {
                 const isFocused = pos === state.focusedIndex;

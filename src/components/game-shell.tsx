@@ -4,7 +4,6 @@ import { BarChart3, ChevronDown, HelpCircle, MoreHorizontal } from "lucide-react
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -133,9 +132,7 @@ export function GameShell({
 
       <main className="flex-1 overflow-y-auto overscroll-contain" style={{ paddingBottom: contentPaddingBottom }}>
         <div className={cn("space-y-3 py-3", containerClass)}>
-          <Card className="shadow-sm">
-            <CardContent className="p-3">{primaryCard}</CardContent>
-          </Card>
+          <div className="game-surface">{primaryCard}</div>
 
           {feedbackSlot ? (
             <div
@@ -146,11 +143,7 @@ export function GameShell({
             </div>
           ) : null}
 
-          {secondaryCard ? (
-            <Card className="shadow-sm">
-              <CardContent className="p-3">{secondaryCard}</CardContent>
-            </Card>
-          ) : null}
+          {secondaryCard ? <div className="game-surface">{secondaryCard}</div> : null}
         </div>
       </main>
 

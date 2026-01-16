@@ -11,6 +11,9 @@ type GameStats = {
   solves: number;
   streakDays: number;
   bestTimeSeconds: number | null;
+  bestScore: number | null;
+  lastScore: number | null;
+  totalScore: number;
   lastPlayedAt: string | null;
   lastSolvedDate: string | null;
 };
@@ -28,6 +31,9 @@ function sanitizeStats(raw: any): GameStats | null {
     streakDays: Number.isFinite(raw.streakDays) ? Number(raw.streakDays) : 0,
     bestTimeSeconds:
       raw.bestTimeSeconds === null || Number.isFinite(raw.bestTimeSeconds) ? (raw.bestTimeSeconds ?? null) : null,
+    bestScore: raw.bestScore === null || Number.isFinite(raw.bestScore) ? (raw.bestScore ?? null) : null,
+    lastScore: raw.lastScore === null || Number.isFinite(raw.lastScore) ? (raw.lastScore ?? null) : null,
+    totalScore: Number.isFinite(raw.totalScore) ? Number(raw.totalScore) : 0,
     lastPlayedAt: typeof raw.lastPlayedAt === "string" ? raw.lastPlayedAt : null,
     lastSolvedDate: typeof raw.lastSolvedDate === "string" ? raw.lastSolvedDate : null,
   };

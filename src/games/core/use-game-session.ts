@@ -160,6 +160,12 @@ export function useGameSession(gameId: string, initialDifficulty: number = 1) {
 
     setStats(prev => {
       const newStats = { ...prev };
+      const roundScore = Number.isFinite(evaluation.scoreDelta) ? evaluation.scoreDelta : 0;
+      newStats.lastScore = roundScore;
+      newStats.totalScore = (newStats.totalScore ?? 0) + roundScore;
+      if (roundScore > 0) {
+        newStats.bestScore = newStats.bestScore == null ? roundScore : Math.max(newStats.bestScore, roundScore);
+      }
       if (evaluation.status === "solved") {
         newStats.solves += 1;
         const today = new Date().toDateString();

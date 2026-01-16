@@ -76,7 +76,14 @@ export const KenKenUI: React.FC<Props> = ({ puzzle, state, dispatch }) => {
     }
   };
 
-  const cellSize = n <= 4 ? "w-14 h-14" : n === 5 ? "w-12 h-12" : "w-10 h-10";
+  const numberSize =
+    n <= 4
+      ? "text-[clamp(14px,3.4vw,22px)]"
+      : n === 5
+        ? "text-[clamp(12px,3vw,20px)]"
+        : "text-[clamp(11px,2.6vw,18px)]";
+  const pencilSize = "text-[clamp(9px,2vw,12px)]";
+  const cageSize = "text-[clamp(9px,1.8vw,12px)]";
 
   return (
     <div ref={rootRef} tabIndex={0} onKeyDown={onKeyDown} className="outline-none">
@@ -102,68 +109,75 @@ export const KenKenUI: React.FC<Props> = ({ puzzle, state, dispatch }) => {
 
         <div className="game-panel game-panel-muted p-3">
           <div className="game-grid-wrap">
-            <div
-              role="grid"
-              aria-label="KenKen grid"
-              className="inline-grid"
-              style={{ gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))` }}
-            >
-              {Array.from({ length: n }).map((_, r) =>
-                Array.from({ length: n }).map((__, c) => {
-                  const isSelected = state.selected.r === r && state.selected.c === c;
-                  const v = state.grid[r][c];
+            <div className="mx-auto w-full max-w-[520px] sm:max-w-[560px] md:max-w-[620px]">
+              <div className="aspect-square w-full">
+                <div
+                  role="grid"
+                  aria-label="KenKen grid"
+                  className="grid h-full w-full"
+                  style={{
+                    gridTemplateColumns: `repeat(${n}, minmax(0, 1fr))`,
+                    gridTemplateRows: `repeat(${n}, minmax(0, 1fr))`,
+                  }}
+                >
+                  {Array.from({ length: n }).map((_, r) =>
+                    Array.from({ length: n }).map((__, c) => {
+                      const isSelected = state.selected.r === r && state.selected.c === c;
+                      const v = state.grid[r][c];
 
-                  const cageId = cellToCageId.get(`${r},${c}`)!;
-                  const cage = cageById.get(cageId)!;
-                  const anchor = anchorByCageId.get(cageId)!;
-                  const isAnchor = anchor.r === r && anchor.c === c;
+                      const cageId = cellToCageId.get(`${r},${c}`)!;
+                      const cage = cageById.get(cageId)!;
+                      const anchor = anchorByCageId.get(cageId)!;
+                      const isAnchor = anchor.r === r && anchor.c === c;
 
-                  // Light cage borders: thicker where cage boundary changes
-                  const leftCage = c > 0 ? cellToCageId.get(`${r},${c - 1}`) : null;
-                  const topCage = r > 0 ? cellToCageId.get(`${r - 1},${c}`) : null;
-                  const rightCage = c < n - 1 ? cellToCageId.get(`${r},${c + 1}`) : null;
-                  const bottomCage = r < n - 1 ? cellToCageId.get(`${r + 1},${c}`) : null;
+                      // Light cage borders: thicker where cage boundary changes
+                      const leftCage = c > 0 ? cellToCageId.get(`${r},${c - 1}`) : null;
+                      const topCage = r > 0 ? cellToCageId.get(`${r - 1},${c}`) : null;
+                      const rightCage = c < n - 1 ? cellToCageId.get(`${r},${c + 1}`) : null;
+                      const bottomCage = r < n - 1 ? cellToCageId.get(`${r + 1},${c}`) : null;
 
-                  const borderL = leftCage !== cageId ? "border-l-2" : "border-l";
-                  const borderT = topCage !== cageId ? "border-t-2" : "border-t";
-                  const borderR = rightCage !== cageId ? "border-r-2" : "border-r";
-                  const borderB = bottomCage !== cageId ? "border-b-2" : "border-b";
+                      const borderL = leftCage !== cageId ? "border-l-2" : "border-l";
+                      const borderT = topCage !== cageId ? "border-t-2" : "border-t";
+                      const borderR = rightCage !== cageId ? "border-r-2" : "border-r";
+                      const borderB = bottomCage !== cageId ? "border-b-2" : "border-b";
 
-                  const label = cage.op === "=" ? `${cage.target}` : `${cage.target}${cage.op}`;
+                      const label = cage.op === "=" ? `${cage.target}` : `${cage.target}${cage.op}`;
 
-                  return (
-                    <button
-                      key={`${r}-${c}`}
-                      role="gridcell"
-                      aria-label={`Row ${r + 1} Column ${c + 1}`}
-                      onClick={() => dispatch({ type: "select", r, c })}
-                      className={[
-                        "relative flex items-center justify-center rounded-md",
-                        "border-border/70 bg-background",
-                        borderL,
-                        borderT,
-                        borderR,
-                        borderB,
-                        cellSize,
-                        isSelected ? "bg-accent/40 border-primary/60" : "",
-                      ].join(" ")}
-                    >
-                      {isAnchor && (
-                        <div className="absolute left-1 top-1 text-[10px] text-muted-foreground leading-none">
-                          {label}
-                        </div>
-                      )}
-                      {v !== 0 ? (
-                        <span className="text-lg font-semibold">{v}</span>
-                      ) : state.pencil[r][c].length ? (
-                        <span className="text-[10px] text-muted-foreground px-1 text-center">
-                          {state.pencil[r][c].join(" ")}
-                        </span>
-                      ) : null}
-                    </button>
-                  );
-                })
-              )}
+                      return (
+                        <button
+                          key={`${r}-${c}`}
+                          role="gridcell"
+                          aria-label={`Row ${r + 1} Column ${c + 1}`}
+                          onClick={() => dispatch({ type: "select", r, c })}
+                          className={[
+                            "relative flex items-center justify-center rounded-md",
+                            "border-border/70 bg-background",
+                            "aspect-square w-full h-full",
+                            borderL,
+                            borderT,
+                            borderR,
+                            borderB,
+                            isSelected ? "bg-accent/40 border-primary/60" : "",
+                          ].join(" ")}
+                        >
+                          {isAnchor && (
+                            <div className={`absolute left-1 top-1 text-muted-foreground leading-none ${cageSize}`}>
+                              {label}
+                            </div>
+                          )}
+                          {v !== 0 ? (
+                            <span className={`font-semibold ${numberSize}`}>{v}</span>
+                          ) : state.pencil[r][c].length ? (
+                            <span className={`text-muted-foreground px-1 text-center ${pencilSize}`}>
+                              {state.pencil[r][c].join(" ")}
+                            </span>
+                          ) : null}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 

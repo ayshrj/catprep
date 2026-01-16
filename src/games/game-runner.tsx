@@ -11,9 +11,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { isLlmGame } from "@/games/core/game-generation";
+import { getGameHelpContent } from "@/games/core/help-content";
 import gameRegistry from "@/games/core/registry";
 import { formatTime } from "@/games/core/timer";
 import { useGameSession } from "@/games/core/use-game-session";
+
+function renderHelpSection(lines: string[]) {
+  return (
+    <div className="space-y-2 p-1 text-sm text-muted-foreground">
+      {lines.map((line, idx) => (
+        <div key={`${idx}-${line}`}>{line}</div>
+      ))}
+    </div>
+  );
+}
 
 const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
   const fallbackGameId = useMemo(() => Object.keys(gameRegistry)[0] ?? "", []);
@@ -37,6 +48,8 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
   const [difficulty, setDifficulty] = useState(gameModule.difficulties[0].id);
 
   const accuracy = stats.attempts ? Math.round((stats.solves / stats.attempts) * 100) : 0;
+  const averageScore = stats.attempts ? Math.round(stats.totalScore / stats.attempts) : 0;
+  const bestScoreLabel = stats.bestScore == null ? "--" : stats.bestScore;
   const difficultyLabel =
     gameModule.difficulties.find(item => item.id === difficulty)?.label ?? gameModule.difficulties[0]?.label ?? "Easy";
   const lastHint = hints.length > 0 ? hints[hints.length - 1] : null;
@@ -97,6 +110,7 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
       <Badge variant="outline">
         Best {stats.bestTimeSeconds == null ? "--:--" : formatTime(stats.bestTimeSeconds)}
       </Badge>
+      <Badge variant="outline">Best score {bestScoreLabel}</Badge>
       <Badge variant="outline">{difficultyLabel}</Badge>
       <Badge variant="outline">{accuracy}% acc</Badge>
     </div>
@@ -139,6 +153,12 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
         </Card>
         <Card className="shadow-sm">
           <CardContent className="p-3 text-sm">
+            <div className="text-muted-foreground">Score</div>
+            <div className="text-lg font-semibold">{evaluation.scoreDelta}</div>
+          </CardContent>
+        </Card>
+        <Card className="shadow-sm">
+          <CardContent className="p-3 text-sm">
             <div className="text-muted-foreground">Streak</div>
             <div className="text-lg font-semibold">{stats.streakDays} days</div>
           </CardContent>
@@ -151,6 +171,12 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
             </div>
           </CardContent>
         </Card>
+        <Card className="shadow-sm">
+          <CardContent className="p-3 text-sm">
+            <div className="text-muted-foreground">Best score</div>
+            <div className="text-lg font-semibold">{bestScoreLabel}</div>
+          </CardContent>
+        </Card>
       </div>
       <details className="rounded-md border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
         <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -161,17 +187,12 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
     </div>
   ) : null;
 
+  const helpContent = getGameHelpContent(gameModule.id, gameModule.description);
   const helpSheetContent: HelpSheetContent = {
-    rules: <div className="space-y-2 text-sm text-muted-foreground">{gameModule.description}</div>,
-    examples: <div className="text-sm text-muted-foreground">Examples will appear here as you explore the game.</div>,
-    scoring: (
-      <div className="text-sm text-muted-foreground">Track accuracy, streak, and best time to measure progress.</div>
-    ),
-    shortcuts: (
-      <div className="text-sm text-muted-foreground">
-        Use quick taps for inputs; keyboard shortcuts can be added per game.
-      </div>
-    ),
+    rules: renderHelpSection(helpContent.rules),
+    examples: renderHelpSection(helpContent.examples),
+    scoring: renderHelpSection(helpContent.scoring),
+    shortcuts: renderHelpSection(helpContent.shortcuts),
   };
 
   const statsSheetContent = (
@@ -200,6 +221,18 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
         <CardContent className="p-3 text-sm">
           <div className="text-muted-foreground">Streak</div>
           <div className="text-lg font-semibold">{stats.streakDays} days</div>
+        </CardContent>
+      </Card>
+      <Card className="shadow-sm">
+        <CardContent className="p-3 text-sm">
+          <div className="text-muted-foreground">Best score</div>
+          <div className="text-lg font-semibold">{bestScoreLabel}</div>
+        </CardContent>
+      </Card>
+      <Card className="shadow-sm">
+        <CardContent className="p-3 text-sm">
+          <div className="text-muted-foreground">Average score</div>
+          <div className="text-lg font-semibold">{stats.attempts ? averageScore : "--"}</div>
         </CardContent>
       </Card>
     </div>

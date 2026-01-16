@@ -3,6 +3,9 @@ type GameStats = {
   solves: number;
   streakDays: number;
   bestTimeSeconds: number | null;
+  bestScore: number | null;
+  lastScore: number | null;
+  totalScore: number;
   lastPlayedAt: string | null;
   lastSolvedDate: string | null;
 };
@@ -22,6 +25,9 @@ const EMPTY_STATS: GameStats = {
   solves: 0,
   streakDays: 0,
   bestTimeSeconds: null,
+  bestScore: null,
+  lastScore: null,
+  totalScore: 0,
   lastPlayedAt: null,
   lastSolvedDate: null,
 };
@@ -40,6 +46,9 @@ function normalizeStats(raw: any): GameStats | null {
     streakDays: Number.isFinite(raw.streakDays) ? Number(raw.streakDays) : 0,
     bestTimeSeconds:
       raw.bestTimeSeconds === null || Number.isFinite(raw.bestTimeSeconds) ? (raw.bestTimeSeconds ?? null) : null,
+    bestScore: raw.bestScore === null || Number.isFinite(raw.bestScore) ? (raw.bestScore ?? null) : null,
+    lastScore: raw.lastScore === null || Number.isFinite(raw.lastScore) ? (raw.lastScore ?? null) : null,
+    totalScore: Number.isFinite(raw.totalScore) ? Number(raw.totalScore) : 0,
     lastPlayedAt: typeof raw.lastPlayedAt === "string" ? raw.lastPlayedAt : null,
     lastSolvedDate: typeof raw.lastSolvedDate === "string" ? raw.lastSolvedDate : null,
   };
@@ -104,6 +113,9 @@ export function getGameStats(gameId: string): GameStats {
       solves: stats.solves ?? 0,
       streakDays: stats.streakDays ?? 0,
       bestTimeSeconds: stats.bestTimeSeconds ?? null,
+      bestScore: stats.bestScore ?? null,
+      lastScore: stats.lastScore ?? null,
+      totalScore: stats.totalScore ?? 0,
       lastPlayedAt: stats.lastPlayedAt ?? null,
       lastSolvedDate: stats.lastSolvedDate ?? null,
     };
