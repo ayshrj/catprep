@@ -1,7 +1,8 @@
 "use client";
 import { ChevronLeft, Lightbulb, RotateCcw, Sparkles } from "lucide-react";
 import Link from "next/link";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { GameShell } from "@/components/game-shell";
 import type { BottomBarActions, HelpSheetContent } from "@/components/game-shell.types";
@@ -46,6 +47,7 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
   } = useGameSession(safeGameId);
   const [hints, setHints] = useState<Array<{ title: string; body: string }>>([]);
   const [difficulty, setDifficulty] = useState(gameModule.difficulties[0].id);
+  const lastNotifiedStatus = useRef<"solved" | "failed" | null>(null);
 
   const accuracy = stats.attempts ? Math.round((stats.solves / stats.attempts) * 100) : 0;
   const averageScore = stats.attempts ? Math.round(stats.totalScore / stats.attempts) : 0;
@@ -82,6 +84,30 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
     setHints([]);
   };
 
+  const endOfRound = evaluation.status === "solved" || evaluation.status === "failed";
+  const statusLabel =
+    evaluation.status === "solved" ? "Solved" : evaluation.status === "failed" ? "Round complete" : "";
+
+  useEffect(() => {
+    if (showLoading) {
+      lastNotifiedStatus.current = null;
+      return;
+    }
+    if (evaluation.status === "solved" || evaluation.status === "failed") {
+      if (lastNotifiedStatus.current !== evaluation.status) {
+        const scoreDelta = Number.isFinite(evaluation.scoreDelta) ? evaluation.scoreDelta : 0;
+        if (evaluation.status === "solved") {
+          toast.success(`Solved! ${scoreDelta >= 0 ? `+${scoreDelta}` : scoreDelta} points.`);
+        } else {
+          toast.info(`Round complete. Score ${scoreDelta}.`);
+        }
+        lastNotifiedStatus.current = evaluation.status;
+      }
+      return;
+    }
+    lastNotifiedStatus.current = null;
+  }, [evaluation.scoreDelta, evaluation.status, showLoading]);
+
   const feedbackMessage = useMemo(() => {
     if (generationError) {
       return generationError;
@@ -104,9 +130,16 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
     return "Stay focused and keep moving.";
   }, [evaluation.errors, evaluation.status, generationError, lastHint, showLoading]);
 
+  const statusBadge = endOfRound ? (
+    <Badge variant={evaluation.status === "solved" ? "default" : "destructive"}>{statusLabel}</Badge>
+  ) : showLoading ? (
+    <Badge variant="secondary">Generating</Badge>
+  ) : null;
+
   const contextStrip = (
     <div className="flex items-center gap-2 text-xs">
-      <Badge variant="secondary">{showLoading ? "Generating" : formatTime(elapsedSeconds)}</Badge>
+      {statusBadge}
+      <Badge variant="secondary">{formatTime(elapsedSeconds)}</Badge>
       <Badge variant="outline">
         Best {stats.bestTimeSeconds == null ? "--:--" : formatTime(stats.bestTimeSeconds)}
       </Badge>
@@ -116,7 +149,23 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
     </div>
   );
 
-  const endOfRound = evaluation.status === "solved" || evaluation.status === "failed";
+  const endBanner = endOfRound ? (
+    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-muted/30 px-3 py-2 text-xs sm:text-sm">
+      <div className="flex flex-wrap items-center gap-2">
+        <Badge variant={evaluation.status === "solved" ? "default" : "destructive"}>{statusLabel}</Badge>
+        <span className="text-muted-foreground">
+          {evaluation.status === "solved"
+            ? "Nice work! Start a new round to keep your streak going."
+            : "Round complete. Review your approach and try again."}
+        </span>
+      </div>
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <span>Score {evaluation.scoreDelta}</span>
+        <span className="hidden sm:inline">|</span>
+        <span>{formatTime(elapsedSeconds)}</span>
+      </div>
+    </div>
+  ) : null;
 
   const primaryCard = showLoading ? (
     <div className="min-h-[320px] sm:min-h-[360px] lg:min-h-[460px]">
@@ -131,7 +180,8 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
       </div>
     </div>
   ) : (
-    <div className="min-h-[320px] sm:min-h-[360px] lg:min-h-[460px]">
+    <div className="min-h-[320px] space-y-3 sm:min-h-[360px] lg:min-h-[460px]">
+      {endBanner}
       <gameModule.Component puzzle={puzzle} state={state} dispatch={dispatch} />
     </div>
   );

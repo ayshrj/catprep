@@ -1,7 +1,8 @@
 "use client";
 
 import { ChevronLeft, Lightbulb, RotateCcw, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 import { GameShell } from "@/components/game-shell";
 import type { BottomBarActions, HelpSheetContent } from "@/components/game-shell.types";
@@ -21,15 +22,35 @@ export default function ExampleGamePage() {
     useGameSession(GAME_ID);
   const [difficulty, setDifficulty] = useState(gameModule.difficulties[0].id);
   const [hint, setHint] = useState<string | null>(null);
+  const lastNotifiedStatus = useRef<"solved" | "failed" | null>(null);
 
   const difficultyLabel = gameModule.difficulties.find(item => item.id === difficulty)?.label ?? "Easy";
   const statusLabel =
     evaluation.status === "solved" ? "Solved" : evaluation.status === "failed" ? "Try again" : "In progress";
+  const statusBadgeLabel =
+    evaluation.status === "solved" ? "Solved" : evaluation.status === "failed" ? "Round complete" : "";
+  const endOfRound = evaluation.status === "solved" || evaluation.status === "failed";
 
   const feedbackMessage =
     evaluation.status === "solved"
       ? "Solved. Start a new round to keep the streak going."
       : (hint ?? evaluation.errors[0]?.message ?? `Status: ${statusLabel}.`);
+
+  useEffect(() => {
+    if (evaluation.status === "solved" || evaluation.status === "failed") {
+      if (lastNotifiedStatus.current !== evaluation.status) {
+        const scoreDelta = Number.isFinite(evaluation.scoreDelta) ? evaluation.scoreDelta : 0;
+        if (evaluation.status === "solved") {
+          toast.success(`Solved! ${scoreDelta >= 0 ? `+${scoreDelta}` : scoreDelta} points.`);
+        } else {
+          toast.info(`Round complete. Score ${scoreDelta}.`);
+        }
+        lastNotifiedStatus.current = evaluation.status;
+      }
+      return;
+    }
+    lastNotifiedStatus.current = null;
+  }, [evaluation.scoreDelta, evaluation.status]);
 
   const handleDifficultyChange = (value: string) => {
     if (!value) return;
@@ -161,13 +182,33 @@ export default function ExampleGamePage() {
       headerCenter={<span className="truncate">{gameModule.title}</span>}
       contextStrip={
         <div className="flex min-w-0 items-center gap-2 text-xs">
+          {endOfRound ? (
+            <Badge variant={evaluation.status === "solved" ? "default" : "destructive"}>{statusBadgeLabel}</Badge>
+          ) : null}
           <Badge variant="secondary">{formatTime(elapsedSeconds)}</Badge>
           <Badge variant="outline">Streak {stats.streakDays}d</Badge>
           <Badge variant="outline">{difficultyLabel}</Badge>
         </div>
       }
       primaryCard={
-        <div className="min-h-[280px]">
+        <div className="min-h-[280px] space-y-3">
+          {endOfRound ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border bg-muted/30 px-3 py-2 text-xs sm:text-sm">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant={evaluation.status === "solved" ? "default" : "destructive"}>{statusBadgeLabel}</Badge>
+                <span className="text-muted-foreground">
+                  {evaluation.status === "solved"
+                    ? "Nice work! Start a new round to keep your streak going."
+                    : "Round complete. Review your approach and try again."}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <span>Score {evaluation.scoreDelta}</span>
+                <span className="hidden sm:inline">|</span>
+                <span>{formatTime(elapsedSeconds)}</span>
+              </div>
+            </div>
+          ) : null}
           <gameModule.Component puzzle={puzzle} state={state} dispatch={dispatch} />
         </div>
       }
