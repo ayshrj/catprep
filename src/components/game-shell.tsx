@@ -88,6 +88,7 @@ export function GameShell({
   const [statsOpen, setStatsOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const [controlsCollapsed, setControlsCollapsed] = useState(false);
 
   const { ref: bottomBarRef, height: bottomBarHeight } = useElementHeight<HTMLDivElement>();
   const contentPaddingBottom = bottomBarHeight || 72;
@@ -148,13 +149,54 @@ export function GameShell({
       </main>
 
       <div ref={bottomBarRef} className="sticky bottom-0 z-30 border-t bg-background/95 backdrop-blur">
-        <div className={cn("space-y-1.5 py-2 pb-[env(safe-area-inset-bottom)]", containerClass)}>
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-1.5">
-            <div className="flex flex-wrap items-center gap-2 justify-self-start">{bottomCoreActions?.left}</div>
-            <div className="flex items-center justify-center">{bottomCoreActions?.center}</div>
-            <div className="flex flex-wrap items-center gap-2 justify-self-end">{bottomCoreActions?.right}</div>
-          </div>
-          {bottomGameControls ? <div className="border-t pt-1.5 text-[11px]">{bottomGameControls}</div> : null}
+        <div
+          className={cn(
+            controlsCollapsed
+              ? "py-1.5 pb-[env(safe-area-inset-bottom)]"
+              : "space-y-1.5 py-2 pb-[env(safe-area-inset-bottom)]",
+            containerClass
+          )}
+        >
+          {controlsCollapsed ? (
+            <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+              <span>Controls hidden to save space.</span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setControlsCollapsed(false)}
+                aria-label="Show controls"
+              >
+                Show controls
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-nowrap items-center justify-center gap-2">
+                {bottomCoreActions?.left ? (
+                  <div className="flex items-center gap-2">{bottomCoreActions.left}</div>
+                ) : null}
+                {bottomCoreActions?.center ? (
+                  <div className="flex items-center gap-2">{bottomCoreActions.center}</div>
+                ) : null}
+                <div className="flex items-center gap-2">
+                  {bottomCoreActions?.right}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setControlsCollapsed(true)}
+                    aria-label="Hide controls"
+                    className="gap-2"
+                  >
+                    Hide
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+              {bottomGameControls ? <div className="border-t pt-1.5 text-[11px]">{bottomGameControls}</div> : null}
+            </>
+          )}
         </div>
       </div>
 
