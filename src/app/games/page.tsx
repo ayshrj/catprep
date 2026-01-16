@@ -12,12 +12,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import gameRegistry from "@/games/core/registry";
 import { fetchCloudGameData, getGameStats } from "@/games/core/storage";
 import { formatTime } from "@/games/core/timer";
 import { useAuthAndTheme } from "@/hooks/use-auth-and-theme";
+import { GAMES } from "@/lib/cat";
 
 const ALL = "__all__";
 
@@ -108,6 +110,86 @@ export default function DashboardPage() {
       lastPlayedGame,
     };
   }, [allGames, statsMap]);
+
+  const gameWeightMap = useMemo(() => {
+    const map = new Map<string, number>();
+    GAMES.games.forEach(game => map.set(game.id, game.weight));
+    return map;
+  }, []);
+
+  const totalWeight = useMemo(() => GAMES.games.reduce((sum, game) => sum + game.weight, 0), []);
+
+  const practiceBalance = useMemo(() => {
+    const entries = allGames.map(game => {
+      const attempts = statsMap[game.id]?.attempts ?? 0;
+      const weight = gameWeightMap.get(game.id) ?? 0;
+      const recommendedShare = totalWeight > 0 ? weight / totalWeight : 0;
+      return {
+        id: game.id,
+        title: game.title,
+        section: game.section,
+        attempts,
+        recommendedShare,
+      };
+    });
+
+    const totalAttempts = entries.reduce((sum, entry) => sum + entry.attempts, 0);
+    const sectionAttempts = { qa: 0, dilr: 0, varc: 0 };
+
+    entries.forEach(entry => {
+      const attempts = entry.attempts;
+      if (entry.section === "qa") sectionAttempts.qa += attempts;
+      else if (entry.section === "varc") sectionAttempts.varc += attempts;
+      else if (entry.section === "dilr") sectionAttempts.dilr += attempts;
+      else {
+        sectionAttempts.qa += attempts * 0.5;
+        sectionAttempts.dilr += attempts * 0.5;
+      }
+    });
+
+    const sections = (Object.keys(GAMES.notes.sectionSplit) as Array<"qa" | "dilr" | "varc">).map(section => {
+      const actualShare = totalAttempts ? sectionAttempts[section] / totalAttempts : 0;
+      const targetShare = GAMES.notes.sectionSplit[section] ?? 0;
+      return {
+        section,
+        actualShare,
+        targetShare,
+        actualPercent: Math.round(actualShare * 100),
+        targetPercent: Math.round(targetShare * 100),
+      };
+    });
+
+    const entriesWithShare = entries.map(entry => {
+      const actualShare = totalAttempts ? entry.attempts / totalAttempts : 0;
+      const ratio = entry.recommendedShare > 0 ? actualShare / entry.recommendedShare : null;
+      return { ...entry, actualShare, ratio };
+    });
+
+    const under = entriesWithShare
+      .filter(entry => entry.recommendedShare > 0 && entry.ratio != null && entry.ratio < 0.7)
+      .sort((a, b) => (a.ratio ?? 1) - (b.ratio ?? 1));
+
+    const over = entriesWithShare
+      .filter(entry => entry.recommendedShare > 0 && entry.ratio != null && entry.ratio > 1.6)
+      .sort((a, b) => (b.ratio ?? 0) - (a.ratio ?? 0));
+
+    const topShare =
+      totalAttempts === 0
+        ? 0
+        : entriesWithShare
+            .slice()
+            .sort((a, b) => b.attempts - a.attempts)
+            .slice(0, 3)
+            .reduce((sum, entry) => sum + entry.actualShare, 0);
+
+    return { totalAttempts, sections, entries: entriesWithShare, under, over, topShare };
+  }, [allGames, gameWeightMap, statsMap, totalWeight]);
+
+  const balanceById = useMemo(() => {
+    const map = new Map<string, (typeof practiceBalance.entries)[number]>();
+    practiceBalance.entries.forEach(entry => map.set(entry.id, entry));
+    return map;
+  }, [practiceBalance.entries]);
 
   const totalGames = allGames.length;
   const showReset = Boolean(filterSection || searchTerm);
@@ -216,6 +298,95 @@ export default function DashboardPage() {
 
                 <Separator className="bg-border/60" />
 
+                <div className="grid gap-3 lg:grid-cols-[1.25fr_0.75fr]">
+                  <div className="rounded-2xl border border-border/60 bg-background/70 px-3 py-3 shadow-sm">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div>
+                        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                          Practice balance
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          Attempts vs CAT-weighted targets. Use this to avoid over-drilling one game.
+                        </div>
+                      </div>
+                      <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                        {practiceBalance.totalAttempts} attempts
+                      </Badge>
+                    </div>
+
+                    <div className="mt-3 space-y-3">
+                      {practiceBalance.sections.map(section => {
+                        const isUnder =
+                          practiceBalance.totalAttempts > 0 && section.actualPercent + 5 < section.targetPercent;
+                        return (
+                          <div key={section.section} className="space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="font-medium">{section.section.toUpperCase()}</span>
+                              <span className={isUnder ? "text-destructive" : "text-muted-foreground"}>
+                                {section.actualPercent}% vs {section.targetPercent}% target
+                              </span>
+                            </div>
+                            <Progress value={section.actualPercent} className="h-2" />
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {practiceBalance.totalAttempts === 0 ? (
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        Play a few rounds to unlock balance insights.
+                      </p>
+                    ) : practiceBalance.topShare >= 0.6 ? (
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        Your top 3 games are {Math.round(practiceBalance.topShare * 100)}% of attempts. Rotate in new
+                        drills.
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="rounded-2xl border border-border/60 bg-background/70 px-3 py-3 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Suggested next games
+                      </div>
+                      {practiceBalance.under.length > 0 ? (
+                        <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                          {practiceBalance.under.length} under-target
+                        </Badge>
+                      ) : null}
+                    </div>
+
+                    {practiceBalance.totalAttempts === 0 ? (
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        Start with one QA, one DILR, and one VARC game to keep balance.
+                      </p>
+                    ) : practiceBalance.under.length === 0 ? (
+                      <p className="mt-3 text-xs text-muted-foreground">Nice mix. Keep rotating across sections.</p>
+                    ) : (
+                      <div className="mt-3 space-y-2">
+                        {practiceBalance.under.slice(0, 4).map(entry => (
+                          <div key={entry.id} className="flex items-center justify-between gap-2 text-xs">
+                            <div className="min-w-0">
+                              <div className="truncate font-medium">{entry.title}</div>
+                              <div className="text-[10px] text-muted-foreground">
+                                {Math.round(entry.actualShare * 100)}% now • target{" "}
+                                {Math.round(entry.recommendedShare * 100)}%
+                              </div>
+                            </div>
+                            <Link href={`/games/${entry.id}`}>
+                              <Button size="sm" variant="outline">
+                                Play
+                              </Button>
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <Separator className="bg-border/60" />
+
                 <div className="space-y-3">
                   <div className="flex flex-col gap-3 md:flex-row md:items-center">
                     <div className="relative flex-1">
@@ -294,12 +465,17 @@ export default function DashboardPage() {
                   streakDays: 0,
                   lastPlayedAt: null,
                 };
+                const balance = balanceById.get(game.id);
                 const lastPlayed = stats.lastPlayedAt
                   ? new Date(stats.lastPlayedAt).toLocaleDateString()
                   : "Not started";
                 const accuracy = stats.attempts ? Math.round((stats.solves / stats.attempts) * 100) : 0;
                 const tags = game.skillTags.slice(0, 3);
                 const extraTags = Math.max(0, game.skillTags.length - tags.length);
+                const showBalanceBadge = practiceBalance.totalAttempts >= 6 && balance && balance.recommendedShare > 0;
+                const isUnderTarget =
+                  showBalanceBadge && balance.actualShare < balance.recommendedShare * 0.7 && balance.attempts > 0;
+                const isOverTarget = showBalanceBadge && balance.actualShare > balance.recommendedShare * 1.6;
 
                 return (
                   <Card
@@ -321,6 +497,15 @@ export default function DashboardPage() {
                           >
                             {game.section.toUpperCase()}
                           </Badge>
+                          {isUnderTarget ? (
+                            <Badge variant="destructive" className="text-[10px] uppercase tracking-wide">
+                              Under target
+                            </Badge>
+                          ) : isOverTarget ? (
+                            <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                              Over target
+                            </Badge>
+                          ) : null}
                           {stats.attempts === 0 ? (
                             <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
                               New
@@ -368,6 +553,13 @@ export default function DashboardPage() {
                           <div className="text-sm font-semibold">{stats.streakDays}d</div>
                         </div>
                       </div>
+
+                      {balance && practiceBalance.totalAttempts > 0 ? (
+                        <div className="mt-2 text-[10px] text-muted-foreground">
+                          Share {Math.round(balance.actualShare * 100)}% • target{" "}
+                          {Math.round(balance.recommendedShare * 100)}%
+                        </div>
+                      ) : null}
                     </CardContent>
 
                     <Separator />
