@@ -1,35 +1,78 @@
+import { pick, randInt } from "../core/generator-utils";
+import { makeRng } from "../core/rng";
 import { TargetNumberPuzzle } from "./types";
 
-type Def = TargetNumberPuzzle;
+type Expr = { value: number; expr: string };
 
-const easy: Def[] = [
-  {
-    target: 50,
-    numbers: [25, 2, 10, 5],
-    solution: "(25×2) = 50 (ignore extras)",
-  },
-  { target: 36, numbers: [6, 6, 3, 2], solution: "6×6 = 36" },
-  { target: 24, numbers: [8, 3, 2, 1], solution: "8×3 = 24" },
-];
+function applyOp(a: Expr, b: Expr, op: string): Expr | null {
+  switch (op) {
+    case "+":
+      return { value: a.value + b.value, expr: `(${a.expr} + ${b.expr})` };
+    case "-":
+      return { value: a.value - b.value, expr: `(${a.expr} - ${b.expr})` };
+    case "*":
+      return { value: a.value * b.value, expr: `(${a.expr} * ${b.expr})` };
+    case "/":
+      if (b.value === 0) return null;
+      if (a.value % b.value !== 0) return null;
+      return { value: a.value / b.value, expr: `(${a.expr} / ${b.expr})` };
+    default:
+      return null;
+  }
+}
 
-const medium: Def[] = [
-  { target: 72, numbers: [9, 8, 2, 3], solution: "9×8 = 72" },
-  { target: 45, numbers: [10, 5, 9, 2], solution: "9×5 = 45 (ignore extras)" },
-  { target: 30, numbers: [6, 5, 3, 2], solution: "6×5 = 30" },
-];
+function buildExpression(rng: () => number, difficulty: number) {
+  const easyOps = ["+", "*"];
+  const medOps = ["+", "-", "*", "/"];
+  const hardOps = ["+", "-", "*", "/"];
+  const ops = difficulty <= 1 ? easyOps : difficulty === 2 ? medOps : hardOps;
 
-const hard: Def[] = [
-  {
-    target: 60,
-    numbers: [8, 6, 5, 2],
-    solution: "(6×5)×2 = 60 (use 8 as distractor)",
-  },
-  { target: 42, numbers: [7, 6, 3, 2], solution: "7×6 = 42" },
-  { target: 81, numbers: [9, 9, 3, 1], solution: "9×9 = 81" },
-];
+  const numberRange = difficulty <= 1 ? [2, 12] : difficulty === 2 ? [2, 15] : [1, 20];
+  const targetRange = difficulty <= 1 ? [10, 120] : difficulty === 2 ? [10, 180] : [10, 240];
+
+  for (let attempt = 0; attempt < 250; attempt++) {
+    const nums = Array.from({ length: 4 }, () => randInt(rng, numberRange[0], numberRange[1]));
+    const [a, b, c, d] = nums.map(n => ({ value: n, expr: String(n) }));
+    const op1 = pick(rng, ops);
+    const op2 = pick(rng, ops);
+    const op3 = pick(rng, ops);
+
+    const groupLeft = rng() < 0.5;
+    let expr: Expr | null = null;
+
+    if (groupLeft) {
+      const first = applyOp(a, b, op1);
+      if (!first) continue;
+      const second = applyOp(first, c, op2);
+      if (!second) continue;
+      expr = applyOp(second, d, op3);
+    } else {
+      const left = applyOp(a, b, op1);
+      if (!left) continue;
+      const right = applyOp(c, d, op3);
+      if (!right) continue;
+      expr = applyOp(left, right, op2);
+    }
+
+    if (!expr) continue;
+    if (!Number.isFinite(expr.value)) continue;
+    if (expr.value <= 0) continue;
+    if (expr.value < targetRange[0] || expr.value > targetRange[1]) continue;
+
+    return {
+      target: expr.value,
+      numbers: nums,
+      solution: `${expr.expr} = ${expr.value}`,
+    };
+  }
+
+  const fallback = { target: 24, numbers: [3, 3, 4, 4], solution: "(3 + 3) * (4 - 4 / 4) = 24" };
+  return fallback;
+}
 
 export function createPuzzle(opts: { seed: number; difficulty: number }): TargetNumberPuzzle {
-  const list = opts.difficulty <= 1 ? easy : opts.difficulty === 2 ? medium : hard;
-  const def = list[Math.abs(opts.seed) % list.length];
-  return { ...def, numbers: [...def.numbers] };
+  const rng = makeRng(opts.seed);
+  const difficulty = Math.max(1, Math.min(3, opts.difficulty));
+  const puzzle = buildExpression(rng, difficulty);
+  return { ...puzzle, numbers: puzzle.numbers.slice() };
 }

@@ -1,186 +1,236 @@
+import { makeId, pick, shuffle } from "../core/generator-utils";
+import { makeRng } from "../core/rng";
 import type { RcDailyPuzzle } from "./types";
 
-const EASY: RcDailyPuzzle[] = [
+type Topic = {
+  title: string;
+  claim: string;
+  support: string;
+  caveat: string;
+  implication: string;
+  example: string;
+  mainDistractors: string[];
+  caveatDistractors: string[];
+  implicationDistractors: string[];
+};
+
+const TOPICS: Topic[] = [
   {
-    id: "rc-e1",
     title: "Habits and friction",
-    difficulty: 1,
-    strategyNote:
-      "Find the author's main claim, then eliminate options that add new ideas not supported by the passage.",
-    passage:
-      "People often blame motivation when habits fail. But habits frequently fail because the environment makes the desired action costly. " +
-      "A small friction—like searching for shoes or opening a complicated app—can be enough to derail repetition. " +
-      "Designing habits is therefore less about willpower and more about reducing the steps between intention and action. " +
-      "When friction is lowered, repetition becomes easier, and consistency follows.",
+    claim: "Habits fail less from lack of willpower and more from small frictions in the environment.",
+    support: "Minor setup costs compound, so repetition drops when the first step feels effortful.",
+    caveat: "Motivation helps, but it is unreliable unless the path is simplified.",
+    implication: "Reduce steps between intention and action to make routines stick.",
+    example: "A default calendar reminder can outperform a big motivation speech.",
+    mainDistractors: [
+      "Habits are mostly determined by personality and cannot be changed.",
+      "Long-term success depends entirely on sustained willpower.",
+      "The passage argues against routines altogether.",
+    ],
+    caveatDistractors: [
+      "Willpower is irrelevant once a habit starts.",
+      "Friction only matters for complex tasks, not simple ones.",
+      "The author says environments are fixed and cannot be redesigned.",
+    ],
+    implicationDistractors: [
+      "Make routines harder to test commitment.",
+      "Add more steps to build resilience.",
+      "Avoid planning so habits feel spontaneous.",
+    ],
+  },
+  {
+    title: "Metrics and incentives",
+    claim: "Systems optimize for what they measure, not necessarily for what they claim to value.",
+    support: "When a single metric dominates, behavior shifts to hit that number even if other outcomes suffer.",
+    caveat: "This is a warning about incentive design, not an argument against measurement itself.",
+    implication: "Design metrics that balance short-term gains with long-term costs.",
+    example: "A call-center metric can improve speed while degrading resolution quality.",
+    mainDistractors: [
+      "Measurement is useless because it hides information.",
+      "Markets always allocate resources efficiently regardless of metrics.",
+      "Incentives never affect behavior once rules are clear.",
+    ],
+    caveatDistractors: [
+      "The author claims all metrics are harmful and should be removed.",
+      "The passage says incentives do not influence decision-making.",
+      "The author believes performance is best judged qualitatively only.",
+    ],
+    implicationDistractors: [
+      "Pick a single metric and optimize it aggressively.",
+      "Ignore unmeasured outcomes since they cannot be tracked.",
+      "Eliminate incentives to prevent gaming.",
+    ],
+  },
+  {
+    title: "Explanation vs prediction",
+    claim: "Explanation can fit the past without guaranteeing accurate prediction of the future.",
+    support: "Retrospective stories often select details that make outcomes seem inevitable.",
+    caveat: "Predictive accuracy can come from models that are hard to interpret.",
+    implication: "Test models on unseen data before trusting them for decisions.",
+    example: "A neat narrative can still fail when conditions shift.",
+    mainDistractors: [
+      "Any model that explains well will predict well.",
+      "Prediction is impossible, so explanations are all that matter.",
+      "Interpretability is always more important than accuracy.",
+    ],
+    caveatDistractors: [
+      "The author says only intuitive models can generalize.",
+      "Interpretability guarantees predictive performance.",
+      "Predictive models must always be simple.",
+    ],
+    implicationDistractors: [
+      "Adopt models that sound reasonable without testing them.",
+      "Prefer explanations over forecasting in all cases.",
+      "Avoid updating models when evidence contradicts them.",
+    ],
+  },
+  {
+    title: "Remote work communication",
+    claim: "Remote work succeeds when teams replace ad hoc conversations with explicit communication norms.",
+    support: "Without shared context, silent assumptions multiply and misalignment grows.",
+    caveat: "More communication is not always better; clarity and timing matter more than volume.",
+    implication: "Define which decisions require synchronous discussion and which can be documented.",
+    example: "A brief weekly alignment note can prevent scattered priorities.",
+    mainDistractors: [
+      "Remote work fails because people are less motivated at home.",
+      "Informal conversations are unnecessary for coordination.",
+      "Only synchronous meetings can keep teams aligned.",
+    ],
+    caveatDistractors: [
+      "The author wants more meetings regardless of their purpose.",
+      "Clarity is less important than frequency of updates.",
+      "Asynchronous communication always beats live discussion.",
+    ],
+    implicationDistractors: [
+      "Increase message volume to ensure visibility.",
+      "Avoid documentation to keep decisions flexible.",
+      "Make all decisions in real-time meetings.",
+    ],
+  },
+  {
+    title: "Trust in automation",
+    claim: "People trust automation when it is predictable and transparent about its limits.",
+    support: "Inconsistent outputs create confusion even if average accuracy is high.",
+    caveat: "Transparency alone is not enough if the system is erratic.",
+    implication: "Design interfaces that communicate confidence and known failure cases.",
+    example: "A navigation app that flags uncertain routes is used more consistently.",
+    mainDistractors: [
+      "Accuracy does not matter as long as the system is fast.",
+      "Automation should hide uncertainty to avoid user doubt.",
+      "Predictability is irrelevant to adoption.",
+    ],
+    caveatDistractors: [
+      "The author claims transparency guarantees perfect trust.",
+      "Consistency matters only for novice users.",
+      "Erratic systems can be trusted if they are complex.",
+    ],
+    implicationDistractors: [
+      "Remove confidence indicators to reduce clutter.",
+      "Optimize only for speed, not reliability.",
+      "Prevent users from seeing system limitations.",
+    ],
+  },
+  {
+    title: "Learning and spacing",
+    claim: "Spacing practice improves long-term retention more than cramming does.",
+    support: "Retrieval after a delay forces deeper processing than immediate repetition.",
+    caveat: "Spacing still requires feedback; repeating mistakes can reinforce errors.",
+    implication: "Schedule short reviews across days rather than one long session.",
+    example: "A 10-minute recap every other day outperforms a weekend marathon.",
+    mainDistractors: [
+      "Cramming always leads to durable mastery.",
+      "Only total study hours matter, not timing.",
+      "Spacing is effective because it shortens study time.",
+    ],
+    caveatDistractors: [
+      "The author says feedback is unnecessary.",
+      "Spacing works even if mistakes are never corrected.",
+      "Delays should be avoided because they reduce motivation.",
+    ],
+    implicationDistractors: [
+      "Front-load all practice into a single block.",
+      "Review only when you feel unsure.",
+      "Avoid revisiting difficult material.",
+    ],
+  },
+];
+
+const STRATEGY_NOTES = [
+  "Find the author's main claim, then eliminate options that add new ideas.",
+  "Track scope: avoid options that overgeneralize with always/never.",
+  "Separate what is stated from what is implied; inference questions punish overreach.",
+];
+
+function buildOptions(rng: () => number, correct: string, wrongs: string[]) {
+  const options = shuffle(rng, [correct, ...wrongs.slice(0, 3)]);
+  const ids = ["a", "b", "c", "d"] as const;
+  const correctIndex = options.indexOf(correct);
+  return {
+    options: options.map((text, idx) => ({ id: ids[idx], text })),
+    correctOptionId: ids[correctIndex],
+  };
+}
+
+function buildPassage(rng: () => number, topic: Topic) {
+  const openers = [
+    "Many discussions focus on surface causes, but deeper patterns matter.",
+    "At first glance the issue looks like a motivation problem, yet design plays a larger role.",
+    "The common diagnosis misses a quieter driver in the background.",
+  ];
+  const contrasts = ["However,", "Yet,", "Still,", "Even so,"];
+  const implications = ["As a result,", "Therefore,", "In practice,"];
+
+  const sentences = [
+    `${pick(rng, openers)} ${topic.claim}`,
+    topic.support,
+    `${pick(rng, contrasts)} ${topic.caveat}`,
+    `${pick(rng, implications)} ${topic.implication}`,
+    topic.example,
+  ];
+
+  return sentences.join(" ");
+}
+
+export function createPuzzle(opts: { seed: number; difficulty: number }): RcDailyPuzzle {
+  const rng = makeRng(opts.seed);
+  const difficulty = Math.max(1, Math.min(3, opts.difficulty));
+  const topic = pick(rng, TOPICS);
+
+  const passage = buildPassage(rng, topic);
+  const strategyNote = STRATEGY_NOTES[difficulty - 1] ?? STRATEGY_NOTES[0];
+
+  const q1 = buildOptions(rng, topic.claim, topic.mainDistractors);
+  const q2 = buildOptions(rng, topic.caveat, topic.caveatDistractors);
+  const q3 = buildOptions(rng, topic.implication, topic.implicationDistractors);
+
+  return {
+    id: makeId(rng, "rc"),
+    title: topic.title,
+    difficulty,
+    strategyNote,
+    passage,
     questions: [
       {
         id: "q1",
-        prompt: "The passage primarily argues that habits fail because:",
-        options: [
-          { id: "a", text: "people lack discipline in the long run" },
-          { id: "b", text: "motivation is always temporary" },
-          { id: "c", text: "environmental friction raises the cost of action" },
-          { id: "d", text: "habits should be redesigned every week" },
-        ],
-        correctOptionId: "c",
-        explanation: "The passage emphasizes friction and environment over motivation or discipline.",
+        prompt: "The passage primarily argues that:",
+        options: q1.options,
+        correctOptionId: q1.correctOptionId,
+        explanation: "The main claim is stated directly in the opening of the passage.",
       },
       {
         id: "q2",
-        prompt: "Which option best captures the role of willpower in the passage?",
-        options: [
-          { id: "a", text: "Willpower is the only reliable driver of habits." },
-          {
-            id: "b",
-            text: "Willpower matters, but environment can override it.",
-          },
-          { id: "c", text: "Willpower is irrelevant; habits are genetic." },
-          { id: "d", text: "Willpower increases when friction increases." },
-        ],
-        correctOptionId: "b",
-        explanation: "Willpower is not denied, but the argument is: reduce friction to make habits stick.",
+        prompt: "Which statement best captures the passage’s caveat?",
+        options: q2.options,
+        correctOptionId: q2.correctOptionId,
+        explanation: "The author qualifies the claim in the contrast sentence.",
       },
       {
         id: "q3",
         prompt: "A practical implication consistent with the passage is to:",
-        options: [
-          { id: "a", text: "make tasks harder to build resilience" },
-          { id: "b", text: "add steps to test commitment" },
-          { id: "c", text: "remove unnecessary steps before starting" },
-          { id: "d", text: "avoid routines to stay flexible" },
-        ],
-        correctOptionId: "c",
-        explanation: "Lower friction = fewer steps between intention and action.",
+        options: q3.options,
+        correctOptionId: q3.correctOptionId,
+        explanation: "The passage ends with a clear action implication.",
       },
     ],
-  },
-];
-
-const MED: RcDailyPuzzle[] = [
-  {
-    id: "rc-m1",
-    title: "Markets and measurement",
-    difficulty: 2,
-    strategyNote:
-      "Track scope: options that overgeneralize (always/never) are usually wrong unless the passage is absolute.",
-    passage:
-      "Markets are praised for allocating resources efficiently, but efficiency depends on what is measured. " +
-      "When only short-term outputs are counted, decisions optimize for near-term gains even if long-term costs rise. " +
-      "This is not an argument against markets; it is a warning about incentives. " +
-      "Measurement systems act like a map: they guide action, but they also hide what they do not represent.",
-    questions: [
-      {
-        id: "q1",
-        prompt: "The passage suggests that market efficiency is influenced by:",
-        options: [
-          { id: "a", text: "the number of buyers and sellers" },
-          { id: "b", text: "what outcomes are measured and rewarded" },
-          { id: "c", text: "government ownership of firms" },
-          { id: "d", text: "eliminating all incentives" },
-        ],
-        correctOptionId: "b",
-        explanation: "The argument hinges on measurement/incentives shaping decisions.",
-      },
-      {
-        id: "q2",
-        prompt: "The author’s tone toward markets is best described as:",
-        options: [
-          { id: "a", text: "hostile; markets are inherently harmful" },
-          { id: "b", text: "dismissive; markets are outdated" },
-          { id: "c", text: "qualified; markets work but depend on incentives" },
-          { id: "d", text: "uncertain; markets cannot be studied" },
-        ],
-        correctOptionId: "c",
-        explanation: "The passage explicitly says it is not against markets—just warns about incentives.",
-      },
-      {
-        id: "q3",
-        prompt: "The map analogy implies that measurement systems:",
-        options: [
-          { id: "a", text: "represent reality completely" },
-          { id: "b", text: "are useless because they hide information" },
-          { id: "c", text: "guide action but omit some details" },
-          { id: "d", text: "replace incentives with fairness" },
-        ],
-        correctOptionId: "c",
-        explanation: "Maps guide but simplify; measurement similarly guides and hides what it doesn’t capture.",
-      },
-    ],
-  },
-];
-
-const HARD: RcDailyPuzzle[] = [
-  {
-    id: "rc-h1",
-    title: "Explanation versus prediction",
-    difficulty: 3,
-    strategyNote: "Separate 'what is said' from 'what is implied'. Inference questions punish overreach.",
-    passage:
-      "A theory can explain why an event happened without helping us predict future events. " +
-      "Explanation can be retrospective: it fits a story to known outcomes. Prediction is prospective: it must survive unknowns. " +
-      "The temptation is to treat a good explanation as a reliable predictor, but the two can diverge. " +
-      "A model that predicts well may even be hard to interpret, while a model that reads like common sense may fail on new data.",
-    questions: [
-      {
-        id: "q1",
-        prompt: "The passage distinguishes explanation from prediction mainly by:",
-        options: [
-          { id: "a", text: "declaring prediction impossible" },
-          {
-            id: "b",
-            text: "stating explanation requires math and prediction does not",
-          },
-          {
-            id: "c",
-            text: "highlighting retrospective fit vs prospective robustness",
-          },
-          {
-            id: "d",
-            text: "arguing that interpretation is always better than accuracy",
-          },
-        ],
-        correctOptionId: "c",
-        explanation: "Explanation fits known outcomes; prediction must handle unknown future conditions.",
-      },
-      {
-        id: "q2",
-        prompt: "Which statement is most consistent with the passage?",
-        options: [
-          {
-            id: "a",
-            text: "A model that sounds intuitive is likely to generalize.",
-          },
-          { id: "b", text: "Some predictive models may be hard to interpret." },
-          { id: "c", text: "All models that explain well also predict well." },
-          { id: "d", text: "Prediction should be replaced by explanation." },
-        ],
-        correctOptionId: "b",
-        explanation: "The passage explicitly says predictive models may be hard to interpret.",
-      },
-      {
-        id: "q3",
-        prompt: "The passage would most likely criticize which approach?",
-        options: [
-          { id: "a", text: "Testing a model on unseen data" },
-          {
-            id: "b",
-            text: "Assuming a plausible story guarantees future accuracy",
-          },
-          {
-            id: "c",
-            text: "Separating interpretability from predictive success",
-          },
-          { id: "d", text: "Recognizing limits of retrospective explanations" },
-        ],
-        correctOptionId: "b",
-        explanation: "It warns against treating good explanations as reliable predictors.",
-      },
-    ],
-  },
-];
-
-export function createPuzzle(opts: { seed: number; difficulty: number }): RcDailyPuzzle {
-  const { seed, difficulty } = opts;
-  const pool = difficulty <= 1 ? EASY : difficulty === 2 ? MED : HARD;
-  return pool[Math.abs(seed) % pool.length];
+  };
 }

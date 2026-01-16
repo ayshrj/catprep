@@ -1,143 +1,126 @@
+import { makeId, pick, randInt, shuffle } from "../core/generator-utils";
+import { makeRng } from "../core/rng";
 import { InferenceJudgePuzzle } from "./types";
 
-type BankItem = Omit<InferenceJudgePuzzle, "difficulty"> & {
-  minDifficulty: number;
+type Option = { text: string; why: string; correct?: boolean };
+
+type Scenario = {
+  build: (rng: () => number) => { passage: string; options: Option[] };
 };
 
-const BANK: BankItem[] = [
+const SCENARIOS: Scenario[] = [
   {
-    id: "inf-1",
-    minDifficulty: 1,
-    passage:
-      "A city introduced a congestion charge for private cars in the central zone. In the first six months, car entries fell by 18%. Bus ridership rose by 9%, and average bus speeds improved by 6%. Retail footfall in the zone remained stable.",
-    question: "Which statement must be true based on the passage?",
-    correctOptionId: "B",
-    options: [
-      {
-        id: "A",
-        text: "Retailers in the zone opposed the congestion charge.",
-        why: "No info about opposition.",
-      },
-      {
-        id: "B",
-        text: "Average bus speeds increased after the congestion charge was introduced.",
-        why: "Directly stated: bus speeds improved by 6%.",
-      },
-      {
-        id: "C",
-        text: "Overall traffic congestion in the entire city decreased.",
-        why: "Only central zone described; citywide not guaranteed.",
-      },
-      {
-        id: "D",
-        text: "Car owners switched to cycling more than public transport.",
-        why: "Mode shift not specified beyond bus ridership.",
-      },
-    ],
+    build: rng => {
+      const carDrop = randInt(rng, 10, 25);
+      const busRise = randInt(rng, 5, 15);
+      const speedGain = randInt(rng, 3, 9);
+      const passage =
+        `A city introduced a congestion charge for private cars in the central zone. ` +
+        `In six months, car entries fell by ${carDrop}%. Bus ridership rose by ${busRise}%, ` +
+        `and average bus speeds improved by ${speedGain}%. Retail footfall in the zone remained stable.`;
+      const options: Option[] = [
+        {
+          text: `Average bus speeds increased after the charge was introduced.`,
+          why: "Directly stated.",
+          correct: true,
+        },
+        { text: `Retailers in the zone opposed the congestion charge.`, why: "No evidence about opposition." },
+        { text: `Citywide traffic congestion decreased.`, why: "Only the central zone is discussed." },
+        { text: `Car owners shifted mostly to cycling.`, why: "Mode shift beyond buses is not stated." },
+      ];
+      return { passage, options };
+    },
   },
   {
-    id: "inf-2",
-    minDifficulty: 1,
-    passage:
-      "In a study of two groups, participants who took brief walking breaks every hour reported lower fatigue by late afternoon than those who worked continuously. Productivity scores were similar in both groups.",
-    question: "Which statement must be true?",
-    correctOptionId: "C",
-    options: [
-      {
-        id: "A",
-        text: "Walking breaks reduced fatigue for all participants.",
-        why: "The passage says 'reported lower fatigue' at group level, not for all individuals.",
-      },
-      {
-        id: "B",
-        text: "Productivity improved substantially in the walking-break group.",
-        why: "Productivity was similar.",
-      },
-      {
-        id: "C",
-        text: "The walking-break group reported lower fatigue late in the day.",
-        why: "Directly stated.",
-      },
-      {
-        id: "D",
-        text: "Continuous workers experienced higher stress levels.",
-        why: "Stress not mentioned.",
-      },
-    ],
+    build: rng => {
+      const fatigueGap = randInt(rng, 8, 18);
+      const passage =
+        `In a study of two groups, participants who took brief walking breaks every hour reported ` +
+        `lower late-afternoon fatigue by about ${fatigueGap}% compared with those who worked continuously. ` +
+        `Productivity scores were similar in both groups.`;
+      const options: Option[] = [
+        {
+          text: `The walking-break group reported lower fatigue later in the day.`,
+          why: "Directly stated.",
+          correct: true,
+        },
+        { text: `Productivity improved substantially in the walking-break group.`, why: "Productivity was similar." },
+        {
+          text: `Walking breaks reduced fatigue for every participant.`,
+          why: "Group averages do not imply all individuals.",
+        },
+        { text: `Continuous workers experienced higher stress levels.`, why: "Stress is not mentioned." },
+      ];
+      return { passage, options };
+    },
   },
   {
-    id: "inf-3",
-    minDifficulty: 2,
-    passage:
-      "A firm replaced a yearly performance review with quarterly check-ins. After a year, employee survey responses showed higher clarity about goals, but manager time spent on performance discussions increased.",
-    question: "Which statement must be true?",
-    correctOptionId: "A",
-    options: [
-      {
-        id: "A",
-        text: "Managers spent more time on performance discussions after introducing check-ins.",
-        why: "Directly stated.",
-      },
-      {
-        id: "B",
-        text: "Employee satisfaction increased in every department.",
-        why: "No department breakdown.",
-      },
-      {
-        id: "C",
-        text: "The policy reduced turnover.",
-        why: "Turnover not mentioned.",
-      },
-      {
-        id: "D",
-        text: "Quarterly check-ins are always better than yearly reviews.",
-        why: "Absolute claim not supported.",
-      },
-    ],
+    build: rng => {
+      const clarityGain = randInt(rng, 6, 14);
+      const passage =
+        `A firm replaced a yearly performance review with quarterly check-ins. After a year, ` +
+        `survey responses showed clarity about goals increased by ${clarityGain}%, but manager time ` +
+        `spent on performance discussions rose.`;
+      const options: Option[] = [
+        {
+          text: "Managers spent more time on performance discussions after introducing check-ins.",
+          why: "Directly stated.",
+          correct: true,
+        },
+        { text: "Employee satisfaction improved in every department.", why: "No department breakdown is given." },
+        { text: "The policy reduced turnover.", why: "Turnover is not mentioned." },
+        { text: "Quarterly check-ins are always better than yearly reviews.", why: "Absolute claim not supported." },
+      ];
+      return { passage, options };
+    },
   },
   {
-    id: "inf-4",
-    minDifficulty: 3,
-    passage:
-      "An online course offered two tracks: self-paced and instructor-led. Completion rates were higher in the instructor-led track, but average quiz scores among completers were similar across tracks.",
-    question: "Which statement must be true?",
-    correctOptionId: "D",
-    options: [
-      {
-        id: "A",
-        text: "Self-paced learners studied fewer hours than instructor-led learners.",
-        why: "Study hours not given.",
-      },
-      {
-        id: "B",
-        text: "Instructor-led instruction improved quiz performance.",
-        why: "Quiz scores among completers were similar.",
-      },
-      {
-        id: "C",
-        text: "Most learners prefer self-paced courses.",
-        why: "Preference not stated.",
-      },
-      {
-        id: "D",
-        text: "Completion rates differed between the two tracks.",
-        why: "Directly stated: higher in instructor-led track.",
-      },
-    ],
+    build: rng => {
+      const completionGap = randInt(rng, 10, 25);
+      const passage =
+        `An online course offered two tracks: self-paced and instructor-led. Completion rates were ` +
+        `higher in the instructor-led track by ${completionGap} percentage points, but average quiz ` +
+        `scores among completers were similar across tracks.`;
+      const options: Option[] = [
+        { text: "Completion rates differed between the two tracks.", why: "Directly stated.", correct: true },
+        { text: "Instructor-led teaching improved quiz performance.", why: "Quiz scores were similar." },
+        { text: "Most learners prefer self-paced courses.", why: "Preference is not stated." },
+        { text: "Self-paced learners studied fewer hours.", why: "Study hours are not given." },
+      ];
+      return { passage, options };
+    },
   },
 ];
 
+function finalizeOptions(rng: () => number, options: Option[]) {
+  const shuffled = shuffle(rng, options);
+  const ids = ["A", "B", "C", "D"] as const;
+  const mapped = shuffled.map((opt, idx) => ({
+    id: ids[idx],
+    text: opt.text,
+    why: opt.why,
+    correct: opt.correct,
+  }));
+  const correct = mapped.find(m => m.correct);
+  return {
+    options: mapped.map(({ id, text, why }) => ({ id, text, why })),
+    correctOptionId: correct?.id ?? "A",
+  };
+}
+
 export function createPuzzle(opts: { seed: number; difficulty: number }): InferenceJudgePuzzle {
+  const rng = makeRng(opts.seed);
   const difficulty = Math.max(1, Math.min(3, opts.difficulty));
-  const eligible = BANK.filter(b => b.minDifficulty <= difficulty);
-  const picked = eligible[Math.abs(opts.seed) % eligible.length];
+  const scenario = pick(rng, SCENARIOS);
+  const built = scenario.build(rng);
+  const finalized = finalizeOptions(rng, built.options);
 
   return {
-    id: picked.id,
-    passage: picked.passage,
-    question: picked.question,
-    options: picked.options.map(o => ({ ...o })),
-    correctOptionId: picked.correctOptionId,
+    id: makeId(rng, "inf"),
+    passage: built.passage,
+    question: "Which statement must be true?",
+    options: finalized.options,
+    correctOptionId: finalized.correctOptionId,
     difficulty,
   };
 }

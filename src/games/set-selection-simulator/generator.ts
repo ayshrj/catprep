@@ -1,18 +1,44 @@
+import { pick, randInt } from "../core/generator-utils";
 import { makeRng } from "../core/rng";
 import { SetCard, SetSelectionPuzzle } from "./types";
 
-const TITLES = [
-  "Percent + Table DI",
-  "Routes & Constraints LR",
-  "Tournament Points Table",
-  "Stacked Bar Chart DI",
-  "Scheduling with 3 Constraints",
-  "Venn + Selection Trap",
-  "Circular Arrangement LR",
-  "Caselet with Ratios",
-  "Network Flow Lite",
-  "Puzzles with Conditional Counts",
+const TOPICS = [
+  "Routes",
+  "Scheduling",
+  "Tournament",
+  "Venn",
+  "Inventory",
+  "Network",
+  "Allocation",
+  "Ranking",
+  "Team Selection",
+  "Capacity",
 ];
+
+const FORMATS = ["Table DI", "Bar Chart", "Caselet", "Grid", "Constraint Set", "Flow Diagram", "Matrix"];
+
+const TWISTS = [
+  "with Missing Totals",
+  "with 3 Constraints",
+  "with Two Stages",
+  "with Ratio Trap",
+  "with Conditional Counts",
+];
+
+function buildTitle(rng: () => number, used: Set<string>) {
+  for (let i = 0; i < 30; i++) {
+    const title = [pick(rng, TOPICS), pick(rng, FORMATS), rng() < 0.6 ? pick(rng, TWISTS) : ""]
+      .filter(Boolean)
+      .join(" ");
+    if (!used.has(title)) {
+      used.add(title);
+      return title;
+    }
+  }
+  const fallback = `${pick(rng, TOPICS)} ${pick(rng, FORMATS)}`;
+  used.add(fallback);
+  return fallback;
+}
 
 function scoreEV(card: Omit<SetCard, "ev">): number {
   // Simple EV heuristic:
@@ -47,8 +73,10 @@ export function createPuzzle(opts: { seed: number; difficulty: number }): SetSel
 
   const count = difficulty === 1 ? 6 : difficulty === 2 ? 8 : 10;
 
+  const usedTitles = new Set<string>();
+
   const sets: SetCard[] = Array.from({ length: count }, (_, i) => {
-    const title = TITLES[i % TITLES.length];
+    const title = buildTitle(rng, usedTitles);
 
     const type: SetCard["type"] = rng() < 0.45 ? "DI" : rng() < 0.8 ? "LR" : "Mixed";
     const setupCost: SetCard["setupCost"] = rng() < 0.5 ? "low" : rng() < 0.8 ? "medium" : "high";
@@ -56,11 +84,7 @@ export function createPuzzle(opts: { seed: number; difficulty: number }): SetSel
     const readability: SetCard["readability"] = rng() < 0.7 ? "clear" : "messy";
 
     const estimatedMinutes =
-      difficulty === 1
-        ? Math.floor(8 + rng() * 8) // 8–15
-        : difficulty === 2
-          ? Math.floor(9 + rng() * 9) // 9–17
-          : Math.floor(10 + rng() * 10); // 10–19
+      difficulty === 1 ? randInt(rng, 8, 15) : difficulty === 2 ? randInt(rng, 9, 17) : randInt(rng, 10, 19);
 
     const baseTags =
       type === "DI"

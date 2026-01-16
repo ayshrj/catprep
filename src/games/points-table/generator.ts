@@ -1,154 +1,113 @@
-import { PointsTablePuzzle } from "./types";
-
-type PuzzleDef = Omit<PointsTablePuzzle, "pointsSystem">;
+import { pick, sampleUnique } from "../core/generator-utils";
+import { makeRng } from "../core/rng";
+import { Outcome, PointsTablePuzzle } from "./types";
 
 const basePointsSystem = { win: 3, draw: 1, loss: 0 };
 
-const puzzlesEasy: PuzzleDef[] = [
-  {
-    teams: [
-      { id: "A", name: "Apex" },
-      { id: "B", name: "Bolt" },
-      { id: "C", name: "Crest" },
-      { id: "D", name: "Drift" },
-    ],
-    matches: [
-      { id: "m1", home: "A", away: "B" },
-      { id: "m2", home: "A", away: "C" },
-      { id: "m3", home: "A", away: "D" },
-      { id: "m4", home: "B", away: "C" },
-      { id: "m5", home: "B", away: "D" },
-      { id: "m6", home: "C", away: "D" },
-    ],
-    // Lock 3 results; user fills remaining 3
-    fixedOutcomes: { m1: "H", m4: "D", m6: "A" },
-    // Full solution set (used for correctness + hints)
-    solutionOutcomes: { m1: "H", m2: "D", m3: "A", m4: "D", m5: "H", m6: "A" },
-    constraints: [
-      "Win = 3 points, Draw = 1 point.",
-      "Apex beats Bolt.",
-      "Bolt draws with Crest.",
-      "Crest loses to Drift.",
-      "Use totals to deduce remaining results (table-making discipline).",
-    ],
-  },
-  {
-    teams: [
-      { id: "A", name: "Atlas" },
-      { id: "B", name: "Blaze" },
-      { id: "C", name: "Cobalt" },
-      { id: "D", name: "Delta" },
-    ],
-    matches: [
-      { id: "m1", home: "A", away: "B" },
-      { id: "m2", home: "A", away: "C" },
-      { id: "m3", home: "A", away: "D" },
-      { id: "m4", home: "B", away: "C" },
-      { id: "m5", home: "B", away: "D" },
-      { id: "m6", home: "C", away: "D" },
-    ],
-    fixedOutcomes: { m2: "H", m5: "D", m6: "H" },
-    solutionOutcomes: { m1: "D", m2: "H", m3: "A", m4: "A", m5: "D", m6: "H" },
-    constraints: [
-      "Win = 3, Draw = 1.",
-      "Atlas beats Cobalt.",
-      "Blaze draws with Delta.",
-      "Cobalt beats Delta.",
-      "Deduce remaining outcomes by balancing W/D/L totals.",
-    ],
-  },
+const TEAM_NAMES = [
+  "Apex",
+  "Bolt",
+  "Crest",
+  "Drift",
+  "Atlas",
+  "Blaze",
+  "Cobalt",
+  "Delta",
+  "Echo",
+  "Nova",
+  "Orion",
+  "Pulse",
+  "Quark",
+  "Rift",
+  "Solstice",
+  "Zenith",
 ];
 
-const puzzlesMedium: PuzzleDef[] = [
-  {
-    teams: [
-      { id: "A", name: "Alpha" },
-      { id: "B", name: "Bravo" },
-      { id: "C", name: "Charlie" },
-      { id: "D", name: "Delta" },
-      { id: "E", name: "Echo" },
-    ],
-    // 5 teams -> 10 matches
-    matches: [
-      { id: "m1", home: "A", away: "B" },
-      { id: "m2", home: "A", away: "C" },
-      { id: "m3", home: "A", away: "D" },
-      { id: "m4", home: "A", away: "E" },
-      { id: "m5", home: "B", away: "C" },
-      { id: "m6", home: "B", away: "D" },
-      { id: "m7", home: "B", away: "E" },
-      { id: "m8", home: "C", away: "D" },
-      { id: "m9", home: "C", away: "E" },
-      { id: "m10", home: "D", away: "E" },
-    ],
-    fixedOutcomes: { m1: "H", m5: "A", m8: "D", m10: "H" },
-    solutionOutcomes: {
-      m1: "H",
-      m2: "D",
-      m3: "A",
-      m4: "H",
-      m5: "A",
-      m6: "D",
-      m7: "H",
-      m8: "D",
-      m9: "A",
-      m10: "H",
-    },
-    constraints: [
-      "5-team round robin: track 10 matches carefully.",
-      "Use derived columns (Played, GD not used here) and points totals.",
-      "Practice elimination logic + constraint propagation (CAT DILR table-making).",
-    ],
-  },
-];
+function buildMatches(teamIds: string[]) {
+  const matches: PointsTablePuzzle["matches"] = [];
+  let id = 1;
+  for (let i = 0; i < teamIds.length; i++) {
+    for (let j = i + 1; j < teamIds.length; j++) {
+      matches.push({ id: `m${id++}`, home: teamIds[i], away: teamIds[j] });
+    }
+  }
+  return matches;
+}
 
-const puzzlesHard: PuzzleDef[] = [
-  {
-    teams: [
-      { id: "A", name: "Nova" },
-      { id: "B", name: "Orion" },
-      { id: "C", name: "Pulse" },
-      { id: "D", name: "Quark" },
-      { id: "E", name: "Rift" },
-    ],
-    matches: [
-      { id: "m1", home: "A", away: "B" },
-      { id: "m2", home: "A", away: "C" },
-      { id: "m3", home: "A", away: "D" },
-      { id: "m4", home: "A", away: "E" },
-      { id: "m5", home: "B", away: "C" },
-      { id: "m6", home: "B", away: "D" },
-      { id: "m7", home: "B", away: "E" },
-      { id: "m8", home: "C", away: "D" },
-      { id: "m9", home: "C", away: "E" },
-      { id: "m10", home: "D", away: "E" },
-    ],
-    fixedOutcomes: { m2: "A", m6: "H", m9: "D" },
-    solutionOutcomes: {
-      m1: "D",
-      m2: "A",
-      m3: "H",
-      m4: "D",
-      m5: "H",
-      m6: "H",
-      m7: "A",
-      m8: "D",
-      m9: "D",
-      m10: "A",
-    },
-    constraints: [
-      "Hard: fewer fixed outcomes, more deduction.",
-      "Watch the global draw count and each team’s total played.",
-      "Build a points table as you go; don’t guess.",
-    ],
-  },
-];
+function randomOutcome(rng: () => number, difficulty: number): Outcome {
+  const roll = rng();
+  const drawBias = difficulty <= 1 ? 0.2 : difficulty === 2 ? 0.25 : 0.3;
+  if (roll < drawBias) return "D";
+  return roll < 0.5 + drawBias / 2 ? "H" : "A";
+}
+
+function computeTeamPoints(matches: PointsTablePuzzle["matches"], outcomes: Record<string, Outcome>) {
+  const points = new Map<string, number>();
+  for (const m of matches) {
+    if (!points.has(m.home)) points.set(m.home, 0);
+    if (!points.has(m.away)) points.set(m.away, 0);
+    const out = outcomes[m.id];
+    if (out === "H") {
+      points.set(m.home, (points.get(m.home) || 0) + basePointsSystem.win);
+    } else if (out === "A") {
+      points.set(m.away, (points.get(m.away) || 0) + basePointsSystem.win);
+    } else {
+      points.set(m.home, (points.get(m.home) || 0) + basePointsSystem.draw);
+      points.set(m.away, (points.get(m.away) || 0) + basePointsSystem.draw);
+    }
+  }
+  return points;
+}
 
 export function createPuzzle(opts: { seed: number; difficulty: number }): PointsTablePuzzle {
-  const list = opts.difficulty <= 1 ? puzzlesEasy : opts.difficulty === 2 ? puzzlesMedium : puzzlesHard;
-  const def = list[Math.abs(opts.seed) % list.length];
+  const rng = makeRng(opts.seed);
+  const difficulty = Math.max(1, Math.min(3, opts.difficulty));
+
+  const teamCount = difficulty <= 1 ? 4 : 5;
+  const teamNames = sampleUnique(rng, TEAM_NAMES, teamCount);
+  const teams = teamNames.map((name, idx) => ({ id: String.fromCharCode(65 + idx), name }));
+  const matches = buildMatches(teams.map(t => t.id));
+
+  const solutionOutcomes: Record<string, Outcome> = {};
+  for (const m of matches) {
+    solutionOutcomes[m.id] = randomOutcome(rng, difficulty);
+  }
+
+  const fixedCount = difficulty <= 1 ? 3 : difficulty === 2 ? 4 : 3;
+  const fixedOutcomes: Record<string, Outcome> = {};
+  const matchIds = matches.map(m => m.id);
+  const fixedIds = sampleUnique(rng, matchIds, fixedCount);
+  for (const id of fixedIds) {
+    fixedOutcomes[id] = solutionOutcomes[id];
+  }
+
+  const totalDraws = Object.values(solutionOutcomes).filter(out => out === "D").length;
+  const points = computeTeamPoints(matches, solutionOutcomes);
+  const pointEntries = Array.from(points.entries());
+  const [spotTeamId, spotPoints] = pick(rng, pointEntries);
+  const teamNameMap = new Map(teams.map(t => [t.id, t.name]));
+
+  const constraints = [
+    "Win = 3 points, Draw = 1 point.",
+    `Total draws in the tournament: ${totalDraws}.`,
+    `${teamNameMap.get(spotTeamId)} finishes with ${spotPoints} points.`,
+  ];
+
+  for (const [mid, out] of Object.entries(fixedOutcomes)) {
+    const match = matches.find(m => m.id === mid)!;
+    const home = teamNameMap.get(match.home)!;
+    const away = teamNameMap.get(match.away)!;
+    if (out === "H") constraints.push(`${home} beats ${away}.`);
+    else if (out === "A") constraints.push(`${away} beats ${home}.`);
+    else constraints.push(`${home} draws with ${away}.`);
+  }
+
   return {
-    ...def,
+    teams,
+    matches,
     pointsSystem: basePointsSystem,
+    fixedOutcomes,
+    solutionOutcomes,
+    constraints,
   };
 }

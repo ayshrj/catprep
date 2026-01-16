@@ -1,127 +1,162 @@
+import { makeId, pick, randInt } from "../core/generator-utils";
+import { makeRng } from "../core/rng";
 import { DICaseletPuzzle } from "./types";
 
-type BankItem = Omit<DICaseletPuzzle, "difficulty"> & { minDifficulty: number };
+type Scenario = {
+  title: string;
+  caselet: string;
+  headers: string[];
+  rowLabels: string[];
+  buildRows: (rng: () => number, difficulty: number) => Array<{ label: string; values: number[] }>;
+  buildQuestions: (rows: Array<{ label: string; values: number[] }>) => DICaseletPuzzle["questions"];
+};
 
-const BANK: BankItem[] = [
+const SCENARIOS: Scenario[] = [
   {
-    id: "di-1",
-    minDifficulty: 1,
     title: "Quarterly Sales Snapshot",
     caselet:
       "A startup tracks quarterly unit sales (in thousands) for two products. Use the table to answer the questions. Assume values are exact.",
-    table: {
-      headers: ["Quarter", "Product A", "Product B"],
-      rows: [
-        { label: "Q1", values: [40, 30] },
-        { label: "Q2", values: [50, 36] },
-        { label: "Q3", values: [55, 33] },
-        { label: "Q4", values: [60, 42] },
-      ],
+    headers: ["Quarter", "Product A", "Product B"],
+    rowLabels: ["Q1", "Q2", "Q3", "Q4"],
+    buildRows: (rng, difficulty) => {
+      const baseA =
+        difficulty <= 1 ? randInt(rng, 35, 70) : difficulty === 2 ? randInt(rng, 45, 90) : randInt(rng, 55, 110);
+      const baseB =
+        difficulty <= 1 ? randInt(rng, 25, 60) : difficulty === 2 ? randInt(rng, 35, 80) : randInt(rng, 45, 95);
+      const stepA = randInt(rng, 3, 8);
+      const stepB = randInt(rng, 2, 7);
+
+      return ["Q1", "Q2", "Q3", "Q4"].map((label, idx) => ({
+        label,
+        values: [baseA + idx * stepA, baseB + idx * stepB],
+      }));
     },
-    questions: [
-      {
-        id: "q1",
-        prompt: "What is the percentage increase in Product A sales from Q1 to Q4?",
-        answer: 50, // (60-40)/40 * 100
-        tolerance: 0.01,
-        unit: "%",
-        solution: "Increase = 60-40=20. % increase = 20/40 ×100 = 50%.",
-      },
-      {
-        id: "q2",
-        prompt: "In Q2, Product B sales are what percent of Product A sales?",
-        answer: 72, // 36/50*100
-        tolerance: 0.01,
-        unit: "%",
-        solution: "36/50 ×100 = 72%.",
-      },
-    ],
+    buildQuestions: rows => {
+      const q1Start = rows[0].values[0];
+      const q1End = rows[rows.length - 1].values[0];
+      const q1Ans = ((q1End - q1Start) / q1Start) * 100;
+
+      const q2Row = rows[1];
+      const q2Ans = (q2Row.values[1] / q2Row.values[0]) * 100;
+
+      return [
+        {
+          id: "q1",
+          prompt: "What is the percentage increase in Product A sales from Q1 to Q4?",
+          answer: q1Ans,
+          tolerance: 0.05,
+          unit: "%",
+          solution: `Increase = ${q1End}-${q1Start}=${q1End - q1Start}. % increase = ${
+            q1End - q1Start
+          }/${q1Start} ×100 = ${q1Ans.toFixed(2)}%.`,
+        },
+        {
+          id: "q2",
+          prompt: "In Q2, Product B sales are what percent of Product A sales?",
+          answer: q2Ans,
+          tolerance: 0.05,
+          unit: "%",
+          solution: `${q2Row.values[1]}/${q2Row.values[0]} ×100 = ${q2Ans.toFixed(2)}%.`,
+        },
+      ];
+    },
   },
   {
-    id: "di-2",
-    minDifficulty: 2,
-    title: "Call Center Metrics",
+    title: "Regional Revenue",
     caselet:
-      "A call center records average handling time (AHT, in minutes) and daily calls handled by two teams. Use the data to compute weighted average AHT.",
-    table: {
-      headers: ["Day", "Team X Calls", "Team X AHT", "Team Y Calls", "Team Y AHT"],
-      rows: [
-        { label: "Mon", values: [120, 4.5, 100, 5.0] },
-        { label: "Tue", values: [150, 4.2, 90, 5.4] },
-        { label: "Wed", values: [130, 4.6, 110, 5.1] },
-      ],
+      "A company reports revenue (in millions) across regions for two years. Use the table to answer the questions.",
+    headers: ["Region", "2023", "2024"],
+    rowLabels: ["North", "South", "East", "West"],
+    buildRows: (rng, difficulty) =>
+      ["North", "South", "East", "West"].map(label => {
+        const base =
+          difficulty <= 1 ? randInt(rng, 40, 90) : difficulty === 2 ? randInt(rng, 55, 120) : randInt(rng, 70, 160);
+        const growth = randInt(rng, -5, 20);
+        return { label, values: [base, Math.max(10, base + growth)] };
+      }),
+    buildQuestions: rows => {
+      const total2024 = rows.reduce((sum, r) => sum + r.values[1], 0);
+      const focus = rows[0];
+      const pctChange = ((focus.values[1] - focus.values[0]) / focus.values[0]) * 100;
+      return [
+        {
+          id: "q1",
+          prompt: "What is the total revenue in 2024 across all regions?",
+          answer: total2024,
+          tolerance: 0.05,
+          unit: "million",
+          solution: `Sum 2024 values = ${rows.map(r => r.values[1]).join(" + ")} = ${total2024}.`,
+        },
+        {
+          id: "q2",
+          prompt: `What is the percentage change in ${focus.label} revenue from 2023 to 2024?`,
+          answer: pctChange,
+          tolerance: 0.05,
+          unit: "%",
+          solution: `(${focus.values[1]}-${focus.values[0]})/${focus.values[0]} ×100 = ${pctChange.toFixed(2)}%.`,
+        },
+      ];
     },
-    questions: [
-      {
-        id: "q1",
-        prompt: "Compute the overall weighted average AHT for Monday (weight by calls).",
-        answer: 4.7272727, // (120*4.5 + 100*5)/220
-        tolerance: 0.02,
-        unit: "minutes",
-        solution: "Weighted AHT = (120×4.5 + 100×5.0) / (120+100) = (540+500)/220 = 1040/220 ≈ 4.73.",
-      },
-      {
-        id: "q2",
-        prompt: "On Tuesday, what is the ratio of Team X calls to Team Y calls?",
-        answer: 150 / 90, // 1.666...
-        tolerance: 0.02,
-        unit: "",
-        solution: "Ratio = 150:90 = 5:3 ≈ 1.67.",
-      },
-    ],
   },
   {
-    id: "di-3",
-    minDifficulty: 3,
-    title: "Inventory & Returns",
+    title: "Production and Defects",
     caselet:
-      "A retailer tracks shipments and returns for three categories over two months. Use the table to compute net units and percentage shares.",
-    table: {
-      headers: ["Category", "Jan Shipped", "Jan Returned", "Feb Shipped", "Feb Returned"],
-      rows: [
-        { label: "Electronics", values: [800, 80, 900, 99] },
-        { label: "Home", values: [600, 30, 750, 45] },
-        { label: "Fashion", values: [700, 140, 650, 130] },
-      ],
+      "A manufacturer tracks daily output (in units) and defects for three plants. Use the table to compute rates and totals.",
+    headers: ["Plant", "Output", "Defects"],
+    rowLabels: ["Plant A", "Plant B", "Plant C"],
+    buildRows: (rng, difficulty) =>
+      ["Plant A", "Plant B", "Plant C"].map(label => {
+        const output =
+          difficulty <= 1 ? randInt(rng, 180, 320) : difficulty === 2 ? randInt(rng, 240, 420) : randInt(rng, 300, 520);
+        const defectRate =
+          difficulty <= 1 ? randInt(rng, 2, 6) : difficulty === 2 ? randInt(rng, 3, 8) : randInt(rng, 4, 10);
+        const defects = Math.max(1, Math.round((output * defectRate) / 100));
+        return { label, values: [output, defects] };
+      }),
+    buildQuestions: rows => {
+      const focus = rows[1];
+      const defectRate = (focus.values[1] / focus.values[0]) * 100;
+      const totalOutput = rows.reduce((sum, r) => sum + r.values[0], 0);
+      return [
+        {
+          id: "q1",
+          prompt: `What is the defect rate for ${focus.label}?`,
+          answer: defectRate,
+          tolerance: 0.05,
+          unit: "%",
+          solution: `${focus.values[1]}/${focus.values[0]} ×100 = ${defectRate.toFixed(2)}%.`,
+        },
+        {
+          id: "q2",
+          prompt: "What is the total output across all plants?",
+          answer: totalOutput,
+          tolerance: 0.05,
+          unit: "units",
+          solution: `Sum output = ${rows.map(r => r.values[0]).join(" + ")} = ${totalOutput}.`,
+        },
+      ];
     },
-    questions: [
-      {
-        id: "q1",
-        prompt: "Total net units (shipped - returned) in January across all categories?",
-        answer: 800 - 80 + (600 - 30) + (700 - 140), // 1850
-        tolerance: 0.01,
-        unit: "units",
-        solution: "Jan net = 720 + 570 + 560 = 1850.",
-      },
-      {
-        id: "q2",
-        prompt: "In February, what percent of total net units are Electronics? (Round to 2 decimals)",
-        answer: ((900 - 99) / (900 - 99 + (750 - 45) + (650 - 130))) * 100,
-        tolerance: 0.05,
-        unit: "%",
-        solution: "Feb net: E=801, H=705, F=520. Total=2026. %E = 801/2026×100 ≈ 39.54%.",
-      },
-    ],
   },
 ];
 
 export function createPuzzle(opts: { seed: number; difficulty: number }): DICaseletPuzzle {
+  const rng = makeRng(opts.seed);
   const difficulty = Math.max(1, Math.min(3, opts.difficulty));
-  const eligible = BANK.filter(b => b.minDifficulty <= difficulty);
-  const picked = eligible[Math.abs(opts.seed) % eligible.length];
+  const scenario = pick(rng, SCENARIOS);
+
+  const rows = scenario.buildRows(rng, difficulty);
+
+  const questions = scenario.buildQuestions(rows);
 
   return {
-    id: picked.id,
-    title: picked.title,
-    caselet: picked.caselet,
+    id: makeId(rng, "di"),
+    title: scenario.title,
+    caselet: scenario.caselet,
     table: {
-      headers: picked.table.headers.slice(),
-      rows: picked.table.rows.map(r => ({
-        label: r.label,
-        values: r.values.slice(),
-      })),
+      headers: scenario.headers.slice(),
+      rows: rows.map(r => ({ label: r.label, values: r.values.slice() })),
     },
-    questions: picked.questions.map(q => ({ ...q })),
+    questions,
     difficulty,
   };
 }

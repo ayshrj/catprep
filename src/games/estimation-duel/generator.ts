@@ -1,90 +1,113 @@
+import { makeId, pick, randInt, shuffle } from "../core/generator-utils";
+import { makeRng } from "../core/rng";
 import { EstimationDuelPuzzle, Round } from "./types";
 
-const easy: Round[] = [
-  {
-    id: "e1",
-    prompt: "Approximate 49 × 51",
-    options: ["2400", "2500", "2600", "2700"],
-    correctIndex: 1,
-    hint: "Use (50−1)(50+1)=50²−1.",
-    explanation: "49×51 = (50−1)(50+1)=2500−1=2499, closest to 2500.",
-  },
-  {
-    id: "e2",
-    prompt: "Approximate 199/4",
-    options: ["45", "50", "55", "60"],
-    correctIndex: 1,
-    hint: "200/4 = 50; small adjustment.",
-    explanation: "199/4 = 49.75, closest to 50.",
-  },
-  {
-    id: "e3",
-    prompt: "Approximate √(980)",
-    options: ["30", "31", "32", "33"],
-    correctIndex: 1,
-    hint: "31²=961, 32²=1024.",
-    explanation: "980 is closer to 961 than 1024 → around 31.",
-  },
-];
+function formatNumber(n: number): string {
+  if (Number.isInteger(n)) return String(n);
+  return n.toFixed(2).replace(/\.?0+$/, "");
+}
 
-const medium: Round[] = [
-  {
-    id: "m1",
-    prompt: "Approximate 98 × 103",
-    options: ["9800", "10000", "10100", "10300"],
-    correctIndex: 2,
-    hint: "Use (100−2)(100+3)=10000+100−6.",
-    explanation: "98×103 = 10000 + 300 − 200 − 6 = 10094 → closest to 10100.",
-  },
-  {
-    id: "m2",
-    prompt: "Approximate 1.98 × 5.1",
-    options: ["9", "10", "11", "12"],
-    correctIndex: 1,
-    hint: "2×5.1 ≈ 10.2, adjust slightly down.",
-    explanation: "1.98×5.1 ≈ 10.098 → closest to 10.",
-  },
-  {
-    id: "m3",
-    prompt: "Approximate 51% of 198",
-    options: ["95", "100", "105", "110"],
-    correctIndex: 1,
-    hint: "50% of 200 = 100; adjust.",
-    explanation: "51% of 198 ≈ 0.51×198 ≈ 100.98 → closest to 100.",
-  },
-];
+function buildOptions(rng: () => number, exact: number, step: number, count: number) {
+  const rounded = Math.round(exact / step) * step;
+  const options = new Set<number>([rounded]);
+  const deltas = [-3, -2, -1, 1, 2, 3];
 
-const hard: Round[] = [
-  {
-    id: "h1",
-    prompt: "Approximate 999 × 1001",
-    options: ["999000", "1000000", "1002000", "1003000"],
-    correctIndex: 1,
-    hint: "Use (1000−1)(1000+1)=1000²−1.",
-    explanation: "999×1001 = 1000000 − 1 = 999999 → closest to 1000000.",
-  },
-  {
-    id: "h2",
-    prompt: "Approximate (19.8/0.51)",
-    options: ["35", "38", "40", "42"],
-    correctIndex: 1,
-    hint: "Divide by ~0.5 doubles; adjust a bit.",
-    explanation: "19.8/0.51 ≈ 19.8×(1/0.51) ≈ 19.8×1.96 ≈ 38.8 → closest to 38.",
-  },
-  {
-    id: "h3",
-    prompt: "Approximate √(2,050)",
-    options: ["44", "45", "46", "47"],
-    correctIndex: 1,
-    hint: "45²=2025, 46²=2116.",
-    explanation: "2050 is closer to 2025 → ~45.",
-  },
-];
+  while (options.size < count) {
+    const delta = pick(rng, deltas) * step;
+    const candidate = rounded + delta;
+    if (candidate <= 0) continue;
+    options.add(candidate);
+  }
+
+  const list = shuffle(rng, Array.from(options));
+  return {
+    options: list.map(formatNumber),
+    correctIndex: list.findIndex(v => Math.abs(v - rounded) < 1e-9),
+    rounded,
+  };
+}
+
+function roundNearSquareMul(rng: () => number, difficulty: number): Round {
+  const base = difficulty <= 1 ? randInt(rng, 25, 60) : randInt(rng, 60, 140);
+  const offset = randInt(rng, 1, 3);
+  const a = base - offset;
+  const b = base + offset;
+  const exact = a * b;
+  const step = exact > 10000 ? 200 : 100;
+  const { options, correctIndex, rounded } = buildOptions(rng, exact, step, 4);
+  return {
+    id: makeId(rng, "est"),
+    prompt: `Approximate ${a} × ${b}`,
+    options,
+    correctIndex,
+    hint: `Use (${base}−${offset})(${base}+${offset}) = ${base}² − ${offset}².`,
+    explanation: `${a}×${b} ≈ ${base * base} − ${offset * offset} = ${exact}. Closest option is ${rounded}.`,
+  };
+}
+
+function roundPercent(rng: () => number, difficulty: number): Round {
+  const p = difficulty <= 1 ? pick(rng, [12, 15, 18, 20, 25, 30]) : randInt(rng, 5, 55);
+  const n = difficulty <= 1 ? randInt(rng, 80, 240) : randInt(rng, 150, 450);
+  const exact = (p / 100) * n;
+  const step = difficulty <= 1 ? 5 : 2;
+  const { options, correctIndex, rounded } = buildOptions(rng, exact, step, 4);
+  return {
+    id: makeId(rng, "est"),
+    prompt: `Approximate ${p}% of ${n}`,
+    options,
+    correctIndex,
+    hint: `Use ${p}% = ${p}/100, then round.`,
+    explanation: `${p}% of ${n} ≈ ${formatNumber(exact)} → closest option ${rounded}.`,
+  };
+}
+
+function roundSqrt(rng: () => number, difficulty: number): Round {
+  const base = difficulty <= 1 ? randInt(rng, 25, 50) : randInt(rng, 35, 70);
+  const delta = difficulty <= 1 ? randInt(rng, -30, 30) : randInt(rng, -80, 80);
+  const value = base * base + delta;
+  const exact = Math.sqrt(value);
+  const step = 1;
+  const { options, correctIndex, rounded } = buildOptions(rng, exact, step, 4);
+  return {
+    id: makeId(rng, "est"),
+    prompt: `Approximate √(${value})`,
+    options,
+    correctIndex,
+    hint: `${base}² = ${base * base}; compare to nearby squares.`,
+    explanation: `√${value} ≈ ${formatNumber(exact)} → closest option ${rounded}.`,
+  };
+}
+
+function roundDivision(rng: () => number, difficulty: number): Round {
+  const denom = difficulty <= 1 ? pick(rng, [4, 5, 8, 12]) : pick(rng, [0.48, 0.52, 0.65, 0.75, 1.2]);
+  const numer = difficulty <= 1 ? randInt(rng, 160, 320) : Number((randInt(rng, 120, 320) / 10).toFixed(1));
+  const exact = numer / denom;
+  const step = exact > 100 ? 5 : 2;
+  const { options, correctIndex, rounded } = buildOptions(rng, exact, step, 4);
+  return {
+    id: makeId(rng, "est"),
+    prompt: `Approximate ${formatNumber(numer)} ÷ ${formatNumber(denom)}`,
+    options,
+    correctIndex,
+    hint: "Round denominator to a friendly number, then adjust.",
+    explanation: `${formatNumber(numer)} ÷ ${formatNumber(denom)} ≈ ${formatNumber(exact)} → closest option ${rounded}.`,
+  };
+}
 
 export function createPuzzle(opts: { seed: number; difficulty: number }): EstimationDuelPuzzle {
-  const list = opts.difficulty <= 1 ? easy : opts.difficulty === 2 ? medium : hard;
-  // Deterministic shuffle by seed not needed for small set; we’ll rotate by seed.
-  const start = Math.abs(opts.seed) % list.length;
-  const rounds = [...list.slice(start), ...list.slice(0, start)];
+  const rng = makeRng(opts.seed);
+  const difficulty = Math.max(1, Math.min(3, opts.difficulty));
+
+  const pool =
+    difficulty <= 1
+      ? [roundNearSquareMul, roundPercent, roundSqrt]
+      : difficulty === 2
+        ? [roundNearSquareMul, roundPercent, roundDivision]
+        : [roundNearSquareMul, roundDivision, roundSqrt];
+
+  const rounds = shuffle(
+    rng,
+    pool.map(fn => fn(rng, difficulty))
+  ).slice(0, 3);
   return { rounds };
 }

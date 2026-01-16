@@ -1,23 +1,63 @@
-type PuzzleDef = { numbers: number[]; solution: string };
+import { randInt } from "../core/generator-utils";
+import { makeRng } from "../core/rng";
 
-const easyPuzzles: PuzzleDef[] = [
-  { numbers: [6, 6, 6, 6], solution: "6 + 6 + 6 + 6 = 24" },
-  { numbers: [4, 4, 5, 1], solution: "5 * 4 + 4 * 1 = 24" },
-  { numbers: [2, 3, 4, 6], solution: "3 * 4 + 6 * 2 = 24" },
-];
-const mediumPuzzles: PuzzleDef[] = [
-  { numbers: [2, 2, 6, 8], solution: "(8 - 2) * (6 - 2) = 24" },
-  { numbers: [4, 7, 8, 8], solution: "(7 - 8/8) * 4 = 24" },
-];
-const hardPuzzles: PuzzleDef[] = [
-  { numbers: [1, 5, 5, 5], solution: "5 * (5 - 1/5) = 24" },
-  { numbers: [3, 3, 8, 8], solution: "8 / (3 - 8/3) = 24" },
-];
+type Expr = { value: number; expr: string };
+
+const TARGET = 24;
+const EPS = 1e-6;
+
+function solve24(items: Expr[]): string | null {
+  if (items.length === 1) {
+    return Math.abs(items[0].value - TARGET) < EPS ? items[0].expr : null;
+  }
+
+  for (let i = 0; i < items.length; i++) {
+    for (let j = i + 1; j < items.length; j++) {
+      const a = items[i];
+      const b = items[j];
+      const rest = items.filter((_, idx) => idx !== i && idx !== j);
+
+      const candidates: Expr[] = [
+        { value: a.value + b.value, expr: `(${a.expr} + ${b.expr})` },
+        { value: a.value * b.value, expr: `(${a.expr} * ${b.expr})` },
+        { value: a.value - b.value, expr: `(${a.expr} - ${b.expr})` },
+        { value: b.value - a.value, expr: `(${b.expr} - ${a.expr})` },
+      ];
+
+      if (Math.abs(b.value) > EPS) {
+        candidates.push({ value: a.value / b.value, expr: `(${a.expr} / ${b.expr})` });
+      }
+      if (Math.abs(a.value) > EPS) {
+        candidates.push({ value: b.value / a.value, expr: `(${b.expr} / ${a.expr})` });
+      }
+
+      for (const cand of candidates) {
+        const res = solve24([...rest, cand]);
+        if (res) return res;
+      }
+    }
+  }
+
+  return null;
+}
+
+function generateNumbers(rng: () => number, difficulty: number): number[] {
+  const max = difficulty <= 1 ? 9 : difficulty === 2 ? 11 : 13;
+  const min = 1;
+  return Array.from({ length: 4 }, () => randInt(rng, min, max));
+}
 
 export function createPuzzle(opts: { seed: number; difficulty: number }) {
-  const { seed, difficulty } = opts;
-  const list = difficulty <= 1 ? easyPuzzles : difficulty === 2 ? mediumPuzzles : hardPuzzles;
-  const puzzleDef = list[Math.abs(seed) % list.length];
-  // Return a copy of the numbers array to avoid mutation
-  return { numbers: [...puzzleDef.numbers], solution: puzzleDef.solution };
+  const rng = makeRng(opts.seed);
+  const difficulty = Math.max(1, Math.min(3, opts.difficulty));
+
+  for (let attempt = 0; attempt < 300; attempt++) {
+    const numbers = generateNumbers(rng, difficulty);
+    const solution = solve24(numbers.map(n => ({ value: n, expr: String(n) })));
+    if (solution) {
+      return { numbers: numbers.slice(), solution: `${solution} = 24` };
+    }
+  }
+
+  return { numbers: [3, 3, 8, 8], solution: "8 / (3 - 8 / 3) = 24" };
 }

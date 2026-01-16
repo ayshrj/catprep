@@ -1,6 +1,5 @@
-function clamp(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, n));
-}
+import { clamp, pick, randInt } from "../core/generator-utils";
+import { makeRng } from "../core/rng";
 
 function computeCorrectPercentA(a: number, b: number, t: number) {
   // Alligation: A:B = (b - t) : (t - a)
@@ -13,45 +12,61 @@ function computeCorrectPercentA(a: number, b: number, t: number) {
 }
 
 export function createPuzzle(opts: { seed: number; difficulty: number }) {
-  const { seed, difficulty } = opts;
+  const rng = makeRng(opts.seed);
+  const difficulty = Math.max(1, Math.min(3, opts.difficulty));
 
-  const EASY = [
-    { id: "rm-e1", a: 20, b: 50, t: 35, tol: 2 },
-    { id: "rm-e2", a: 10, b: 40, t: 25, tol: 2 },
-    { id: "rm-e3", a: 15, b: 45, t: 30, tol: 2 },
-    { id: "rm-e4", a: 30, b: 60, t: 45, tol: 2 },
-    { id: "rm-e5", a: 5, b: 35, t: 20, tol: 2 },
-  ];
+  const step = difficulty <= 1 ? 5 : difficulty === 2 ? 2 : 1;
+  const aMin = difficulty <= 1 ? 5 : 4;
+  const aMax = difficulty <= 1 ? 30 : difficulty === 2 ? 35 : 40;
+  const bMin = difficulty <= 1 ? 40 : difficulty === 2 ? 45 : 50;
+  const bMax = difficulty <= 1 ? 70 : difficulty === 2 ? 80 : 90;
+  const tol = difficulty <= 1 ? 2 : difficulty === 2 ? 1.5 : 1.0;
 
-  const MED = [
-    { id: "rm-m1", a: 18, b: 62, t: 38, tol: 1.5 },
-    { id: "rm-m2", a: 12, b: 48, t: 28, tol: 1.5 },
-    { id: "rm-m3", a: 25, b: 70, t: 40, tol: 1.5 },
-    { id: "rm-m4", a: 8, b: 55, t: 30, tol: 1.5 },
-    { id: "rm-m5", a: 35, b: 80, t: 50, tol: 1.5 },
-  ];
+  const context = pick(rng, [
+    "salt solution",
+    "sugar syrup",
+    "antiseptic mix",
+    "coffee concentrate",
+    "paint blend",
+    "alloy mixture",
+  ]);
 
-  const HARD = [
-    { id: "rm-h1", a: 22, b: 77, t: 41, tol: 1.0 },
-    { id: "rm-h2", a: 9, b: 63, t: 27, tol: 1.0 },
-    { id: "rm-h3", a: 28, b: 73, t: 49, tol: 1.0 },
-    { id: "rm-h4", a: 14, b: 68, t: 37, tol: 1.0 },
-    { id: "rm-h5", a: 32, b: 91, t: 57, tol: 1.0 },
-  ];
+  let a = 0;
+  let b = 0;
+  let t = 0;
 
-  const pool = difficulty <= 1 ? EASY : difficulty === 2 ? MED : HARD;
-  const pick = pool[Math.abs(seed) % pool.length];
+  const aStepMin = Math.ceil(aMin / step);
+  const aStepMax = Math.floor(aMax / step);
+  const bStepMin = Math.ceil(bMin / step);
+  const bStepMax = Math.floor(bMax / step);
 
-  const correctPercentA = computeCorrectPercentA(pick.a, pick.b, pick.t);
+  for (let attempt = 0; attempt < 200; attempt++) {
+    a = randInt(rng, aStepMin, aStepMax) * step;
+    b = randInt(rng, bStepMin, bStepMax) * step;
+    if (a >= b) continue;
+    const tMin = a + step;
+    const tMax = b - step;
+    if (tMax <= tMin) continue;
+    t = randInt(rng, Math.ceil(tMin / step), Math.floor(tMax / step)) * step;
+    break;
+  }
+
+  if (t === 0) {
+    a = aMin;
+    b = bMax;
+    t = Math.round((a + b) / (2 * step)) * step;
+  }
+
+  const correctPercentA = computeCorrectPercentA(a, b, t);
 
   return {
-    id: pick.id,
-    scenario: "You’re mixing two solutions to reach a target concentration. Set the % of Solution A in the final mix.",
-    aPercent: pick.a,
-    bPercent: pick.b,
-    targetPercent: pick.t,
+    id: `rm-${Math.abs(opts.seed)}`,
+    scenario: `You’re mixing two ${context}s to reach a target concentration. Set the % of Solution A in the final mix.`,
+    aPercent: a,
+    bPercent: b,
+    targetPercent: t,
     correctPercentA,
-    tolerancePct: pick.tol,
+    tolerancePct: tol,
     explanation: "Use alligation: A:B = (B−T):(T−A). Convert ratio into % of A in total.",
   };
 }

@@ -1,54 +1,126 @@
+import { pick, sampleUnique, shuffle } from "../core/generator-utils";
+import { makeRng } from "../core/rng";
 import { ScheduleConstraint, SchedulingPuzzle } from "./types";
 
-type Def = { difficulty: number; puzzle: SchedulingPuzzle };
-
-const PUZZLES: Def[] = [
-  {
-    difficulty: 1,
-    puzzle: {
-      slots: ["Slot 1", "Slot 2", "Slot 3", "Slot 4"],
-      items: ["A", "B", "C", "D"],
-      solution: ["C", "A", "D", "B"],
-      constraints: [
-        { type: "before", a: "C", b: "D" },
-        { type: "notInSlot", item: "B", slot: 1 },
-        { type: "adjacent", a: "A", b: "D" },
-      ],
-    },
-  },
-  {
-    difficulty: 2,
-    puzzle: {
-      slots: ["Mon", "Tue", "Wed", "Thu", "Fri"],
-      items: ["Audit", "Briefing", "Call", "Deck", "Email"],
-      solution: ["Call", "Email", "Audit", "Deck", "Briefing"],
-      constraints: [
-        { type: "notInSlot", item: "Audit", slot: 1 }, // not Tue
-        { type: "before", a: "Call", b: "Audit" },
-        { type: "notAdjacent", a: "Deck", b: "Call" },
-        { type: "after", a: "Briefing", b: "Deck" },
-        { type: "notInSlot", item: "Email", slot: 4 }, // not Fri
-      ],
-    },
-  },
-  {
-    difficulty: 3,
-    puzzle: {
-      slots: ["T1", "T2", "T3", "T4", "T5", "T6"],
-      items: ["P", "Q", "R", "S", "T", "U"],
-      solution: ["S", "Q", "U", "P", "T", "R"],
-      constraints: [
-        { type: "before", a: "S", b: "U" },
-        { type: "after", a: "R", b: "T" },
-        { type: "notAdjacent", a: "P", b: "Q" },
-        { type: "notInSlot", item: "S", slot: 5 }, // not T6
-        { type: "notInSlot", item: "U", slot: 0 }, // not T1
-        { type: "adjacent", a: "T", b: "P" },
-        { type: "before", a: "Q", b: "P" },
-      ],
-    },
-  },
+const SLOT_THEMES = [
+  ["Slot 1", "Slot 2", "Slot 3", "Slot 4", "Slot 5", "Slot 6"],
+  ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  ["T1", "T2", "T3", "T4", "T5", "T6"],
+  ["Session 1", "Session 2", "Session 3", "Session 4", "Session 5", "Session 6"],
 ];
+
+const ITEM_BANK = [
+  "Audit",
+  "Briefing",
+  "Call",
+  "Deck",
+  "Email",
+  "Follow-up",
+  "Huddle",
+  "Interview",
+  "Kickoff",
+  "Launch",
+  "Meetup",
+  "Review",
+  "Sync",
+  "Training",
+  "Workshop",
+];
+
+function buildConstraints(
+  rng: () => number,
+  items: string[],
+  slots: string[],
+  solution: string[],
+  difficulty: number
+): ScheduleConstraint[] {
+  const indexByItem = new Map<string, number>();
+  solution.forEach((item, idx) => indexByItem.set(item, idx));
+
+  const targetCount = difficulty <= 1 ? 3 : difficulty === 2 ? 5 : 7;
+  const constraints: ScheduleConstraint[] = [];
+  const seen = new Set<string>();
+
+  const addConstraint = (c: ScheduleConstraint) => {
+    const key = JSON.stringify(c);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    constraints.push(c);
+    return true;
+  };
+
+  const tryAdd = () => {
+    const type = pick(rng, ["notInSlot", "inSlot", "before", "after", "adjacent", "notAdjacent"]);
+    switch (type) {
+      case "notInSlot": {
+        const item = pick(rng, items);
+        const actual = indexByItem.get(item)!;
+        const slot = pick(
+          rng,
+          slots.map((_, idx) => idx).filter(idx => idx !== actual)
+        );
+        return addConstraint({ type: "notInSlot", item, slot });
+      }
+      case "inSlot": {
+        const item = pick(rng, items);
+        const slot = indexByItem.get(item)!;
+        return addConstraint({ type: "inSlot", item, slot });
+      }
+      case "before": {
+        const candidates = items.filter(it => indexByItem.get(it)! < items.length - 1);
+        if (candidates.length === 0) return false;
+        const a = pick(rng, candidates);
+        const aIdx = indexByItem.get(a)!;
+        const after = items.filter(it => indexByItem.get(it)! > aIdx);
+        if (after.length === 0) return false;
+        const b = pick(rng, after);
+        return addConstraint({ type: "before", a, b });
+      }
+      case "after": {
+        const candidates = items.filter(it => indexByItem.get(it)! > 0);
+        if (candidates.length === 0) return false;
+        const a = pick(rng, candidates);
+        const aIdx = indexByItem.get(a)!;
+        const before = items.filter(it => indexByItem.get(it)! < aIdx);
+        if (before.length === 0) return false;
+        const b = pick(rng, before);
+        return addConstraint({ type: "after", a, b });
+      }
+      case "adjacent": {
+        const pairs: Array<[string, string]> = [];
+        for (let i = 0; i < solution.length - 1; i++) {
+          pairs.push([solution[i], solution[i + 1]]);
+        }
+        const [a, b] = pick(rng, pairs);
+        return addConstraint({ type: "adjacent", a, b });
+      }
+      case "notAdjacent": {
+        const pairs: Array<[string, string]> = [];
+        for (let i = 0; i < items.length; i++) {
+          for (let j = i + 1; j < items.length; j++) {
+            const a = items[i];
+            const b = items[j];
+            const ia = indexByItem.get(a)!;
+            const ib = indexByItem.get(b)!;
+            if (Math.abs(ia - ib) > 1) pairs.push([a, b]);
+          }
+        }
+        if (pairs.length === 0) return false;
+        const [a, b] = pick(rng, pairs);
+        return addConstraint({ type: "notAdjacent", a, b });
+      }
+      default:
+        return false;
+    }
+  };
+
+  let attempts = 0;
+  while (constraints.length < targetCount && attempts < 200) {
+    if (!tryAdd()) attempts++;
+  }
+
+  return constraints;
+}
 
 function stringifyConstraint(c: ScheduleConstraint, slots: string[]) {
   switch (c.type) {
@@ -68,16 +140,21 @@ function stringifyConstraint(c: ScheduleConstraint, slots: string[]) {
 }
 
 export function createPuzzle(opts: { seed: number; difficulty: number }): SchedulingPuzzle {
-  const pool = PUZZLES.filter(p => p.difficulty === opts.difficulty);
-  const pick = pool[Math.abs(opts.seed) % pool.length].puzzle;
+  const rng = makeRng(opts.seed);
+  const difficulty = Math.max(1, Math.min(3, opts.difficulty));
 
-  // Normalize: ensure constraints are present
+  const size = difficulty <= 1 ? 4 : difficulty === 2 ? 5 : 6;
+  const slots = pick(rng, SLOT_THEMES).slice(0, size);
+  const items = sampleUnique(rng, ITEM_BANK, size);
+  const solution = shuffle(rng, items);
+
+  const constraints = buildConstraints(rng, items, slots, solution, difficulty);
+
   return {
-    ...pick,
-    constraints: pick.constraints.slice(),
-    slots: pick.slots.slice(),
-    items: pick.items.slice(),
-    solution: pick.solution.slice(),
+    slots,
+    items,
+    solution,
+    constraints,
   };
 }
 
