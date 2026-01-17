@@ -12,6 +12,7 @@ import { ContentBlocks } from "@/components/papers/content-blocks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { useAuthAndTheme } from "@/hooks/use-auth-and-theme";
 import { fetchQuestion, fetchQuestions } from "@/lib/cat-papers-service";
@@ -19,6 +20,13 @@ import type { CatPaperQuestionSummary, CatPaperSolutionDoc } from "@/types/cat-p
 import { normalizeMathDelimiters } from "@/utils/markdown-math";
 
 const CHOICE_LABELS = ["A", "B", "C", "D", "E"];
+
+function parseNumericValue(value: string) {
+  const normalized = value.replace(/,/g, "").trim();
+  if (!normalized) return null;
+  const numberValue = Number(normalized);
+  return Number.isFinite(numberValue) ? numberValue : null;
+}
 
 export default function QuestionDetailPage() {
   const { handleLogout, handleThemeToggle } = useAuthAndTheme();
@@ -37,6 +45,10 @@ export default function QuestionDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loadingNeighbors, setLoadingNeighbors] = useState(false);
+  const [titaAnswer, setTitaAnswer] = useState("");
+  const [titaStatus, setTitaStatus] = useState<"idle" | "correct" | "incorrect" | "unavailable">("idle");
+  const [selectedChoiceIndex, setSelectedChoiceIndex] = useState<number | null>(null);
+  const [mcqStatus, setMcqStatus] = useState<"idle" | "correct" | "incorrect" | "unavailable">("idle");
 
   const loadQuestion = useCallback(async () => {
     if (!paperId || !sectionId || !questionId) return;
@@ -76,6 +88,13 @@ export default function QuestionDetailPage() {
     loadPracticeList();
   }, [loadPracticeList]);
 
+  useEffect(() => {
+    setTitaAnswer("");
+    setTitaStatus("idle");
+    setSelectedChoiceIndex(null);
+    setMcqStatus("idle");
+  }, [questionId]);
+
   const currentIndex = useMemo(() => {
     if (!questionList.length || !question) return -1;
     return questionList.findIndex(item => item.id === question.id);
@@ -110,6 +129,79 @@ export default function QuestionDetailPage() {
     () => (solution?.explanationText ? normalizeMathDelimiters(solution.explanationText) : ""),
     [solution]
   );
+
+  const needsManualAnswer = useMemo(() => {
+    if (!question) return false;
+    return !question.correctAnswerChoice;
+  }, [question]);
+  const titaCorrectValue = useMemo(() => question?.correctAnswerText?.trim() ?? "", [question]);
+
+  const handleTitaCheck = useCallback(() => {
+    if (!needsManualAnswer) return;
+    const userValue = titaAnswer.trim();
+    if (!userValue) return;
+    if (!titaCorrectValue) {
+      setTitaStatus("unavailable");
+      return;
+    }
+
+    const numericUser = parseNumericValue(userValue);
+    const numericCorrect = parseNumericValue(titaCorrectValue);
+    const matches =
+      numericUser !== null && numericCorrect !== null ? numericUser == numericCorrect : userValue == titaCorrectValue;
+
+    setTitaStatus(matches ? "correct" : "incorrect");
+  }, [needsManualAnswer, titaAnswer, titaCorrectValue]);
+
+  const handleChoiceCheck = useCallback(() => {
+    if (!question || selectedChoiceIndex === null) return;
+    const selectedLabel = CHOICE_LABELS[selectedChoiceIndex] ?? "";
+    if (question.correctAnswerChoice) {
+      setMcqStatus(selectedLabel == question.correctAnswerChoice ? "correct" : "incorrect");
+      return;
+    }
+    const correctText = question.correctAnswerText?.trim() ?? "";
+    if (!correctText) {
+      setMcqStatus("unavailable");
+      return;
+    }
+    const selectedText = question.choices[selectedChoiceIndex] ?? "";
+    const numericSelected = parseNumericValue(selectedText);
+    const numericCorrect = parseNumericValue(correctText);
+    const matches =
+      numericSelected !== null && numericCorrect !== null
+        ? numericSelected == numericCorrect
+        : selectedText.trim() == correctText;
+    setMcqStatus(matches ? "correct" : "incorrect");
+  }, [question, selectedChoiceIndex]);
+
+  const manualAnswerNode = needsManualAnswer ? (
+    <div className="flex flex-wrap items-center gap-2">
+      <Input
+        value={titaAnswer}
+        onChange={event => {
+          setTitaAnswer(event.target.value);
+          setTitaStatus("idle");
+        }}
+        onKeyDown={event => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            handleTitaCheck();
+          }
+        }}
+        placeholder="Your answer"
+        className="w-44 sm:w-52"
+      />
+      <Button type="button" variant="secondary" size="sm" onClick={handleTitaCheck} disabled={!titaAnswer.trim()}>
+        Check
+      </Button>
+      {titaStatus === "correct" ? <span className="text-xs font-semibold text-emerald-600">Correct</span> : null}
+      {titaStatus === "incorrect" ? <span className="text-xs font-semibold text-rose-600">Incorrect</span> : null}
+      {titaStatus === "unavailable" ? (
+        <span className="text-xs text-muted-foreground">Answer not available.</span>
+      ) : null}
+    </div>
+  ) : null;
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/30">
@@ -198,23 +290,65 @@ export default function QuestionDetailPage() {
                     ) : null}
 
                     {question.choices.length ? (
-                      <div className="space-y-2">
-                        {normalizedChoices.map((choice, index) => (
-                          <div key={`${choice}-${index}`} className="rounded-lg border border-border/60 p-2 text-sm">
-                            <div className="flex gap-2">
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          {normalizedChoices.map((choice, index) => (
+                            <Button
+                              key={`choice-${index}`}
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedChoiceIndex(index);
+                                setMcqStatus("idle");
+                              }}
+                              className={`h-auto w-full justify-start text-left whitespace-normal py-2 ${
+                                selectedChoiceIndex === index
+                                  ? mcqStatus === "correct"
+                                    ? "border-emerald-400 bg-emerald-50 text-emerald-700"
+                                    : mcqStatus === "incorrect"
+                                      ? "border-rose-400 bg-rose-50 text-rose-700"
+                                      : "border-primary/50 bg-primary/5"
+                                  : ""
+                              }`}
+                            >
                               <span className="text-xs font-semibold text-muted-foreground">
                                 {CHOICE_LABELS[index] ?? ""}
                               </span>
-                              <div className="flex-1">
+                              <span className="flex-1">
                                 <MarkdownRenderer>{choice}</MarkdownRenderer>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                              </span>
+                            </Button>
+                          ))}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={handleChoiceCheck}
+                            disabled={selectedChoiceIndex === null}
+                          >
+                            Check
+                          </Button>
+                          {mcqStatus === "correct" ? (
+                            <span className="text-xs font-semibold text-emerald-600">Correct</span>
+                          ) : null}
+                          {mcqStatus === "incorrect" ? (
+                            <span className="text-xs font-semibold text-rose-600">Incorrect</span>
+                          ) : null}
+                          {mcqStatus === "unavailable" ? (
+                            <span className="text-xs text-muted-foreground">Answer not available.</span>
+                          ) : null}
+                        </div>
+                        {manualAnswerNode}
                       </div>
                     ) : (
-                      <div className="rounded-lg border border-dashed border-border/60 p-3 text-xs text-muted-foreground">
-                        TITA question - write your own answer.
+                      <div className="space-y-3">
+                        <div className="rounded-lg border border-dashed border-border/60 p-3 text-xs text-muted-foreground">
+                          TITA question - type your answer to check.
+                        </div>
+                        {manualAnswerNode}
                       </div>
                     )}
 
