@@ -10,6 +10,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
+    "import:cat-papers": "node scripts/import-cat-papers.mjs",
     "lint-staged": "lint-staged",
     "husky": "husky install",
     "prepare": "husky install"

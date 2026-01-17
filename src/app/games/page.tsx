@@ -218,6 +218,8 @@ export default function DashboardPage() {
                 window.location.href = "/rough-notes";
               } else if (next === "games") {
                 window.location.href = "/games";
+              } else if (next === "papers") {
+                window.location.href = "/papers";
               }
             }}
             onLogout={handleLogout}

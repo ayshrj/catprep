@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircle, NotebookPen, Sparkles, Trophy } from "lucide-react";
+import { BookOpen, MessageCircle, NotebookPen, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 
 import { APP_CONTENT_HEIGHT, AppContent } from "@/components/app-content";
@@ -35,6 +35,13 @@ export default function Page() {
       tone: "bg-sky-500/15 text-sky-600",
     },
     {
+      title: "Papers",
+      description: "Browse CAT & XAT past papers with solutions.",
+      href: "/papers",
+      icon: BookOpen,
+      tone: "bg-indigo-500/15 text-indigo-600",
+    },
+    {
       title: "Rough notes",
       description: "Dump quick thoughts, drafts, and scratch ideas.",
       href: "/rough-notes",
@@ -60,6 +67,8 @@ export default function Page() {
                 window.location.href = "/rough-notes";
               } else if (next === "games") {
                 window.location.href = "/games";
+              } else if (next === "papers") {
+                window.location.href = "/papers";
               }
             }}
             onLogout={handleLogout}

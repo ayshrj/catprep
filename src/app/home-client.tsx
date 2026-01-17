@@ -263,9 +263,9 @@ export function HomeClient() {
 
   const initialMode = searchParams.get("view") === "notes" ? ("notes" as const) : ("chat" as const);
   const [homeMode, setHomeMode] = useState<"chat" | "notes">(initialMode);
-  const [navigationValue, setNavigationValue] = useState<"chat" | "notes" | "saved" | "games">(initialMode);
+  const [navigationValue, setNavigationValue] = useState<"chat" | "notes" | "saved" | "games" | "papers">(initialMode);
   const handleNavigationChange = useCallback(
-    (target: "chat" | "notes" | "saved" | "games") => {
+    (target: "chat" | "notes" | "saved" | "games" | "papers") => {
       setNavigationValue(target);
       if (target === "chat") {
         const params = new URLSearchParams(searchParams.toString());
@@ -279,6 +279,8 @@ export function HomeClient() {
         router.push("/rough-notes");
       } else if (target === "games") {
         router.push("/games");
+      } else if (target === "papers") {
+        router.push("/papers");
       }
     },
     [router, searchParams]
