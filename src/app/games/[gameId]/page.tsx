@@ -17,8 +17,8 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { ModelIcon } from "@/components/ui/model-icon";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ModelIcon } from "@/constant/model";
 import { isLlmGame } from "@/games/core/game-generation";
 import { useAuthAndTheme } from "@/hooks/use-auth-and-theme";
 import { useOpenRouterModels } from "@/hooks/use-openrouter-models";

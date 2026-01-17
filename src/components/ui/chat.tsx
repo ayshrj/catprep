@@ -10,8 +10,8 @@ import { MessageInput } from "@/components/ui/message-input";
 import { MessageList } from "@/components/ui/message-list";
 import { PromptSuggestions } from "@/components/ui/prompt-suggestions";
 import { useAutoScroll } from "@/hooks/use-auto-scroll";
-import { stringifyMessageContent } from "@/lib/message-content";
 import { cn } from "@/lib/utils";
+import { stringifyMessageContent } from "@/utils/message-content";
 
 interface ChatPropsBase {
   handleSubmit: (event?: { preventDefault?: () => void }, options?: { experimental_attachments?: FileList }) => void;

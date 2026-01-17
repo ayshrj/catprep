@@ -1,4 +1,4 @@
-export type MessageContent = string | Record<string, unknown> | unknown[];
+import type { MessageContent } from "@/types/message-content";
 
 export function coerceStoredMessageContent(value: unknown): MessageContent | null {
   if (typeof value === "string") return value;

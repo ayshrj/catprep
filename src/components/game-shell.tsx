@@ -9,8 +9,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-
-import type { GameShellProps, HelpSheetContent } from "./game-shell.types";
+import type { GameShellProps, HelpSheetContent } from "@/types/game-shell";
 
 function useElementHeight<T extends HTMLElement>() {
   const ref = useRef<T | null>(null);

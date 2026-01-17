@@ -1,7 +1,7 @@
 import { ChatMessage, type ChatMessageProps, type Message } from "@/components/ui/chat-message";
 import { LlmChatMessage } from "@/components/ui/llm-chat-message";
 import { TypingIndicator } from "@/components/ui/typing-indicator";
-import { isLlmCatCoachResponse } from "@/types/llm-response";
+import { isLlmCatCoachResponse } from "@/utils/llm-response";
 
 type AdditionalMessageOptions = Omit<ChatMessageProps, keyof Message>;
 

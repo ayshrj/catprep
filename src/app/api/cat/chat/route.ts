@@ -3,8 +3,9 @@ import { type NextRequest, NextResponse } from "next/server";
 import { PROMPT_CAT } from "@/lib/cat";
 import { CAT_COACH_TOOLS, executeCatTool } from "@/lib/cat-tools";
 import { getAdminDb } from "@/lib/firebase-admin";
-import { parseAssistantJsonOrThrow } from "@/lib/llm-response-parser";
-import { MessageContent, stringifyMessageContent } from "@/lib/message-content";
+import type { MessageContent } from "@/types/message-content";
+import { parseAssistantJsonOrThrow } from "@/utils/llm-response-parser";
+import { stringifyMessageContent } from "@/utils/message-content";
 
 import { getAuthenticatedUserId } from "../../auth/utils";
 

@@ -3,10 +3,11 @@ import { motion } from "framer-motion";
 import React from "react";
 
 import { ChatMessage, type ChatMessageProps } from "@/components/ui/chat-message";
-import { SCENARIO_COLORS } from "@/constant/llm-chat";
+import { SCENARIO_COLORS } from "@/constants/llm-chat";
+import { LlmMainAnswerTypeLabels } from "@/constants/llm-response";
 import { CatCoachIntentLabels, CatCoachResponseModeLabels, CatScenarioCode } from "@/lib/cat-tools";
 import { cn } from "@/lib/utils";
-import { type LlmCatCoachResponse, LlmMainAnswerTypeLabels } from "@/types/llm-response";
+import { type LlmCatCoachResponse } from "@/types/llm-response";
 
 type LlmChatMessageProps = Omit<ChatMessageProps, "content"> & {
   content: LlmCatCoachResponse;

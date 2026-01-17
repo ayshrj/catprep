@@ -1,4 +1,4 @@
-import { CatScenarioCode } from "@/lib/cat-tools";
+import type { CatScenarioCode } from "@/lib/cat-tools";
 
 export interface ScenarioColors {
   bg: string; // Main background (pastel)

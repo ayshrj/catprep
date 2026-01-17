@@ -2,7 +2,8 @@ import { randomUUID } from "crypto";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { getAdminDb } from "@/lib/firebase-admin";
-import { MessageContent, previewMessageContent } from "@/lib/message-content";
+import type { MessageContent } from "@/types/message-content";
+import { previewMessageContent } from "@/utils/message-content";
 
 import { getAuthenticatedUserId } from "../../auth/utils";
 

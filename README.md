@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Cat99
 
-## Getting Started
+Cat99 is a Next.js app for CAT exam prep. It combines a chat coach, practice games, and structured notes in one workspace.
 
-First, run the development server:
+## Highlights
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- Chat coaching with tool-driven responses and structured JSON output
+- Practice games with hints, scoring, and session stats
+- Notes and rich editor for revision material
+- Firebase-backed auth and storage with in-memory fallback
+- Cloudinary uploads with optional OCR for images
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Tech stack
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Next.js App Router, React 19, TypeScript
+- Tailwind CSS, Radix UI, framer-motion
+- Lexical editor
+- Firebase Admin SDK, Cloudinary
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Local development
 
-## Learn More
+1. Install deps: `npm install`
+2. Create `.env.local` with the variables below
+3. Run: `npm run dev`
 
-To learn more about Next.js, take a look at the following resources:
+## Environment variables
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Required for full functionality:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `FIREBASE_SERVICE_ACCOUNT_BASE64` - Base64-encoded Firebase service account JSON
+- `NEXT_PUBLIC_FIREBASE_WEB_API_KEY` - Firebase Web API key for auth endpoints
+- `CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name
+- `CLOUDINARY_API_KEY` - Cloudinary API key
+- `CLOUDINARY_API_SECRET` - Cloudinary API secret
 
-## Deploy on Vercel
+Optional:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `CLOUDINARY_OCR_ENABLED` - Set to `true` to enable OCR on uploads
+- `NEXT_PUBLIC_ENABLE_GAME_CLOUD_SYNC` - Set to `0` to force local-only game storage
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Scripts
+
+- `npm run dev` - Start local dev server
+- `npm run build` - Build for production
+- `npm run start` - Run the production build
+- `npm run lint` - Lint
+- `npm run format` - Prettier check
+
+## Project structure
+
+- `src/app` - Routes, layouts, API handlers
+- `src/components` - App and UI components
+- `src/constants` - Static maps and labels
+- `src/games` - Game engines, generators, evaluators, UI
+- `src/hooks` - React hooks
+- `src/lib` - Service clients and domain integrations
+- `src/types` - Shared TypeScript types
+- `src/utils` - Pure helpers and parsers
+- `public` - Static assets
+
+## Notes
+
+- OpenRouter API keys are stored per user in Firestore (see Settings UI).
+- Game cloud sync is enabled by default and falls back to local storage.

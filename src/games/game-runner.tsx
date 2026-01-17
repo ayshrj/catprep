@@ -5,7 +5,6 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { GameShell } from "@/components/game-shell";
-import type { BottomBarActions, HelpSheetContent } from "@/components/game-shell.types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +15,7 @@ import { getGameHelpContent } from "@/games/core/help-content";
 import gameRegistry from "@/games/core/registry";
 import { formatTime } from "@/games/core/timer";
 import { useGameSession } from "@/games/core/use-game-session";
+import type { BottomBarActions, HelpSheetContent } from "@/types/game-shell";
 
 function renderHelpSection(lines: string[]) {
   return (

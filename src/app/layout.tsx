@@ -1,5 +1,4 @@
 import "./globals.css";
-import "./globals.css";
 
 import type { Metadata } from "next";
 import { JetBrains_Mono, Source_Sans_3, Space_Grotesk } from "next/font/google";
@@ -41,7 +40,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${spaceGrotesk.variable} ${sourceSans.variable} ${jetBrainsMono.variable}`}>
-        {" "}
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Toaster />
           {children}

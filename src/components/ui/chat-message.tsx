@@ -8,8 +8,9 @@ import React, { useMemo, useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { FilePreview } from "@/components/ui/file-preview";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
-import { MessageContent, stringifyMessageContent } from "@/lib/message-content";
 import { cn } from "@/lib/utils";
+import type { MessageContent } from "@/types/message-content";
+import { stringifyMessageContent } from "@/utils/message-content";
 
 const chatBubbleVariants = cva("group/message relative wrap-break-word rounded-lg text-sm sm:max-w-[70%]", {
   variants: {

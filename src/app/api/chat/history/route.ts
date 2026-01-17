@@ -1,13 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { getAdminDb } from "@/lib/firebase-admin";
+import type { MessageContent } from "@/types/message-content";
 import {
   coerceStoredMessageContent,
-  MessageContent,
   previewMessageContent,
   restoreFromFirestore,
   sanitizeForFirestore,
-} from "@/lib/message-content";
+} from "@/utils/message-content";
 
 import { getAuthenticatedUserId } from "../../auth/utils";
 

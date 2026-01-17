@@ -39,19 +39,18 @@ import { Dialog, DialogFooter, DialogShell } from "@/components/ui/dialog";
 import { DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ModelIcon } from "@/components/ui/model-icon";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { useAuthAndTheme } from "@/hooks/use-auth-and-theme";
 import { CAT_KB_PARTS } from "@/lib/cat";
-import { coerceStoredMessageContent, stringifyMessageContent } from "@/lib/message-content";
 import { uploadImageToCloudinary } from "@/lib/upload-image";
 import { cn } from "@/lib/utils";
-import { isLlmCatCoachResponse, type LlmCatCoachResponse } from "@/types/llm-response";
-
-import { ModelIcon } from "../constant/model";
+import { type LlmCatCoachResponse } from "@/types/llm-response";
+import { isLlmCatCoachResponse } from "@/utils/llm-response";
+import { coerceStoredMessageContent, stringifyMessageContent } from "@/utils/message-content";
 
 type Attachment = {
   name?: string;
