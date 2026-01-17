@@ -5,6 +5,7 @@ import {
   Archive,
   Check,
   Download,
+  HelpCircle,
   Laptop,
   Moon,
   PanelLeft,
@@ -40,7 +41,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Chat } from "@/components/ui/chat";
 import { type Message } from "@/components/ui/chat-message";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   CommandDialog,
   CommandEmpty,
@@ -343,9 +343,8 @@ export function HomeClient() {
     timeLeftUnit: "weeks",
     mistakes: "",
   });
-  const [onboardingKeyError, setOnboardingKeyError] = useState("");
-  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
-  const [infoPanelOpen, setInfoPanelOpen] = useState(true);
+  const [setupKeyError, setSetupKeyError] = useState("");
+  const [guideOpen, setGuideOpen] = useState(false);
   const [isSavingActionPlan, setIsSavingActionPlan] = useState(false);
   const [actionChecklist, setActionChecklist] = useState<Record<string, boolean>>({});
   const [isActionBoardOpen, setIsActionBoardOpen] = useState(false);
@@ -363,11 +362,8 @@ export function HomeClient() {
     if (!openRouterModel.trim()) return "model" as const;
     return null;
   }, [openRouterModel, openRouterStatus.hasKey]);
-  const showOnboarding =
+  const needsSetup =
     Boolean(sessionUser) && !isSessionLoading && hasLoadedSettings && (needsOpenRouterKey || needsOpenRouterModel);
-  const onboardingStorageKey = sessionUser?.uid ? `cat99:onboardingDismissed:${sessionUser.uid}` : null;
-  const infoPanelStorageKey = sessionUser?.uid ? `cat99:chatInfoPanel:${sessionUser.uid}` : null;
-  const showOnboardingDialog = showOnboarding && !onboardingDismissed;
   const canGenerateResponses = missingSetupReason === null;
   const showChatControls = homeMode === "chat";
   const showNotesNavigation = homeMode === "notes";
@@ -532,37 +528,6 @@ export function HomeClient() {
   useEffect(() => {
     setHasLoadedSettings(false);
   }, [sessionUser]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!onboardingStorageKey) {
-      setOnboardingDismissed(false);
-      return;
-    }
-
-    const stored = window.localStorage.getItem(onboardingStorageKey);
-    setOnboardingDismissed(stored === "1");
-  }, [onboardingStorageKey]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!onboardingStorageKey) return;
-    window.localStorage.setItem(onboardingStorageKey, onboardingDismissed ? "1" : "0");
-  }, [onboardingDismissed, onboardingStorageKey]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!infoPanelStorageKey) return;
-    const stored = window.localStorage.getItem(infoPanelStorageKey);
-    if (stored === "0") setInfoPanelOpen(false);
-    if (stored === "1") setInfoPanelOpen(true);
-  }, [infoPanelStorageKey]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!infoPanelStorageKey) return;
-    window.localStorage.setItem(infoPanelStorageKey, infoPanelOpen ? "1" : "0");
-  }, [infoPanelOpen, infoPanelStorageKey]);
 
   useEffect(() => {
     setMissingSetupNoticeShown(false);
@@ -1107,21 +1072,21 @@ export function HomeClient() {
     }
   }, [loadOpenRouterSettings, openRouterKeyInput]);
 
-  const handleOnboardingSaveKey = useCallback(async () => {
+  const handleSetupSaveKey = useCallback(async () => {
     const key = openRouterKeyInput.trim();
     if (!key) {
-      setOnboardingKeyError("OpenRouter key is required.");
+      setSetupKeyError("OpenRouter key is required.");
       return;
     }
-    setOnboardingKeyError("");
+    setSetupKeyError("");
     await saveOpenRouterKey();
   }, [openRouterKeyInput, saveOpenRouterKey]);
 
   useEffect(() => {
-    if (onboardingKeyError && openRouterKeyInput.trim()) {
-      setOnboardingKeyError("");
+    if (setupKeyError && openRouterKeyInput.trim()) {
+      setSetupKeyError("");
     }
-  }, [onboardingKeyError, openRouterKeyInput]);
+  }, [openRouterKeyInput, setupKeyError]);
 
   const removeOpenRouterKey = useCallback(async () => {
     setIsSettingsSaving(true);
@@ -1193,11 +1158,11 @@ export function HomeClient() {
   }, [canFetchModels, modelsLoading]);
 
   useEffect(() => {
-    if (!showOnboardingDialog) return;
+    if (!guideOpen) return;
     if (!openRouterStatus.hasKey) return;
     if (models.length > 0 || modelsLoading) return;
     fetchModels();
-  }, [fetchModels, models.length, modelsLoading, openRouterStatus.hasKey, showOnboardingDialog]);
+  }, [fetchModels, guideOpen, models.length, modelsLoading, openRouterStatus.hasKey]);
 
   const setArchived = useCallback(
     async (chatId: string, archived: boolean) => {
@@ -1382,14 +1347,6 @@ export function HomeClient() {
       </DialogFooter>
     ) : null;
 
-  const onboardingFooter = (
-    <DialogFooter>
-      <Button type="button" variant="ghost" onClick={() => setOnboardingDismissed(true)}>
-        Skip for now
-      </Button>
-    </DialogFooter>
-  );
-
   const navbarInlineExtras = showChatControls ? (
     <>
       <Button
@@ -1439,17 +1396,25 @@ export function HomeClient() {
     </>
   );
 
-  const keyStatusLabel = openRouterStatus.hasKey
-    ? openRouterStatus.last4
-      ? `saved (last 4: ${openRouterStatus.last4})`
-      : "saved"
-    : "not set";
-  const modelStatusLabel = openRouterModel.trim() ? openRouterModel : "not selected";
-  const setupSummary = canGenerateResponses
-    ? "You're ready to chat. Everything below is optional."
-    : missingSetupReason === "key"
-      ? "Replies are off until you add an OpenRouter key. You can still draft messages."
-      : "Replies are off until you pick a model. You can still draft messages.";
+  const keyStatusLabel = hasLoadedSettings
+    ? openRouterStatus.hasKey
+      ? openRouterStatus.last4
+        ? `saved (last 4: ${openRouterStatus.last4})`
+        : "saved"
+      : "not set"
+    : "loading...";
+  const modelStatusLabel = hasLoadedSettings
+    ? openRouterModel.trim()
+      ? openRouterModel
+      : "not selected"
+    : "loading...";
+  const setupSummary = !hasLoadedSettings
+    ? "Loading setup status..."
+    : canGenerateResponses
+      ? "You're ready to chat. Everything below is optional."
+      : missingSetupReason === "key"
+        ? "Replies are off until you add an OpenRouter key. You can still draft messages."
+        : "Replies are off until you pick a model. You can still draft messages.";
   const generateReplyHint = !activeChatId
     ? "Send a message first."
     : isGenerating
@@ -1461,81 +1426,7 @@ export function HomeClient() {
           : "Generate a reply for the latest message.";
   const generateReplyDisabled = !activeChatId || isGenerating || Boolean(missingSetupReason);
   const canExport = messages.length > 0;
-
-  const chatInfoPanel = (
-    <div className="border-b bg-muted/20 px-3 py-3 sm:px-4">
-      <Collapsible open={infoPanelOpen} onOpenChange={setInfoPanelOpen}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold text-foreground">Quick guide (optional)</p>
-            <p className="text-[11px] text-muted-foreground">{setupSummary}</p>
-          </div>
-          <CollapsibleTrigger asChild>
-            <Button type="button" variant="ghost" size="sm">
-              {infoPanelOpen ? "Hide" : "Show"}
-            </Button>
-          </CollapsibleTrigger>
-        </div>
-        <CollapsibleContent className="mt-3 space-y-2 text-[11px] text-muted-foreground">
-          <div className="grid gap-2 sm:grid-cols-2">
-            <div className="rounded-lg border bg-background/80 p-2">
-              <p className="text-[11px] font-semibold text-foreground">Setup status</p>
-              <div className="mt-1 space-y-1">
-                <p>OpenRouter key: {keyStatusLabel}</p>
-                <p>Model: {modelStatusLabel}</p>
-                <p>Replies: {canGenerateResponses ? "enabled" : "off"}</p>
-                <p>Pending reply: {hasPendingReply ? "waiting" : "none"}</p>
-                <p>Messages: {messages.length}</p>
-                {!canGenerateResponses ? (
-                  <p className="text-[10px] text-muted-foreground">
-                    Responses are optional. Add a key + model when you want replies.
-                  </p>
-                ) : null}
-              </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                <Button type="button" size="sm" variant="outline" onClick={() => setSettingsOpen(true)}>
-                  {openRouterStatus.hasKey ? "Manage key" : "Add key"}
-                </Button>
-                <Button type="button" size="sm" variant="outline" onClick={() => setModelPickerOpen(true)}>
-                  {openRouterModel ? "Change model" : "Pick model"}
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={fetchModels}
-                  disabled={modelsLoading || !openRouterStatus.hasKey}
-                >
-                  {modelsLoading ? "Fetching..." : "Fetch models"}
-                </Button>
-              </div>
-              {modelsError ? <p className="mt-2 text-[10px] text-destructive">{modelsError}</p> : null}
-              {models.length === 0 && !modelsLoading ? (
-                <p className="mt-2 text-[10px] text-muted-foreground">Model list is empty until you fetch it.</p>
-              ) : null}
-              {!openRouterStatus.hasKey ? (
-                <p className="mt-2 text-[10px] text-muted-foreground">Add a key to fetch models.</p>
-              ) : null}
-            </div>
-            <div className="rounded-lg border bg-background/80 p-2">
-              <p className="text-[11px] font-semibold text-foreground">Optional extras</p>
-              <ul className="mt-1 list-disc space-y-1 pl-4">
-                <li>Attach images or text files. Images can run OCR to extract text.</li>
-                <li>Paste long text to turn it into a text attachment automatically.</li>
-                <li>Use the mic button for voice dictation.</li>
-                <li>Enter sends. Shift+Enter makes a new line.</li>
-                <li>Use Generate reply after setup to answer the latest message.</li>
-                <li>Export chats anytime from the top bar.</li>
-              </ul>
-            </div>
-          </div>
-          <p className="text-[10px] text-muted-foreground">
-            Upload note: images are sent to Cloudinary for OCR; text files stay as attachments in your chat history.
-          </p>
-        </CollapsibleContent>
-      </Collapsible>
-    </div>
-  );
+  const guideTitle = needsSetup ? "Guide (setup recommended)" : "Guide";
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/30">
@@ -1706,6 +1597,17 @@ export function HomeClient() {
                       </Button>
                       <Button
                         type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setGuideOpen(true)}
+                        aria-label={guideTitle}
+                        title={guideTitle}
+                      >
+                        <HelpCircle className="h-4 w-4" />
+                        <span className="hidden sm:inline">Guide</span>
+                      </Button>
+                      <Button
+                        type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => {
@@ -1721,9 +1623,6 @@ export function HomeClient() {
                       </Button>
                     </div>
                   </div>
-
-                  {chatInfoPanel}
-
                   <div className="min-h-0 flex-1">
                     <div className="flex h-full min-h-0 flex-col">
                       {actionItems.length > 0 && isActionBoardOpen ? (
@@ -2178,20 +2077,51 @@ export function HomeClient() {
         </DialogShell>
       </Dialog>
 
-      <Dialog
-        open={showOnboardingDialog}
-        onOpenChange={open => {
-          if (!open) setOnboardingDismissed(true);
-        }}
-      >
+      <Dialog open={guideOpen} onOpenChange={setGuideOpen}>
         <DialogShell
-          className="sm:max-w-xl"
-          title="Welcome to Cat99"
-          description="Optional setup for replies. Skip any step and return later from Settings."
-          footer={onboardingFooter}
+          className="sm:max-w-2xl"
+          title="Chat guide"
+          description="Optional setup and tips. Nothing here blocks chatting."
         >
-          <div className="space-y-4">
+          <div className="space-y-4 px-6 pb-6">
+            <div className="rounded-xl border bg-muted/20 p-3">
+              <p className="text-xs font-semibold text-foreground">Status</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">{setupSummary}</p>
+              <div className="mt-2 grid gap-2 text-[11px] text-muted-foreground sm:grid-cols-2">
+                <div className="space-y-1">
+                  <p>OpenRouter key: {keyStatusLabel}</p>
+                  <p>Model: {modelStatusLabel}</p>
+                  <p>Replies: {canGenerateResponses ? "enabled" : "off"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p>Pending reply: {hasPendingReply ? "waiting" : "none"}</p>
+                  <p>Messages: {messages.length}</p>
+                </div>
+              </div>
+              {!canGenerateResponses ? (
+                <p className="mt-2 text-[10px] text-muted-foreground">
+                  Responses are optional. Add a key + model when you want replies.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="rounded-xl border bg-muted/20 p-3">
+              <p className="text-xs font-semibold text-foreground">Quick tips</p>
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-[11px] text-muted-foreground">
+                <li>Attach images or text files. Images can run OCR to extract text.</li>
+                <li>Paste long text to turn it into a text attachment automatically.</li>
+                <li>Use the mic button for voice dictation.</li>
+                <li>Enter sends. Shift+Enter makes a new line.</li>
+                <li>Use Generate reply after setup to answer the latest message.</li>
+                <li>Export chats anytime from the top bar.</li>
+              </ul>
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Upload note: images are sent to Cloudinary for OCR; text files stay as attachments in your chat history.
+              </p>
+            </div>
+
             <div className="space-y-2">
+              <p className="text-xs font-semibold text-foreground">Setup checklist (optional)</p>
               {[
                 { label: "Sign in", done: Boolean(sessionUser) },
                 {
@@ -2219,72 +2149,74 @@ export function HomeClient() {
               ))}
             </div>
 
-            <div className="rounded-xl border bg-muted/20 p-3">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="onboarding-key">OpenRouter API key</Label>
-                {openRouterStatus.hasKey ? (
-                  <span className="text-xs text-muted-foreground">
-                    saved
-                    {openRouterStatus.last4 ? ` ••••${openRouterStatus.last4}` : ""}
-                  </span>
-                ) : null}
-              </div>
-              <Input
-                id="onboarding-key"
-                type="password"
-                placeholder="sk-or-..."
-                value={openRouterKeyInput}
-                onChange={event => setOpenRouterKeyInput(event.target.value)}
-                className="mt-2"
-                disabled={openRouterStatus.hasKey || isSettingsSaving}
-              />
-              {onboardingKeyError ? <p className="mt-1 text-xs text-destructive">{onboardingKeyError}</p> : null}
-              <Button
-                size="sm"
-                className="mt-3"
-                onClick={handleOnboardingSaveKey}
-                disabled={openRouterStatus.hasKey || isSettingsSaving}
-              >
-                {openRouterStatus.hasKey ? "Saved" : "Save key"}
-              </Button>
-            </div>
-
-            <div className="rounded-xl border bg-muted/20 p-3">
-              <div className="flex items-center justify-between">
-                <Label>Model</Label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-xl border bg-muted/20 p-3">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="setup-key">OpenRouter API key</Label>
+                  {openRouterStatus.hasKey ? (
+                    <span className="text-xs text-muted-foreground">
+                      saved
+                      {openRouterStatus.last4 ? ` ••••${openRouterStatus.last4}` : ""}
+                    </span>
+                  ) : null}
+                </div>
+                <Input
+                  id="setup-key"
+                  type="password"
+                  placeholder="sk-or-..."
+                  value={openRouterKeyInput}
+                  onChange={event => setOpenRouterKeyInput(event.target.value)}
+                  className="mt-2"
+                  disabled={openRouterStatus.hasKey || isSettingsSaving}
+                />
+                {setupKeyError ? <p className="mt-1 text-xs text-destructive">{setupKeyError}</p> : null}
                 <Button
                   size="sm"
-                  variant="outline"
-                  onClick={fetchModels}
-                  disabled={!openRouterStatus.hasKey || modelsLoading}
+                  className="mt-3"
+                  onClick={handleSetupSaveKey}
+                  disabled={openRouterStatus.hasKey || isSettingsSaving}
                 >
-                  {modelsLoading ? "Fetching..." : "Fetch models"}
+                  {openRouterStatus.hasKey ? "Saved" : "Save key"}
                 </Button>
               </div>
-              <div className="mt-2 space-y-2">
-                <Select
-                  value={openRouterModel}
-                  onValueChange={value => void saveOpenRouterModel(value)}
-                  disabled={!openRouterStatus.hasKey || models.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={models.length === 0 ? "No models loaded" : "Select model"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {models.map(model => (
-                      <SelectItem key={model.id} value={model.id}>
-                        {model.name || model.id}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {models[0]?.id && !openRouterModel.trim() ? (
-                  <p className="text-xs text-muted-foreground">Recommended: {models[0].name || models[0].id}</p>
-                ) : null}
-                {modelsError ? <p className="text-xs text-destructive">{modelsError}</p> : null}
-                {needsOpenRouterModel && models.length > 0 ? (
-                  <p className="text-xs text-muted-foreground">Pick a model to start chatting.</p>
-                ) : null}
+
+              <div className="rounded-xl border bg-muted/20 p-3">
+                <div className="flex items-center justify-between">
+                  <Label>Model</Label>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={fetchModels}
+                    disabled={!openRouterStatus.hasKey || modelsLoading}
+                  >
+                    {modelsLoading ? "Fetching..." : "Fetch models"}
+                  </Button>
+                </div>
+                <div className="mt-2 space-y-2">
+                  <Select
+                    value={openRouterModel}
+                    onValueChange={value => void saveOpenRouterModel(value)}
+                    disabled={!openRouterStatus.hasKey || models.length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={models.length === 0 ? "No models loaded" : "Select model"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {models.map(model => (
+                        <SelectItem key={model.id} value={model.id}>
+                          {model.name || model.id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {models[0]?.id && !openRouterModel.trim() ? (
+                    <p className="text-xs text-muted-foreground">Recommended: {models[0].name || models[0].id}</p>
+                  ) : null}
+                  {modelsError ? <p className="text-xs text-destructive">{modelsError}</p> : null}
+                  {needsOpenRouterModel && models.length > 0 ? (
+                    <p className="text-xs text-muted-foreground">Pick a model to start chatting.</p>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>
