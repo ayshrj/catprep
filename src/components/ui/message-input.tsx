@@ -35,7 +35,7 @@ interface MessageInputWithAttachmentsProps extends MessageInputBaseProps {
 type MessageInputProps = MessageInputWithoutAttachmentProps | MessageInputWithAttachmentsProps;
 
 export function MessageInput({
-  placeholder = "Ask AI...",
+  placeholder = "Ask the coach anything. Attach files or use voice if you want.",
   className,
   onKeyDown: onKeyDownProp,
   submitOnEnter = true,

@@ -1,7 +1,20 @@
 "use client";
 
 import type { SerializedEditorState } from "lexical";
-import { Archive, Check, Laptop, Moon, PanelLeft, RefreshCcw, RotateCcw, Sun, Trash2, X } from "lucide-react";
+import {
+  Archive,
+  Check,
+  Download,
+  Laptop,
+  Moon,
+  PanelLeft,
+  RefreshCcw,
+  RotateCcw,
+  Sparkles,
+  Sun,
+  Trash2,
+  X,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -27,6 +40,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Chat } from "@/components/ui/chat";
 import { type Message } from "@/components/ui/chat-message";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   CommandDialog,
   CommandEmpty,
@@ -330,9 +344,12 @@ export function HomeClient() {
     mistakes: "",
   });
   const [onboardingKeyError, setOnboardingKeyError] = useState("");
+  const [onboardingDismissed, setOnboardingDismissed] = useState(false);
+  const [infoPanelOpen, setInfoPanelOpen] = useState(true);
   const [isSavingActionPlan, setIsSavingActionPlan] = useState(false);
   const [actionChecklist, setActionChecklist] = useState<Record<string, boolean>>({});
   const [isActionBoardOpen, setIsActionBoardOpen] = useState(false);
+  const [missingSetupNoticeShown, setMissingSetupNoticeShown] = useState(false);
 
   const suggestions = useMemo(
     () => ["Give me a 14-day rescue plan.", "Diagnose my last mock.", "Fix RC accuracy."],
@@ -341,29 +358,42 @@ export function HomeClient() {
 
   const needsOpenRouterKey = Boolean(sessionUser && !openRouterStatus.hasKey);
   const needsOpenRouterModel = Boolean(sessionUser && !openRouterModel.trim());
+  const missingSetupReason = useMemo(() => {
+    if (!openRouterStatus.hasKey) return "key" as const;
+    if (!openRouterModel.trim()) return "model" as const;
+    return null;
+  }, [openRouterModel, openRouterStatus.hasKey]);
   const showOnboarding =
     Boolean(sessionUser) && !isSessionLoading && hasLoadedSettings && (needsOpenRouterKey || needsOpenRouterModel);
+  const onboardingStorageKey = sessionUser?.uid ? `cat99:onboardingDismissed:${sessionUser.uid}` : null;
+  const infoPanelStorageKey = sessionUser?.uid ? `cat99:chatInfoPanel:${sessionUser.uid}` : null;
+  const showOnboardingDialog = showOnboarding && !onboardingDismissed;
+  const canGenerateResponses = missingSetupReason === null;
   const showChatControls = homeMode === "chat";
   const showNotesNavigation = homeMode === "notes";
+  const hasPendingReply = messages.at(-1)?.role === "user";
 
   const buildQuickIntakeLines = useCallback(() => {
-    const attempt = starterIntake.attempt.trim() || "CAT 2026 (assumed)";
-    const weekday = starterIntake.weekdayHours.trim() || "unknown";
-    const weekend = starterIntake.weekendHours.trim() || "unknown";
-    const levels = starterIntake.levels.trim() || "unknown";
-    const resources = starterIntake.resources.trim() || "unknown";
-    return [
-      `CAT attempt: ${attempt}`,
-      `Weekly study hours: ${weekday} weekday + ${weekend} weekend`,
-      `Current level by section: ${levels}`,
-      `Mocks/resources: ${resources}`,
-    ];
+    const lines: string[] = [];
+    const attempt = starterIntake.attempt.trim();
+    const weekday = starterIntake.weekdayHours.trim();
+    const weekend = starterIntake.weekendHours.trim();
+    const levels = starterIntake.levels.trim();
+    const resources = starterIntake.resources.trim();
+
+    if (attempt) lines.push(`CAT attempt: ${attempt}`);
+    if (levels) lines.push(`Current level by section: ${levels}`);
+    if (weekday) lines.push(`Weekday study hours: ${weekday}`);
+    if (weekend) lines.push(`Weekend study hours: ${weekend}`);
+    if (resources) lines.push(`Mocks/resources: ${resources}`);
+
+    return lines;
   }, [starterIntake]);
 
   const buildQuickIntakeBlock = useCallback(() => {
-    return buildQuickIntakeLines()
-      .map(line => `- ${line}`)
-      .join("\n");
+    const lines = buildQuickIntakeLines();
+    if (lines.length === 0) return "";
+    return lines.map(line => `- ${line}`).join("\n");
   }, [buildQuickIntakeLines]);
 
   const buildLexicalPayload = useCallback((lines: string[]): SerializedEditorState => {
@@ -504,6 +534,41 @@ export function HomeClient() {
   }, [sessionUser]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!onboardingStorageKey) {
+      setOnboardingDismissed(false);
+      return;
+    }
+
+    const stored = window.localStorage.getItem(onboardingStorageKey);
+    setOnboardingDismissed(stored === "1");
+  }, [onboardingStorageKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!onboardingStorageKey) return;
+    window.localStorage.setItem(onboardingStorageKey, onboardingDismissed ? "1" : "0");
+  }, [onboardingDismissed, onboardingStorageKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!infoPanelStorageKey) return;
+    const stored = window.localStorage.getItem(infoPanelStorageKey);
+    if (stored === "0") setInfoPanelOpen(false);
+    if (stored === "1") setInfoPanelOpen(true);
+  }, [infoPanelStorageKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!infoPanelStorageKey) return;
+    window.localStorage.setItem(infoPanelStorageKey, infoPanelOpen ? "1" : "0");
+  }, [infoPanelOpen, infoPanelStorageKey]);
+
+  useEffect(() => {
+    setMissingSetupNoticeShown(false);
+  }, [openRouterModel, openRouterStatus.hasKey]);
+
+  useEffect(() => {
     if (!sessionUser) {
       setMessages([]);
       setActiveChatId(null);
@@ -600,15 +665,23 @@ export function HomeClient() {
     return chatId;
   }, []);
 
+  const notifyMissingSetup = useCallback(
+    (reason: "key" | "model") => {
+      if (missingSetupNoticeShown) return;
+      const message =
+        reason === "key"
+          ? "OpenRouter key not set yet. Messages are saved, but replies need a key."
+          : "No model selected yet. Messages are saved; pick a model when you want replies.";
+      toast.info(message);
+      setMissingSetupNoticeShown(true);
+    },
+    [missingSetupNoticeShown]
+  );
+
   const generateAssistantMessage = useCallback(
     async (chatId: string) => {
-      if (!openRouterStatus.hasKey) {
-        toast.error("Add your OpenRouter API key in Settings first.");
-        setIsGenerating(false);
-        return;
-      }
-      if (!openRouterModel.trim()) {
-        toast.error("Select an OpenRouter model first.");
+      if (missingSetupReason) {
+        notifyMissingSetup(missingSetupReason);
         setIsGenerating(false);
         return;
       }
@@ -652,7 +725,22 @@ export function HomeClient() {
         setIsGenerating(false);
       }
     },
-    [openRouterModel, openRouterStatus.hasKey, persistMessages]
+    [missingSetupReason, notifyMissingSetup, persistMessages]
+  );
+
+  const queueAssistantResponse = useCallback(
+    (chatId: string) => {
+      if (pendingReplyTimeoutRef.current) {
+        clearTimeout(pendingReplyTimeoutRef.current);
+        pendingReplyTimeoutRef.current = null;
+      }
+      setIsGenerating(true);
+      pendingReplyTimeoutRef.current = setTimeout(() => {
+        void generateAssistantMessage(chatId);
+        pendingReplyTimeoutRef.current = null;
+      }, 50);
+    },
+    [generateAssistantMessage]
   );
 
   const sendUserMessage = useCallback(
@@ -698,13 +786,23 @@ export function HomeClient() {
         router.replace(`/chat?${params.toString()}`);
       }
 
-      setIsGenerating(true);
-      pendingReplyTimeoutRef.current = setTimeout(() => {
-        void generateAssistantMessage(chatId);
-        pendingReplyTimeoutRef.current = null;
-      }, 50);
+      if (missingSetupReason) {
+        notifyMissingSetup(missingSetupReason);
+        return;
+      }
+
+      queueAssistantResponse(chatId);
     },
-    [chatIdFromUrl, createChatSession, generateAssistantMessage, persistMessages, router, searchParams]
+    [
+      chatIdFromUrl,
+      createChatSession,
+      missingSetupReason,
+      notifyMissingSetup,
+      persistMessages,
+      queueAssistantResponse,
+      router,
+      searchParams,
+    ]
   );
 
   const handleSubmit = useCallback(
@@ -727,6 +825,71 @@ export function HomeClient() {
     },
     [sendUserMessage]
   );
+
+  const handleGenerateReply = useCallback(() => {
+    if (!activeChatId || isGenerating) return;
+    if (missingSetupReason) {
+      notifyMissingSetup(missingSetupReason);
+      return;
+    }
+    queueAssistantResponse(activeChatId);
+  }, [activeChatId, isGenerating, missingSetupReason, notifyMissingSetup, queueAssistantResponse]);
+
+  const exportChat = useCallback(() => {
+    if (typeof window === "undefined") return;
+    if (messages.length === 0) {
+      toast.info("No messages to export yet.");
+      return;
+    }
+
+    const timestamp = new Date();
+    const dateTag = timestamp.toISOString().slice(0, 10);
+    const safeChatId = activeChatId ? activeChatId.slice(0, 8) : "new";
+    const filename = `cat99-chat-${safeChatId}-${dateTag}.md`;
+
+    const lines: string[] = [];
+    lines.push("# Cat99 Chat Export");
+    lines.push("");
+    lines.push(`Chat ID: ${activeChatId ?? "new"}`);
+    if (sessionUser?.email) {
+      lines.push(`User: ${sessionUser.email}`);
+    }
+    lines.push(`Exported: ${timestamp.toLocaleString()}`);
+    lines.push("");
+    lines.push("---");
+    lines.push("");
+
+    messages.forEach(message => {
+      const roleLabel = message.role === "assistant" ? "Assistant" : "User";
+      const createdLabel = message.createdAt ? message.createdAt.toLocaleString() : "Unknown time";
+      const body = stringifyMessageContent(message.content).trim();
+
+      lines.push(`## ${roleLabel} (${createdLabel})`);
+      lines.push(body || "_(empty message)_");
+
+      const attachments = message.experimental_attachments ?? [];
+      if (attachments.length > 0) {
+        lines.push("");
+        lines.push("Attachments:");
+        attachments.forEach(attachment => {
+          const name = attachment.name ?? "Attachment";
+          const kind = attachment.contentType ?? "file";
+          const url = attachment.url.startsWith("data:") ? "(embedded data url)" : attachment.url;
+          lines.push(`- ${name} (${kind}): ${url}`);
+        });
+      }
+      lines.push("");
+    });
+
+    const blob = new Blob([lines.join("\n")], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = filename;
+    anchor.click();
+    URL.revokeObjectURL(url);
+    toast.success("Chat exported.");
+  }, [activeChatId, messages, sessionUser]);
 
   const saveActionPlan = useCallback(async () => {
     if (!latestCoachResponse || actionItems.length === 0) {
@@ -804,7 +967,7 @@ export function HomeClient() {
   const sendQuickStarter = useCallback(
     async (basePrompt: string) => {
       const intake = buildQuickIntakeBlock();
-      const message = `${basePrompt}\n\nQuick intake:\n${intake}`;
+      const message = intake ? `${basePrompt}\n\nQuick intake:\n${intake}` : basePrompt;
       await sendUserMessage(message, undefined);
     },
     [buildQuickIntakeBlock, sendUserMessage]
@@ -838,7 +1001,7 @@ export function HomeClient() {
     }
 
     const intake = buildQuickIntakeBlock();
-    const message = `${lines.join("\n")}\n\nQuick intake:\n${intake}`;
+    const message = intake ? `${lines.join("\n")}\n\nQuick intake:\n${intake}` : lines.join("\n");
     await sendUserMessage(message, undefined);
     setStarterDialog(null);
   }, [buildQuickIntakeBlock, mockForm, sendUserMessage]);
@@ -1020,10 +1183,6 @@ export function HomeClient() {
 
       const nextModels = Array.isArray((data as any).models) ? ((data as any).models as OpenRouterModel[]) : [];
       setModels(nextModels);
-
-      if (!openRouterModel && nextModels[0]?.id) {
-        await saveOpenRouterModel(nextModels[0].id);
-      }
     } catch (err: any) {
       const message = err instanceof Error ? err.message : "Unable to fetch models.";
       setModelsError(message);
@@ -1031,14 +1190,14 @@ export function HomeClient() {
     } finally {
       setModelsLoading(false);
     }
-  }, [canFetchModels, modelsLoading, openRouterModel, saveOpenRouterModel]);
+  }, [canFetchModels, modelsLoading]);
 
   useEffect(() => {
-    if (!showOnboarding) return;
+    if (!showOnboardingDialog) return;
     if (!openRouterStatus.hasKey) return;
     if (models.length > 0 || modelsLoading) return;
     fetchModels();
-  }, [fetchModels, models.length, modelsLoading, openRouterStatus.hasKey, showOnboarding]);
+  }, [fetchModels, models.length, modelsLoading, openRouterStatus.hasKey, showOnboardingDialog]);
 
   const setArchived = useCallback(
     async (chatId: string, archived: boolean) => {
@@ -1199,8 +1358,8 @@ export function HomeClient() {
 
   const starterDialogDescription =
     starterDialog === "mock"
-      ? "Share your scores + what went wrong. We'll build a clean diagnostic prompt."
-      : "Answer quick intake questions so the coach can skip follow-ups.";
+      ? "Share any scores or notes you want. We'll build a clean diagnostic prompt."
+      : "Answer any intake questions you want. Every field is optional.";
 
   const starterDialogFooter =
     starterDialog === "mock" ? (
@@ -1223,13 +1382,21 @@ export function HomeClient() {
       </DialogFooter>
     ) : null;
 
+  const onboardingFooter = (
+    <DialogFooter>
+      <Button type="button" variant="ghost" onClick={() => setOnboardingDismissed(true)}>
+        Skip for now
+      </Button>
+    </DialogFooter>
+  );
+
   const navbarInlineExtras = showChatControls ? (
     <>
       <Button
         type="button"
         variant="outline"
         onClick={() => setModelPickerOpen(true)}
-        disabled={models.length === 0 || isSettingsSaving}
+        disabled={isSettingsSaving}
         className="min-w-0 max-w-full shrink truncate md:max-w-[18rem]"
       >
         <ModelIcon model={openRouterModel} />
@@ -1255,7 +1422,7 @@ export function HomeClient() {
         <>
           <DropdownMenuLabel>Model</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setModelPickerOpen(true)} disabled={models.length === 0 || isSettingsSaving}>
+          <DropdownMenuItem onClick={() => setModelPickerOpen(true)} disabled={isSettingsSaving}>
             Select model
           </DropdownMenuItem>
           <DropdownMenuItem onClick={fetchModels} disabled={modelsLoading || isSettingsSaving}>
@@ -1270,6 +1437,104 @@ export function HomeClient() {
       <DropdownMenuItem onClick={() => setSettingsOpen(true)}>Settings</DropdownMenuItem>
       <DropdownMenuItem onClick={handleNewChat}>New chat</DropdownMenuItem>
     </>
+  );
+
+  const keyStatusLabel = openRouterStatus.hasKey
+    ? openRouterStatus.last4
+      ? `saved (last 4: ${openRouterStatus.last4})`
+      : "saved"
+    : "not set";
+  const modelStatusLabel = openRouterModel.trim() ? openRouterModel : "not selected";
+  const setupSummary = canGenerateResponses
+    ? "You're ready to chat. Everything below is optional."
+    : missingSetupReason === "key"
+      ? "Replies are off until you add an OpenRouter key. You can still draft messages."
+      : "Replies are off until you pick a model. You can still draft messages.";
+  const generateReplyHint = !activeChatId
+    ? "Send a message first."
+    : isGenerating
+      ? "Generating a response..."
+      : missingSetupReason === "key"
+        ? "Add an OpenRouter key to generate replies."
+        : missingSetupReason === "model"
+          ? "Pick a model to generate replies."
+          : "Generate a reply for the latest message.";
+  const generateReplyDisabled = !activeChatId || isGenerating || Boolean(missingSetupReason);
+  const canExport = messages.length > 0;
+
+  const chatInfoPanel = (
+    <div className="border-b bg-muted/20 px-3 py-3 sm:px-4">
+      <Collapsible open={infoPanelOpen} onOpenChange={setInfoPanelOpen}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-xs font-semibold text-foreground">Quick guide (optional)</p>
+            <p className="text-[11px] text-muted-foreground">{setupSummary}</p>
+          </div>
+          <CollapsibleTrigger asChild>
+            <Button type="button" variant="ghost" size="sm">
+              {infoPanelOpen ? "Hide" : "Show"}
+            </Button>
+          </CollapsibleTrigger>
+        </div>
+        <CollapsibleContent className="mt-3 space-y-2 text-[11px] text-muted-foreground">
+          <div className="grid gap-2 sm:grid-cols-2">
+            <div className="rounded-lg border bg-background/80 p-2">
+              <p className="text-[11px] font-semibold text-foreground">Setup status</p>
+              <div className="mt-1 space-y-1">
+                <p>OpenRouter key: {keyStatusLabel}</p>
+                <p>Model: {modelStatusLabel}</p>
+                <p>Replies: {canGenerateResponses ? "enabled" : "off"}</p>
+                <p>Pending reply: {hasPendingReply ? "waiting" : "none"}</p>
+                <p>Messages: {messages.length}</p>
+                {!canGenerateResponses ? (
+                  <p className="text-[10px] text-muted-foreground">
+                    Responses are optional. Add a key + model when you want replies.
+                  </p>
+                ) : null}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button type="button" size="sm" variant="outline" onClick={() => setSettingsOpen(true)}>
+                  {openRouterStatus.hasKey ? "Manage key" : "Add key"}
+                </Button>
+                <Button type="button" size="sm" variant="outline" onClick={() => setModelPickerOpen(true)}>
+                  {openRouterModel ? "Change model" : "Pick model"}
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={fetchModels}
+                  disabled={modelsLoading || !openRouterStatus.hasKey}
+                >
+                  {modelsLoading ? "Fetching..." : "Fetch models"}
+                </Button>
+              </div>
+              {modelsError ? <p className="mt-2 text-[10px] text-destructive">{modelsError}</p> : null}
+              {models.length === 0 && !modelsLoading ? (
+                <p className="mt-2 text-[10px] text-muted-foreground">Model list is empty until you fetch it.</p>
+              ) : null}
+              {!openRouterStatus.hasKey ? (
+                <p className="mt-2 text-[10px] text-muted-foreground">Add a key to fetch models.</p>
+              ) : null}
+            </div>
+            <div className="rounded-lg border bg-background/80 p-2">
+              <p className="text-[11px] font-semibold text-foreground">Optional extras</p>
+              <ul className="mt-1 list-disc space-y-1 pl-4">
+                <li>Attach images or text files. Images can run OCR to extract text.</li>
+                <li>Paste long text to turn it into a text attachment automatically.</li>
+                <li>Use the mic button for voice dictation.</li>
+                <li>Enter sends. Shift+Enter makes a new line.</li>
+                <li>Use Generate reply after setup to answer the latest message.</li>
+                <li>Export chats anytime from the top bar.</li>
+              </ul>
+            </div>
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Upload note: images are sent to Cloudinary for OCR; text files stay as attachments in your chat history.
+          </p>
+        </CollapsibleContent>
+      </Collapsible>
+    </div>
   );
 
   return (
@@ -1422,6 +1687,23 @@ export function HomeClient() {
                           {isActionBoardOpen ? "Hide action board" : "Show action board"}
                         </Button>
                       ) : null}
+                      {hasPendingReply ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleGenerateReply}
+                          disabled={generateReplyDisabled}
+                          title={generateReplyHint}
+                        >
+                          <Sparkles className="h-4 w-4" />
+                          Generate reply
+                        </Button>
+                      ) : null}
+                      <Button type="button" variant="ghost" size="sm" onClick={exportChat} disabled={!canExport}>
+                        <Download className="h-4 w-4" />
+                        Export
+                      </Button>
                       <Button
                         type="button"
                         variant="outline"
@@ -1439,6 +1721,8 @@ export function HomeClient() {
                       </Button>
                     </div>
                   </div>
+
+                  {chatInfoPanel}
 
                   <div className="min-h-0 flex-1">
                     <div className="flex h-full min-h-0 flex-col">
@@ -1894,12 +2178,17 @@ export function HomeClient() {
         </DialogShell>
       </Dialog>
 
-      <Dialog open={showOnboarding} onOpenChange={() => {}}>
+      <Dialog
+        open={showOnboardingDialog}
+        onOpenChange={open => {
+          if (!open) setOnboardingDismissed(true);
+        }}
+      >
         <DialogShell
-          showCloseButton={false}
           className="sm:max-w-xl"
           title="Welcome to Cat99"
-          description="Finish these steps once so you never hit key/model errors."
+          description="Optional setup for replies. Skip any step and return later from Settings."
+          footer={onboardingFooter}
         >
           <div className="space-y-4">
             <div className="space-y-2">
@@ -1910,7 +2199,7 @@ export function HomeClient() {
                   done: openRouterStatus.hasKey,
                 },
                 {
-                  label: "Pick a model (recommended preselected)",
+                  label: "Pick a model (recommended below)",
                   done: Boolean(openRouterModel.trim()),
                 },
               ].map(step => (
@@ -2006,7 +2295,7 @@ export function HomeClient() {
         <DialogShell
           className="sm:max-w-xl"
           title="Settings"
-          description="Saved to your account."
+          description="Optional: add your OpenRouter key to enable replies. Saved to your account."
           footer={
             <DialogFooter>
               {openRouterStatus.hasKey ? (
@@ -2069,13 +2358,18 @@ export function HomeClient() {
         <CommandInput placeholder="Search models..." value={modelSearch} onValueChange={setModelSearch} />
         <CommandList>
           <CommandEmpty>
-            {models.length === 0 ? "No models loaded. Click Fetch models." : "No models found."}
+            {models.length === 0
+              ? openRouterStatus.hasKey
+                ? "No models loaded. Click Fetch models."
+                : "No models loaded. Add a key and fetch models when you're ready."
+              : "No models found."}
           </CommandEmpty>
 
           {modelsError ? <div className="px-3 py-2 text-xs text-destructive">{modelsError}</div> : null}
 
           <CommandGroup heading="Models">
             {models.map(model => {
+              const description = typeof model.description === "string" ? model.description.trim() : "";
               return (
                 <CommandItem
                   key={model.id}
@@ -2093,6 +2387,9 @@ export function HomeClient() {
                         {model.id}
                         {model.contextLength ? ` • ${model.contextLength.toLocaleString()} ctx` : ""}
                       </div>
+                      {description ? (
+                        <div className="truncate text-[11px] text-muted-foreground">{description}</div>
+                      ) : null}
                     </div>
                     <ModelIcon model={model.id} />
                   </div>
