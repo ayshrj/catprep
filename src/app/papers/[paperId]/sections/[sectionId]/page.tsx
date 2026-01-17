@@ -12,9 +12,11 @@ import { ContentBlocks } from "@/components/papers/content-blocks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { useAuthAndTheme } from "@/hooks/use-auth-and-theme";
 import { fetchQuestions, fetchSection } from "@/lib/cat-papers-service";
 import type { CatPaperQuestionSummary, CatPaperSectionSummary } from "@/types/cat-paper-firestore";
+import { normalizeMathDelimiters } from "@/utils/markdown-math";
 
 function sectionHeading(section: CatPaperSectionSummary) {
   const heading = section.heading?.trim();
@@ -152,8 +154,8 @@ export default function SectionDetailPage() {
                     {section.content?.length ? (
                       <ContentBlocks blocks={section.content} />
                     ) : section.passageOrSetText ? (
-                      <div className="rounded-xl border border-border/60 bg-background/60 p-3 text-sm whitespace-pre-wrap">
-                        {section.passageOrSetText}
+                      <div className="rounded-xl border border-border/60 bg-background/60 p-3 text-sm">
+                        <MarkdownRenderer>{normalizeMathDelimiters(section.passageOrSetText)}</MarkdownRenderer>
                       </div>
                     ) : (
                       <p className="text-sm text-muted-foreground">No passage content in this section.</p>

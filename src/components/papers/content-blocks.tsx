@@ -1,6 +1,7 @@
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { cn } from "@/lib/utils";
 import type { ContentBlock } from "@/types/cat-paper";
+import { normalizeMathDelimiters } from "@/utils/markdown-math";
 
 export function ContentBlocks({ blocks, className }: { blocks?: ContentBlock[]; className?: string }) {
   if (!blocks?.length) return null;
@@ -11,9 +12,10 @@ export function ContentBlocks({ blocks, className }: { blocks?: ContentBlock[]; 
         if (block.type === "text") {
           const text = block.text?.trim();
           if (!text) return null;
+          const normalized = normalizeMathDelimiters(text);
           return (
             <div key={`text-${index}`} className="rounded-xl border border-border/60 bg-background/60 p-3 text-sm">
-              <MarkdownRenderer>{text}</MarkdownRenderer>
+              <MarkdownRenderer>{normalized}</MarkdownRenderer>
             </div>
           );
         }

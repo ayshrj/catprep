@@ -16,6 +16,7 @@ import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { useAuthAndTheme } from "@/hooks/use-auth-and-theme";
 import { fetchQuestion, fetchQuestions } from "@/lib/cat-papers-service";
 import type { CatPaperQuestionSummary, CatPaperSolutionDoc } from "@/types/cat-paper-firestore";
+import { normalizeMathDelimiters } from "@/utils/markdown-math";
 
 const CHOICE_LABELS = ["A", "B", "C", "D", "E"];
 
@@ -96,6 +97,20 @@ export default function QuestionDetailPage() {
     return question.correctAnswerRaw || "Not available";
   }, [question]);
 
+  const normalizedPrompt = useMemo(
+    () => (question?.prompt ? normalizeMathDelimiters(question.prompt) : ""),
+    [question]
+  );
+  const normalizedChoices = useMemo(
+    () => question?.choices.map(choice => normalizeMathDelimiters(choice)) ?? [],
+    [question]
+  );
+  const normalizedAnswerLine = useMemo(() => normalizeMathDelimiters(answerLine), [answerLine]);
+  const normalizedExplanationText = useMemo(
+    () => (solution?.explanationText ? normalizeMathDelimiters(solution.explanationText) : ""),
+    [solution]
+  );
+
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/30">
       <AppNavbar
@@ -163,7 +178,7 @@ export default function QuestionDetailPage() {
                     <CardTitle className="text-base">Question {question.index + 1}</CardTitle>
                     {question.title ? <p className="text-xs text-muted-foreground">{question.title}</p> : null}
                     <div className="text-sm">
-                      <MarkdownRenderer>{question.prompt}</MarkdownRenderer>
+                      <MarkdownRenderer>{normalizedPrompt}</MarkdownRenderer>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -184,7 +199,7 @@ export default function QuestionDetailPage() {
 
                     {question.choices.length ? (
                       <div className="space-y-2">
-                        {question.choices.map((choice, index) => (
+                        {normalizedChoices.map((choice, index) => (
                           <div key={`${choice}-${index}`} className="rounded-lg border border-border/60 p-2 text-sm">
                             <div className="flex gap-2">
                               <span className="text-xs font-semibold text-muted-foreground">
@@ -236,7 +251,7 @@ export default function QuestionDetailPage() {
                         <div className="rounded-lg border border-border/60 bg-muted/40 p-3 text-sm">
                           <span className="text-xs uppercase text-muted-foreground">Correct answer</span>
                           <div className="mt-1 font-semibold">
-                            <MarkdownRenderer>{answerLine}</MarkdownRenderer>
+                            <MarkdownRenderer>{normalizedAnswerLine}</MarkdownRenderer>
                           </div>
                         </div>
 
@@ -248,7 +263,7 @@ export default function QuestionDetailPage() {
 
                             {!solution.explanationContent?.length && solution.explanationText ? (
                               <div className="rounded-xl border border-border/60 bg-background/60 p-3 text-sm">
-                                <MarkdownRenderer>{solution.explanationText}</MarkdownRenderer>
+                                <MarkdownRenderer>{normalizedExplanationText}</MarkdownRenderer>
                               </div>
                             ) : null}
 
