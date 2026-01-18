@@ -191,7 +191,7 @@ export default function PapersPage() {
   );
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/30">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background">
       <AppNavbar
         title="Cat99"
         subtitle="Past Papers"
@@ -221,7 +221,6 @@ export default function PapersPage() {
         <div className="h-full min-h-0 overflow-y-auto py-3 sm:py-4">
           <div className="space-y-6 pb-6">
             <section className="game-panel relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-background to-background" />
               <div className="relative game-panel-padded space-y-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                   <div className="space-y-2">
@@ -238,21 +237,21 @@ export default function PapersPage() {
                     </div>
                   </div>
                   <div className="grid w-full gap-2 sm:grid-cols-3 lg:w-auto">
-                    <div className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 shadow-sm">
+                    <div className="rounded-2xl border border-border/60 bg-card px-3 py-2 shadow-sm">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <BookOpen className="h-3.5 w-3.5" />
                         Papers
                       </div>
                       <div className="text-lg font-semibold">{meta ? meta.paperCount.toLocaleString() : "--"}</div>
                     </div>
-                    <div className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 shadow-sm">
+                    <div className="rounded-2xl border border-border/60 bg-card px-3 py-2 shadow-sm">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Layers className="h-3.5 w-3.5" />
                         Sections
                       </div>
                       <div className="text-lg font-semibold">{meta ? meta.sectionCount.toLocaleString() : "--"}</div>
                     </div>
-                    <div className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 shadow-sm">
+                    <div className="rounded-2xl border border-border/60 bg-card px-3 py-2 shadow-sm">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <ListChecks className="h-3.5 w-3.5" />
                         Questions
@@ -266,7 +265,7 @@ export default function PapersPage() {
 
             <Card className="game-panel">
               <CardHeader className="flex flex-col gap-3">
-                <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3 w-full">
                   <div>
                     <CardTitle className="text-lg">Refine your search</CardTitle>
                     <p className="text-sm text-muted-foreground">Filter by exam, year, slot, and section.</p>
@@ -283,7 +282,7 @@ export default function PapersPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))]">
+                <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_repeat(4,minmax(0,1fr))]">
                   <div className="relative">
                     <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
@@ -302,7 +301,7 @@ export default function PapersPage() {
                       }))
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Exam" />
                     </SelectTrigger>
                     <SelectContent>
@@ -323,7 +322,7 @@ export default function PapersPage() {
                       }))
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Year" />
                     </SelectTrigger>
                     <SelectContent>
@@ -344,7 +343,7 @@ export default function PapersPage() {
                       }))
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Slot" />
                     </SelectTrigger>
                     <SelectContent>
@@ -356,8 +355,6 @@ export default function PapersPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
                   <Select
                     value={draftFilters.section ?? "all"}
                     onValueChange={value =>
@@ -367,7 +364,7 @@ export default function PapersPage() {
                       }))
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Section" />
                     </SelectTrigger>
                     <SelectContent>
@@ -379,6 +376,8 @@ export default function PapersPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 justify-end">
                   <Button type="button" onClick={handleApply} className="gap-2">
                     <Filter className="h-4 w-4" />
                     Apply filters

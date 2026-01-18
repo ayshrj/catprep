@@ -6,7 +6,9 @@ export function CharacterLimitPlugin({ maxLength, charset }: { maxLength: number
       maxLength={maxLength}
       charset={charset}
       renderer={number => (
-        <div className={`px-1 text-xs ${number.remainingCharacters <= 0 ? "text-destructive" : "text-gray-500"}`}>
+        <div
+          className={`px-1 text-xs ${number.remainingCharacters <= 0 ? "text-destructive" : "text-muted-foreground"}`}
+        >
           {number.remainingCharacters}
         </div>
       )}

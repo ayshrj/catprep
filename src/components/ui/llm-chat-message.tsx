@@ -9,6 +9,8 @@ import { CatCoachIntentLabels, CatCoachResponseModeLabels, CatScenarioCode } fro
 import { cn } from "@/lib/utils";
 import { type LlmCatCoachResponse } from "@/types/llm-response";
 
+import ConfidenceLine from "../confidence-line";
+
 type LlmChatMessageProps = Omit<ChatMessageProps, "content"> & {
   content: LlmCatCoachResponse;
 };
@@ -52,9 +54,9 @@ function Badge({ label, value }: { label: string; value: string }) {
   return (
     <motion.div
       variants={badgeVariants}
-      whileHover={{ backgroundColor: "rgba(0,0,0,0.03)" }}
+      whileHover={{ backgroundColor: "var(--hover-overlay)" }}
       transition={{ duration: 0.2, ease: "easeInOut" }}
-      className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border bg-background/80 px-2 py-0.5 text-[10px]"
+      className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-4xl border bg-background/80 px-2 py-0.5 text-xs"
     >
       <span className="uppercase tracking-wide text-muted-foreground">{label}</span>
       <span className="font-medium text-foreground">{value}</span>
@@ -122,20 +124,25 @@ function SectionCard({
 }) {
   return (
     <div
-      className={cn("rounded-md border border-foreground/10 bg-muted/20 p-2 sm:p-3", className)}
+      className={cn("rounded-3xl border border-foreground/10 bg-muted/20 p-2 sm:p-3", className)}
       style={{ borderColor: accent }}
     >
-      <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</div>
+      <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</div>
       {children}
     </div>
   );
 }
 
 function renderTable(table: LlmCatCoachResponse["mainAnswer"]["table"], code: CatScenarioCode = "unknown") {
-  if (!table?.headers?.length) return null;
+  if (
+    !table?.headers?.length ||
+    table.rows.length === 0 ||
+    table.rows.every(row => row.every(cell => !cell || !String(cell).trim()))
+  )
+    return null;
 
   return (
-    <motion.div variants={itemVariants} className="overflow-hidden rounded-md border border-foreground/20">
+    <motion.div variants={itemVariants} className="overflow-hidden rounded-3xl border border-foreground/20">
       <div className="overflow-x-auto">
         <table className="w-full min-w-[320px] border-collapse text-xs">
           <thead>
@@ -211,10 +218,10 @@ function renderLlmContent(content: LlmCatCoachResponse) {
       {/* Scenario Header */}
       <motion.div
         variants={itemVariants}
-        className="rounded-md border border-foreground/10 p-3 sm:p-4"
+        className="rounded-t-md border border-foreground/10 p-3 sm:p-4"
         style={{
-          backgroundColor: scenarioColors.bg,
-          color: scenarioColors.text,
+          color: scenarioColors.bg,
+          backgroundColor: scenarioColors.accent,
           borderColor: scenarioColors.accent,
         }}
       >
@@ -241,7 +248,7 @@ function renderLlmContent(content: LlmCatCoachResponse) {
             }}
             className="text-xs"
           >
-            ({content.scenario.confidence})
+            <ConfidenceLine size={16} confidence={content.scenario.confidence} />
           </motion.span>
         </div>
         <motion.p
@@ -270,7 +277,7 @@ function renderLlmContent(content: LlmCatCoachResponse) {
         <motion.div variants={itemVariants} className="px-3">
           <a
             href={buildNotesHref(cheatsheet.id)}
-            className="inline-flex items-center rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition hover:border-primary/60 hover:bg-primary/20"
+            className="inline-flex items-center rounded-4xl border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition hover:border-primary/60 hover:bg-primary/20"
           >
             {cheatsheet.label}
           </a>
@@ -280,7 +287,7 @@ function renderLlmContent(content: LlmCatCoachResponse) {
       {/* Focus */}
       {content.whatUserNeedsNow?.trim() && (
         <motion.div variants={itemVariants} className="px-3">
-          <div className="rounded-lg border-2 border-primary bg-muted/40 p-2">
+          <div className="rounded-3xl border border-border-strong bg-muted/40 p-2">
             <p className="text-xs font-medium text-foreground">{content.whatUserNeedsNow.trim()}</p>
           </div>
         </motion.div>

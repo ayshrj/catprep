@@ -42,6 +42,7 @@ import { CAT_PAPER_SECTION_LABELS } from "@/constants/cat-paper-filters";
 import { formatTime } from "@/games/core/timer";
 import { useAuthAndTheme } from "@/hooks/use-auth-and-theme";
 import { fetchPaper, fetchQuestion, fetchQuestions } from "@/lib/cat-papers-service";
+import { cn } from "@/lib/utils";
 import type {
   CatPaperQuestionSummary,
   CatPaperSectionSummary,
@@ -395,7 +396,14 @@ export default function QuestionDetailPage() {
             }
           }}
           placeholder="Your answer"
-          className="w-44 sm:w-52"
+          className={cn(
+            "w-44 sm:w-52",
+            titaStatus === "correct"
+              ? "border-emerald-600 text-foreground focus-visible:ring-emerald-600/40"
+              : titaStatus === "incorrect"
+                ? "border-rose-600 text-foreground focus-visible:ring-rose-600/40"
+                : ""
+          )}
           disabled={checkLocked}
         />
         <Button
@@ -408,12 +416,14 @@ export default function QuestionDetailPage() {
           Check answer
         </Button>
         {titaStatus === "correct" ? (
-          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+          <span className="rounded-4xl border border-foreground/40 bg-foreground/5 px-2 py-0.5 text-xs font-semibold text-foreground">
             Correct
           </span>
         ) : null}
         {titaStatus === "incorrect" ? (
-          <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-xs font-semibold text-rose-700">Incorrect</span>
+          <span className="rounded-4xl border border-border-strong bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
+            Incorrect
+          </span>
         ) : null}
         {titaStatus === "unavailable" ? (
           <span className="text-xs text-muted-foreground">Answer not available.</span>
@@ -423,7 +433,7 @@ export default function QuestionDetailPage() {
   ) : null;
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/30">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background">
       <AppNavbar
         title="Cat99"
         subtitle="Question detail"
@@ -453,7 +463,6 @@ export default function QuestionDetailPage() {
         <div className="h-full min-h-0 overflow-y-auto py-3 sm:py-4">
           <div className="space-y-6 pb-6">
             <section className="game-panel relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-background to-background" />
               <div className="relative game-panel-padded space-y-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                   <div className="space-y-2">
@@ -553,7 +562,7 @@ export default function QuestionDetailPage() {
                     </Button>
                   )}
                   {practiceActive ? (
-                    <div className="flex items-center gap-2 rounded-full border border-border/60 bg-background/70 px-3 py-1 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 rounded-4xl border border-border/60 bg-card px-3 py-1 text-xs text-muted-foreground">
                       <Timer className="h-3.5 w-3.5" />
                       {formatTime(timerSeconds)}
                     </div>
@@ -636,16 +645,16 @@ export default function QuestionDetailPage() {
                             const isCorrect = isSelected && mcqStatus === "correct";
                             const isIncorrect = isSelected && mcqStatus === "incorrect";
                             const stateStyles = isCorrect
-                              ? "border-emerald-400 bg-emerald-50/80 text-emerald-700"
+                              ? "border-emerald-600/70 bg-emerald-600/10 text-foreground"
                               : isIncorrect
-                                ? "border-rose-400 bg-rose-50/80 text-rose-700"
+                                ? "border-rose-600/70 bg-rose-600/10 text-foreground"
                                 : isSelected
                                   ? "border-primary/40 bg-primary/5"
-                                  : "border-border/60 bg-background/70 hover:border-foreground/30 hover:bg-muted/40";
+                                  : "border-border/60 bg-card hover:border-foreground/30 hover:bg-muted/40";
                             const labelStyles = isCorrect
-                              ? "border-emerald-400 bg-emerald-100 text-emerald-700"
+                              ? "border-emerald-600/70 bg-emerald-600/15 text-emerald-700"
                               : isIncorrect
-                                ? "border-rose-400 bg-rose-100 text-rose-700"
+                                ? "border-rose-600/70 bg-rose-600/15 text-rose-700"
                                 : isSelected
                                   ? "border-primary/40 bg-primary/10 text-primary"
                                   : "border-border/60 text-muted-foreground";
@@ -663,7 +672,7 @@ export default function QuestionDetailPage() {
                                 className={`flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left text-sm transition ${stateStyles} ${checkLocked ? "cursor-not-allowed opacity-70" : ""}`}
                               >
                                 <span
-                                  className={`mt-0.5 flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold ${labelStyles}`}
+                                  className={`mt-0.5 flex h-7 w-7 items-center justify-center rounded-4xl border text-xs font-semibold ${labelStyles}`}
                                 >
                                   {CHOICE_LABELS[index] ?? ""}
                                 </span>
@@ -686,12 +695,12 @@ export default function QuestionDetailPage() {
                           </Button>
                           {selectedChoiceIndex === null ? <span>Select an option to check.</span> : null}
                           {mcqStatus === "correct" ? (
-                            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                            <span className="rounded-4xl border border-foreground/40 bg-foreground/5 px-2 py-0.5 text-xs font-semibold text-foreground">
                               Correct
                             </span>
                           ) : null}
                           {mcqStatus === "incorrect" ? (
-                            <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-xs font-semibold text-rose-700">
+                            <span className="rounded-4xl border border-border-strong bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground">
                               Incorrect
                             </span>
                           ) : null}

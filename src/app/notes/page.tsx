@@ -32,7 +32,7 @@ export default function NotesPage() {
   }, []);
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/30">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background">
       <AppNavbar
         title="Cat99"
         subtitle="Notes"
@@ -57,7 +57,7 @@ export default function NotesPage() {
                     <div className="space-y-4 p-4">
                       {CAT_KB_PARTS.map(part => (
                         <div key={part.id} className="space-y-2">
-                          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                             {part.title}
                           </p>
                           <div className="space-y-1">

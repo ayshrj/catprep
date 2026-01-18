@@ -119,7 +119,7 @@ export function GameShell({
               <button
                 type="button"
                 onClick={() => setStatsOpen(true)}
-                className="flex w-full items-center justify-between gap-2 rounded-md border bg-muted/30 px-2.5 py-1.5 text-[11px] text-muted-foreground"
+                className="flex w-full items-center justify-between gap-2 rounded-md border bg-muted/30 px-2.5 py-1.5 text-xs text-muted-foreground"
                 aria-label="Open stats"
               >
                 <div className="min-w-0 flex-1 overflow-hidden whitespace-nowrap">{contextStrip}</div>
@@ -135,10 +135,7 @@ export function GameShell({
           <div className="game-surface">{primaryCard}</div>
 
           {feedbackSlot ? (
-            <div
-              className="rounded-md border bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground"
-              aria-live="polite"
-            >
+            <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs text-muted-foreground" aria-live="polite">
               {feedbackSlot}
             </div>
           ) : null}
@@ -157,7 +154,7 @@ export function GameShell({
           )}
         >
           {controlsCollapsed ? (
-            <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+            <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
               <span>Controls hidden to save space.</span>
               <Button
                 type="button"
@@ -193,7 +190,7 @@ export function GameShell({
                   </Button>
                 </div>
               </div>
-              {bottomGameControls ? <div className="border-t pt-1.5 text-[11px]">{bottomGameControls}</div> : null}
+              {bottomGameControls ? <div className="border-t pt-1.5 text-xs">{bottomGameControls}</div> : null}
             </>
           )}
         </div>

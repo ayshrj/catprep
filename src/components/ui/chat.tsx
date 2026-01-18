@@ -230,7 +230,7 @@ export function ChatMessages({
           <div className="sticky bottom-0 left-0 flex w-full justify-end">
             <Button
               onClick={scrollToBottom}
-              className="pointer-events-auto h-8 w-8 rounded-full ease-in-out animate-in fade-in-0 slide-in-from-bottom-1"
+              className="pointer-events-auto h-8 w-8 rounded-4xl ease-in-out animate-in fade-in-0 slide-in-from-bottom-1"
               size="icon"
               variant="ghost"
             >

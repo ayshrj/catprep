@@ -378,7 +378,7 @@ export default function NotesPage() {
   }, []);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-gradient-to-b from-background via-background to-muted/30">
+    <div className="flex min-h-dvh flex-col bg-background">
       <AppNavbar
         title="Rough Notes"
         subtitle="Saved to your account."
@@ -510,7 +510,7 @@ export default function NotesPage() {
                         <PanelLeft className="h-4 w-4" />
                         {historyOpen ? "Hide history" : "Show history"}
                       </Button>
-                      <div className="inline-flex rounded-full border bg-background p-0.5 sm:p-1">
+                      <div className="inline-flex rounded-4xl border bg-background p-0.5 sm:p-1">
                         <Button
                           size="sm"
                           variant={viewMode === "edit" ? "default" : "ghost"}

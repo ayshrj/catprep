@@ -141,9 +141,7 @@ export const SudokuUI: React.FC<{
                   {val !== 0 ? (
                     <span className="text-lg">{val}</span>
                   ) : cellPencils.length ? (
-                    <span className="text-[10px] leading-tight text-muted-foreground px-1">
-                      {cellPencils.join(" ")}
-                    </span>
+                    <span className="text-xs leading-tight text-muted-foreground px-1">{cellPencils.join(" ")}</span>
                   ) : null}
                 </button>
               );

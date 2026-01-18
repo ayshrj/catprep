@@ -46,7 +46,7 @@ const ImageFilePreview = React.forwardRef<HTMLDivElement, FilePreviewProps>(({ f
 
       {onRemove ? (
         <button
-          className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full border bg-background"
+          className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-4xl border bg-background"
           type="button"
           onClick={onRemove}
           aria-label="Remove attachment"
@@ -83,7 +83,7 @@ const TextFilePreview = React.forwardRef<HTMLDivElement, FilePreviewProps>(({ fi
       <div className="flex w-full items-center space-x-2">
         <div className="grid h-10 w-10 shrink-0 place-items-center rounded-sm border bg-muted p-0.5">
           {preview ? (
-            <div className="h-full w-full overflow-hidden text-[6px] leading-none text-muted-foreground">{preview}</div>
+            <div className="h-full w-full overflow-hidden text-xs leading-none text-muted-foreground">{preview}</div>
           ) : (
             <div className="flex h-full w-full flex-col justify-center gap-1 p-1">
               <Skeleton className="h-1.5 w-full" />
@@ -97,7 +97,7 @@ const TextFilePreview = React.forwardRef<HTMLDivElement, FilePreviewProps>(({ fi
 
       {onRemove ? (
         <button
-          className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full border bg-background"
+          className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-4xl border bg-background"
           type="button"
           onClick={onRemove}
           aria-label="Remove attachment"
@@ -129,7 +129,7 @@ const GenericFilePreview = React.forwardRef<HTMLDivElement, FilePreviewProps>(({
 
       {onRemove ? (
         <button
-          className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full border bg-background"
+          className="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-4xl border bg-background"
           type="button"
           onClick={onRemove}
           aria-label="Remove attachment"

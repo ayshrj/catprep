@@ -60,8 +60,8 @@ export const EstimationDuelUI: React.FC<{
                 onClick={() => dispatch({ type: "select", optionIndex: i })}
                 className={[
                   "justify-start h-auto py-3",
-                  correct ? "border-emerald-500" : "",
-                  wrongChosen ? "border-destructive" : "",
+                  correct ? "border-foreground" : "",
+                  wrongChosen ? "border-border-strong" : "",
                 ].join(" ")}
                 aria-label={`Option ${i + 1}: ${opt}`}
               >

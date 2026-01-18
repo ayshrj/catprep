@@ -588,7 +588,7 @@ export const Notes: React.FC = () => {
                   key={section.id}
                   type="button"
                   onClick={() => scrollToSection(section.id)}
-                  className="whitespace-nowrap rounded-full border bg-background px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
+                  className="whitespace-nowrap rounded-4xl border bg-background px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
                 >
                   {section.title}
                 </button>
@@ -609,9 +609,7 @@ export const Notes: React.FC = () => {
             <div className="space-y-4 p-4">
               {CAT_KB_PARTS.map(part => (
                 <div key={part.id} className="space-y-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    {part.title}
-                  </p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{part.title}</p>
                   <div className="space-y-1">
                     {part.sections.map(section => (
                       <button
@@ -647,7 +645,7 @@ export const Notes: React.FC = () => {
                       className="scroll-mt-24 rounded-2xl border bg-background p-4 shadow-sm"
                     >
                       {meta?.matches ? (
-                        <div className="mb-2 text-[11px] text-muted-foreground">
+                        <div className="mb-2 text-xs text-muted-foreground">
                           {meta.matches} match{meta.matches === 1 ? "" : "es"}
                         </div>
                       ) : null}

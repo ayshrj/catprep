@@ -18,40 +18,40 @@ export default function Page() {
       description: "Ask, analyze, and work with your CAT prep copilot.",
       href: "/chat",
       icon: MessageCircle,
-      tone: "bg-emerald-500/15 text-emerald-600",
+      tone: "bg-muted text-foreground",
     },
     {
       title: "Games",
       description: "Practice drills, track streaks, and sharpen speed.",
       href: "/games",
       icon: Trophy,
-      tone: "bg-amber-500/15 text-amber-600",
+      tone: "bg-muted text-foreground",
     },
     {
       title: "Notes",
       description: "Capture structured learnings and revision summaries.",
       href: "/notes",
       icon: NotebookPen,
-      tone: "bg-sky-500/15 text-sky-600",
+      tone: "bg-muted text-foreground",
     },
     {
       title: "Papers",
       description: "Browse CAT & XAT past papers with solutions.",
       href: "/papers",
       icon: BookOpen,
-      tone: "bg-indigo-500/15 text-indigo-600",
+      tone: "bg-muted text-foreground",
     },
     {
       title: "Rough notes",
       description: "Dump quick thoughts, drafts, and scratch ideas.",
       href: "/rough-notes",
       icon: Sparkles,
-      tone: "bg-fuchsia-500/15 text-fuchsia-600",
+      tone: "bg-muted text-foreground",
     },
   ];
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/30">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background">
       <AppNavbar
         title="Cat99"
         subtitle="Quick navigation"
@@ -81,7 +81,6 @@ export default function Page() {
         <div className="h-full min-h-0 overflow-y-auto py-4 sm:py-6">
           <div className="space-y-6 pb-6">
             <section className="game-panel relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-background to-background" />
               <div className="relative game-panel-padded space-y-4">
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -97,11 +96,9 @@ export default function Page() {
                   {destinations.map(destination => {
                     const Icon = destination.icon;
                     return (
-                      <Card key={destination.title} className="bg-background/80">
+                      <Card key={destination.title} className="bg-card">
                         <CardHeader className="space-y-3">
-                          <div
-                            className={`flex h-10 w-10 items-center justify-center rounded-full ${destination.tone}`}
-                          >
+                          <div className={`flex h-10 w-10 items-center justify-center rounded-4xl ${destination.tone}`}>
                             <Icon className="h-5 w-5" />
                           </div>
                           <div className="space-y-1">

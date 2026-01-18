@@ -202,7 +202,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/30">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background">
       <AppNavbar
         title="Cat99"
         subtitle="Games"
@@ -232,7 +232,6 @@ export default function DashboardPage() {
         <div className="h-full min-h-0 overflow-y-auto py-3 sm:py-4">
           <div className="space-y-6 pb-6">
             <section className="game-panel relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-background to-background" />
               <div className="relative game-panel-padded space-y-4">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                   <div className="space-y-2">
@@ -263,7 +262,7 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="grid w-full gap-2 sm:grid-cols-2 lg:w-auto lg:grid-cols-4">
-                    <div className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 shadow-sm">
+                    <div className="rounded-2xl border border-border/60 bg-card px-3 py-2 shadow-sm">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Sparkles className="h-3.5 w-3.5" />
                         Games played
@@ -272,21 +271,21 @@ export default function DashboardPage() {
                         {summary.playedCount}/{totalGames}
                       </div>
                     </div>
-                    <div className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 shadow-sm">
+                    <div className="rounded-2xl border border-border/60 bg-card px-3 py-2 shadow-sm">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Target className="h-3.5 w-3.5" />
                         Accuracy
                       </div>
                       <div className="text-lg font-semibold">{summary.accuracy}%</div>
                     </div>
-                    <div className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 shadow-sm">
+                    <div className="rounded-2xl border border-border/60 bg-card px-3 py-2 shadow-sm">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Trophy className="h-3.5 w-3.5" />
                         Solves
                       </div>
                       <div className="text-lg font-semibold">{summary.solves}</div>
                     </div>
-                    <div className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 shadow-sm">
+                    <div className="rounded-2xl border border-border/60 bg-card px-3 py-2 shadow-sm">
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Zap className="h-3.5 w-3.5" />
                         Best streak
@@ -311,7 +310,7 @@ export default function DashboardPage() {
                           Attempts vs CAT-weighted targets. Use this to avoid over-drilling one game.
                         </div>
                       </div>
-                      <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                      <Badge variant="secondary" className="text-xs uppercase tracking-wide">
                         {practiceBalance.totalAttempts} attempts
                       </Badge>
                     </div>
@@ -352,7 +351,7 @@ export default function DashboardPage() {
                         Suggested next games
                       </div>
                       {practiceBalance.under.length > 0 ? (
-                        <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                        <Badge variant="outline" className="text-xs uppercase tracking-wide">
                           {practiceBalance.under.length} under-target
                         </Badge>
                       ) : null}
@@ -370,7 +369,7 @@ export default function DashboardPage() {
                           <div key={entry.id} className="flex items-center justify-between gap-2 text-xs">
                             <div className="min-w-0">
                               <div className="truncate font-medium">{entry.title}</div>
-                              <div className="text-[10px] text-muted-foreground">
+                              <div className="text-xs text-muted-foreground">
                                 {Math.round(entry.actualShare * 100)}% now • target{" "}
                                 {Math.round(entry.recommendedShare * 100)}%
                               </div>
@@ -508,16 +507,16 @@ export default function DashboardPage() {
                             {game.section.toUpperCase()}
                           </Badge>
                           {isUnderTarget ? (
-                            <Badge variant="destructive" className="text-[10px] uppercase tracking-wide">
+                            <Badge variant="destructive" className="text-xs uppercase tracking-wide">
                               Under target
                             </Badge>
                           ) : isOverTarget ? (
-                            <Badge variant="outline" className="text-[10px] uppercase tracking-wide">
+                            <Badge variant="outline" className="text-xs uppercase tracking-wide">
                               Over target
                             </Badge>
                           ) : null}
                           {stats.attempts === 0 ? (
-                            <Badge variant="secondary" className="text-[10px] uppercase tracking-wide">
+                            <Badge variant="secondary" className="text-xs uppercase tracking-wide">
                               New
                             </Badge>
                           ) : null}
@@ -543,29 +542,29 @@ export default function DashboardPage() {
                     <CardContent className="flex-1">
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         <span>{stats.attempts} attempts</span>
-                        <span className="h-1 w-1 rounded-full bg-muted-foreground/60" />
+                        <span className="h-1 w-1 rounded-4xl bg-muted-foreground/60" />
                         <span>{stats.solves} solves</span>
                       </div>
 
                       <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
                         <div className="rounded-xl border border-border/60 bg-muted/30 px-2 py-2">
-                          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Best</div>
+                          <div className="text-xs uppercase tracking-wide text-muted-foreground">Best</div>
                           <div className="text-sm font-semibold">
                             {stats.bestTimeSeconds != null ? formatTime(stats.bestTimeSeconds) : "--:--"}
                           </div>
                         </div>
                         <div className="rounded-xl border border-border/60 bg-muted/30 px-2 py-2">
-                          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Accuracy</div>
+                          <div className="text-xs uppercase tracking-wide text-muted-foreground">Accuracy</div>
                           <div className="text-sm font-semibold">{accuracy}%</div>
                         </div>
                         <div className="rounded-xl border border-border/60 bg-muted/30 px-2 py-2">
-                          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Streak</div>
+                          <div className="text-xs uppercase tracking-wide text-muted-foreground">Streak</div>
                           <div className="text-sm font-semibold">{stats.streakDays}d</div>
                         </div>
                       </div>
 
                       {balance && practiceBalance.totalAttempts > 0 ? (
-                        <div className="mt-2 text-[10px] text-muted-foreground">
+                        <div className="mt-2 text-xs text-muted-foreground">
                           Share {Math.round(balance.actualShare * 100)}% • target{" "}
                           {Math.round(balance.recommendedShare * 100)}%
                         </div>

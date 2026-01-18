@@ -98,11 +98,11 @@ export const RoutesPuzzleUI: React.FC<{
                   <button
                     key={n.id}
                     className={[
-                      "absolute -translate-x-1/2 -translate-y-1/2 rounded-full border",
+                      "absolute -translate-x-1/2 -translate-y-1/2 rounded-4xl border",
                       "px-2 py-1 sm:px-3 sm:py-2 text-[clamp(10px,2.2vw,14px)] font-semibold shadow-sm",
                       "focus:outline-none focus-visible:border-primary/60 focus-visible:bg-accent/30",
                       active ? "bg-primary text-primary-foreground" : "bg-background",
-                      isStart ? "border-emerald-500" : "",
+                      isStart ? "border-foreground" : "",
                       isEnd ? "border-primary" : "",
                     ].join(" ")}
                     style={{ left: `${n.x}%`, top: `${n.y}%` }}

@@ -198,7 +198,7 @@ export const NonogramUI: React.FC<Props> = ({ puzzle, state, dispatch }) => {
                     <div
                       key={`colclue-${clueRow}-${c}`}
                       className={[
-                        "border-r border-b border-border flex items-center justify-center text-[10px] sm:text-xs",
+                        "border-r border-b border-border flex items-center justify-center text-xs",
                         clue != null ? "bg-muted font-semibold text-foreground" : "bg-background text-muted-foreground",
                         clueRow === 0 ? "border-t border-border" : "border-t border-transparent",
                         c === W - 1 ? "border-r border-border rounded-tr-2xl" : "",
@@ -220,7 +220,7 @@ export const NonogramUI: React.FC<Props> = ({ puzzle, state, dispatch }) => {
                     <div
                       key={`rowclue-${r}-${clueCol}`}
                       className={[
-                        "border-r border-b border-border flex items-center justify-center text-[10px] sm:text-xs",
+                        "border-r border-b border-border flex items-center justify-center text-xs",
                         clue != null ? "bg-muted font-semibold text-foreground" : "bg-background text-muted-foreground",
                         clueCol === 0 ? "border-l border-border" : "border-l border-transparent",
                         r === H - 1 && clueCol === 0 ? "rounded-bl-2xl" : "",

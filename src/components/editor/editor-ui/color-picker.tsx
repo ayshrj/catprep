@@ -1042,7 +1042,7 @@ function ColorPickerArea(props: ColorPickerAreaProps) {
       data-slot="color-picker-area"
       {...areaProps}
       className={cn(
-        "relative h-40 w-full cursor-crosshair touch-none rounded-sm border",
+        "relative h-40 w-full cursor-crosshair touch-none rounded-3xl border",
         context.disabled && "pointer-events-none opacity-50",
         className
       )}
@@ -1051,7 +1051,7 @@ function ColorPickerArea(props: ColorPickerAreaProps) {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
     >
-      <div className="absolute inset-0 overflow-hidden rounded-sm">
+      <div className="absolute inset-0 overflow-hidden rounded-3xl">
         <div
           className="absolute inset-0"
           style={{
@@ -1072,7 +1072,7 @@ function ColorPickerArea(props: ColorPickerAreaProps) {
         />
       </div>
       <div
-        className="absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm"
+        className="absolute size-3 -translate-x-1/2 -translate-y-1/2 rounded-4xl border-2 border-foreground shadow-sm"
         style={{
           left: `${hsv?.s ?? 0}%`,
           top: `${100 - (hsv?.v ?? 0)}%`,
@@ -1117,10 +1117,10 @@ function ColorPickerHueSlider(props: ColorPickerHueSliderProps) {
       onValueChange={onValueChange}
       disabled={context.disabled}
     >
-      <SliderPrimitive.Track className="relative h-3 w-full grow overflow-hidden rounded-full bg-[linear-gradient(to_right,#ff0000_0%,#ffff00_16.66%,#00ff00_33.33%,#00ffff_50%,#0000ff_66.66%,#ff00ff_83.33%,#ff0000_100%)]">
+      <SliderPrimitive.Track className="relative h-3 w-full grow overflow-hidden rounded-4xl bg-[linear-gradient(to_right,#ff0000_0%,#ffff00_16.66%,#00ff00_33.33%,#00ffff_50%,#0000ff_66.66%,#ff00ff_83.33%,#ff0000_100%)]">
         <SliderPrimitive.Range className="absolute h-full" />
       </SliderPrimitive.Track>
-      <SliderPrimitive.Thumb className="border-primary/50 bg-background focus-visible:ring-ring block size-4 rounded-full border shadow transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50" />
+      <SliderPrimitive.Thumb className="border-primary/50 bg-background focus-visible:ring-ring block size-4 rounded-4xl border shadow transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50" />
     </SliderPrimitive.Root>
   );
 }
@@ -1161,7 +1161,7 @@ function ColorPickerAlphaSlider(props: ColorPickerAlphaSliderProps) {
       onValueChange={onValueChange}
     >
       <SliderPrimitive.Track
-        className="relative h-3 w-full grow overflow-hidden rounded-full"
+        className="relative h-3 w-full grow overflow-hidden rounded-4xl"
         style={{
           background:
             "linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)",
@@ -1170,14 +1170,14 @@ function ColorPickerAlphaSlider(props: ColorPickerAlphaSliderProps) {
         }}
       >
         <div
-          className="absolute inset-0 rounded-full"
+          className="absolute inset-0 rounded-4xl"
           style={{
             background: `linear-gradient(to right, transparent, ${gradientColor})`,
           }}
         />
         <SliderPrimitive.Range className="absolute h-full" />
       </SliderPrimitive.Track>
-      <SliderPrimitive.Thumb className="border-primary/50 bg-background focus-visible:ring-ring block size-4 rounded-full border shadow transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50" />
+      <SliderPrimitive.Thumb className="border-primary/50 bg-background focus-visible:ring-ring block size-4 rounded-4xl border shadow transition-colors focus-visible:ring-1 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50" />
     </SliderPrimitive.Root>
   );
 }
@@ -1224,7 +1224,7 @@ function ColorPickerSwatch(props: ColorPickerSwatchProps) {
       aria-label={ariaLabel}
       data-slot="color-picker-swatch"
       {...swatchProps}
-      className={cn("box-border size-8 rounded-sm border shadow-sm", context.disabled && "opacity-50", className)}
+      className={cn("box-border size-8 rounded-2xl border shadow-sm", context.disabled && "opacity-50", className)}
       style={{
         ...backgroundStyle,
         forcedColorAdjust: "none",

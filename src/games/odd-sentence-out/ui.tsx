@@ -45,7 +45,7 @@ export const OddSentenceOutUI: React.FC<{
                   aria-pressed={isSelected}
                   onClick={() => dispatch({ type: "select", index: idx })}
                 >
-                  <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full border text-xs">
+                  <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-4xl border text-xs">
                     {labelFor(idx)}
                   </span>
                   <span>{s}</span>

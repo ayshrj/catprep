@@ -333,7 +333,7 @@ function TranscribingOverlay() {
       <div className="relative">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <motion.div
-          className="absolute inset-0 h-8 w-8 animate-pulse rounded-full bg-primary/20"
+          className="absolute inset-0 h-8 w-8 animate-pulse rounded-4xl bg-primary/20"
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1.2, opacity: 1 }}
           transition={{
@@ -369,7 +369,7 @@ function RecordingPrompt({ isVisible, onStopRecording }: RecordingPromptProps) {
             },
           }}
           exit={{ top: 0, filter: "blur(5px)" }}
-          className="absolute left-1/2 flex -translate-x-1/2 cursor-pointer overflow-hidden whitespace-nowrap rounded-full border bg-background py-1 text-center text-sm text-muted-foreground"
+          className="absolute left-1/2 flex -translate-x-1/2 cursor-pointer overflow-hidden whitespace-nowrap rounded-4xl border bg-background py-1 text-center text-sm text-muted-foreground"
           onClick={onStopRecording}
         >
           <span className="mx-2.5 flex items-center">
@@ -399,7 +399,10 @@ function RecordingControls({
 }: RecordingControlsProps) {
   if (isRecording) {
     return (
-      <div className="absolute inset-[1px] z-50 overflow-hidden rounded-xl" style={{ height: textAreaHeight - 2 }}>
+      <div
+        className="absolute inset-[var(--border-w)] z-50 overflow-hidden rounded-xl"
+        style={{ height: textAreaHeight - 2 }}
+      >
         <AudioVisualizer stream={audioStream} isRecording={isRecording} onClick={onStopRecording} />
       </div>
     );
@@ -407,7 +410,10 @@ function RecordingControls({
 
   if (isTranscribing) {
     return (
-      <div className="absolute inset-[1px] z-50 overflow-hidden rounded-xl" style={{ height: textAreaHeight - 2 }}>
+      <div
+        className="absolute inset-[var(--border-w)] z-50 overflow-hidden rounded-xl"
+        style={{ height: textAreaHeight - 2 }}
+      >
         <TranscribingOverlay />
       </div>
     );

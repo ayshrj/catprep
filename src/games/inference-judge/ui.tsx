@@ -56,7 +56,7 @@ export const InferenceJudgeUI: React.FC<{
                   ].join(" ")}
                   onClick={() => dispatch({ type: "select", optionId: opt.id })}
                 >
-                  <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full border text-xs">
+                  <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-4xl border text-xs">
                     {opt.id}
                   </span>
                   {opt.text}

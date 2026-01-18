@@ -2,30 +2,30 @@
   background-color: transparent;
   font-family: Menlo, Consolas, Monaco, monospace;
   display: block;
-  padding: 8px 8px 8px 52px;
-  line-height: 1.53;
-  font-size: 13px;
+  padding: var(--s-2) var(--s-2) var(--s-2) calc(var(--s-8) + var(--s-1));
+  line-height: var(--lh-normal);
+  font-size: var(--fs-xs);
   margin: 0;
-  margin-top: 8px;
-  margin-bottom: 8px;
+  margin-top: var(--s-2);
+  margin-bottom: var(--s-2);
   overflow-x: auto;
-  border: 1px solid #ccc;
+  border: var(--border-w) solid var(--border);
   position: relative;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   tab-size: 2;
 }
 .EditorTheme__code:before {
   content: attr(data-gutter);
   position: absolute;
   background-color: transparent;
-  border-right: 1px solid #ccc;
+  border-right: var(--border-w) solid var(--border);
   left: 0;
   top: 0;
-  padding: 8px;
-  color: #777;
+  padding: var(--s-2);
+  color: var(--text-faint);
   white-space: pre-wrap;
   text-align: right;
-  min-width: 25px;
+  min-width: calc(var(--s-5) + var(--s-1));
 }
 .EditorTheme__table {
   border-collapse: collapse;
@@ -38,40 +38,40 @@
   margin: 0px 0px 30px 0px;
 }
 .EditorTheme__tokenComment {
-  color: slategray;
+  color: var(--text-faint);
 }
 .EditorTheme__tokenPunctuation {
-  color: #999;
+  color: var(--text-muted);
 }
 .EditorTheme__tokenProperty {
-  color: #905;
+  color: var(--text);
 }
 .EditorTheme__tokenSelector {
-  color: #690;
+  color: var(--text);
 }
 .EditorTheme__tokenOperator {
-  color: #9a6e3a;
+  color: var(--text-muted);
 }
 .EditorTheme__tokenAttr {
-  color: #07a;
+  color: var(--text-muted);
 }
 .EditorTheme__tokenVariable {
-  color: #e90;
+  color: var(--text);
 }
 .EditorTheme__tokenFunction {
-  color: #dd4a68;
+  color: var(--text);
 }
 
 .Collapsible__container {
   background-color: var(--background);
-  border: 1px solid #ccc;
-  border-radius: 0.5rem;
-  margin-bottom: 0.5rem;
+  border: var(--border-w) solid var(--border);
+  border-radius: var(--r-sm);
+  margin-bottom: var(--s-2);
 }
 
 .Collapsible__title {
-  padding: 0.25rem;
-  padding-left: 1rem;
+  padding: var(--s-1);
+  padding-left: var(--s-4);
   position: relative;
   font-weight: bold;
   outline: none;
@@ -84,7 +84,7 @@
   display: inline-flex;
 }
 .Collapsible__title::marker {
-  color: lightgray;
+  color: var(--text-faint);
 }
 .Collapsible__container[open] > .Collapsible__title {
   list-style-type: disclosure-open;

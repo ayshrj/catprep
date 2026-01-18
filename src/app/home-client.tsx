@@ -1251,7 +1251,7 @@ export function HomeClient() {
         >
           <button type="button" className="min-w-0 flex-1 text-left" onClick={() => openChat(session.id)}>
             <div className="line-clamp-2">{label}</div>
-            <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground">
+            <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
               {session.archived ? <span className="rounded border px-1 py-0.5">archived</span> : null}
               {session.updatedAt ? <span>{formatWhen(session.updatedAt)}</span> : null}
             </div>
@@ -1431,7 +1431,7 @@ export function HomeClient() {
   const guideTitle = needsSetup ? "Guide (setup recommended)" : "Guide";
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-gradient-to-b from-background via-background to-muted/30">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background">
       <AppNavbar
         title="Cat99"
         subtitle={sessionUser ? (sessionUser.email ?? sessionUser.uid) : undefined}
@@ -1463,7 +1463,7 @@ export function HomeClient() {
                         <div className="space-y-4 p-4">
                           {CAT_KB_PARTS.map(part => (
                             <div key={part.id} className="space-y-2">
-                              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                 {part.title}
                               </p>
                               <div className="space-y-1">
@@ -1632,7 +1632,7 @@ export function HomeClient() {
                           <div className="flex flex-wrap items-start justify-between gap-2">
                             <div>
                               <p className="text-xs font-semibold text-foreground">Action board</p>
-                              <p className="text-[11px] text-muted-foreground">
+                              <p className="text-xs text-muted-foreground">
                                 Track today and this week, then save to rough notes.
                               </p>
                             </div>
@@ -1653,7 +1653,7 @@ export function HomeClient() {
                               if (items.length === 0) return null;
                               return (
                                 <div key={bucket} className="rounded-xl border bg-background p-3">
-                                  <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                     {bucket}
                                   </p>
                                   <div className="mt-2 space-y-2">
@@ -2088,8 +2088,8 @@ export function HomeClient() {
           <div className="space-y-4 px-6 pb-6">
             <div className="rounded-xl border bg-muted/20 p-3">
               <p className="text-xs font-semibold text-foreground">Status</p>
-              <p className="mt-1 text-[11px] text-muted-foreground">{setupSummary}</p>
-              <div className="mt-2 grid gap-2 text-[11px] text-muted-foreground sm:grid-cols-2">
+              <p className="mt-1 text-xs text-muted-foreground">{setupSummary}</p>
+              <div className="mt-2 grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
                 <div className="space-y-1">
                   <p>OpenRouter key: {keyStatusLabel}</p>
                   <p>Model: {modelStatusLabel}</p>
@@ -2101,7 +2101,7 @@ export function HomeClient() {
                 </div>
               </div>
               {!canGenerateResponses ? (
-                <p className="mt-2 text-[10px] text-muted-foreground">
+                <p className="mt-2 text-xs text-muted-foreground">
                   Responses are optional. Add a key + model when you want replies.
                 </p>
               ) : null}
@@ -2109,7 +2109,7 @@ export function HomeClient() {
 
             <div className="rounded-xl border bg-muted/20 p-3">
               <p className="text-xs font-semibold text-foreground">Quick tips</p>
-              <ul className="mt-2 list-disc space-y-1 pl-4 text-[11px] text-muted-foreground">
+              <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-muted-foreground">
                 <li>Attach images or text files. Images can run OCR to extract text.</li>
                 <li>Paste long text to turn it into a text attachment automatically.</li>
                 <li>Use the mic button for voice dictation.</li>
@@ -2117,7 +2117,7 @@ export function HomeClient() {
                 <li>Use Generate reply after setup to answer the latest message.</li>
                 <li>Export chats anytime from the top bar.</li>
               </ul>
-              <p className="mt-2 text-[10px] text-muted-foreground">
+              <p className="mt-2 text-xs text-muted-foreground">
                 Upload note: images are sent to Cloudinary for OCR; text files stay as attachments in your chat history.
               </p>
             </div>
@@ -2138,7 +2138,7 @@ export function HomeClient() {
                 <div key={step.label} className="flex items-center gap-2 text-sm">
                   <span
                     className={cn(
-                      "flex h-5 w-5 items-center justify-center rounded-full border text-xs",
+                      "flex h-5 w-5 items-center justify-center rounded-4xl border text-xs",
                       step.done
                         ? "border-primary bg-primary text-primary-foreground"
                         : "border-muted-foreground/30 text-muted-foreground"
@@ -2321,9 +2321,7 @@ export function HomeClient() {
                         {model.id}
                         {model.contextLength ? ` • ${model.contextLength.toLocaleString()} ctx` : ""}
                       </div>
-                      {description ? (
-                        <div className="truncate text-[11px] text-muted-foreground">{description}</div>
-                      ) : null}
+                      {description ? <div className="truncate text-xs text-muted-foreground">{description}</div> : null}
                     </div>
                     <ModelIcon model={model.id} />
                   </div>
@@ -2360,7 +2358,7 @@ export function HomeClient() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isSettingsSaving}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-white hover:bg-destructive/90"
+              className="bg-destructive text-primary-foreground hover:bg-destructive/90"
               onClick={onConfirm}
               disabled={isSettingsSaving}
             >

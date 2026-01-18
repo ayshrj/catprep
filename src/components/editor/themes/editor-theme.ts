@@ -15,12 +15,12 @@ export const editorTheme: EditorThemeClasses = {
   },
   paragraph: "leading-7 [&:not(:first-child)]:mt-6",
   quote: "mt-6 border-l-2 pl-6 italic",
-  link: "text-blue-600 hover:underline hover:cursor-pointer",
+  link: "text-foreground hover:underline hover:cursor-pointer",
   list: {
     checklist: "relative",
     listitem: "mx-8",
     listitemChecked:
-      'relative mx-2 px-6 list-none outline-none line-through before:content-[""] before:w-4 before:h-4 before:top-0.5 before:left-0 before:cursor-pointer before:block before:bg-cover before:absolute before:border before:border-primary before:rounded before:bg-primary before:bg-no-repeat after:content-[""] after:cursor-pointer after:border-white after:border-solid after:absolute after:block after:top-[6px] after:w-[3px] after:left-[7px] after:right-[7px] after:h-[6px] after:rotate-45 after:border-r-2 after:border-b-2 after:border-l-0 after:border-t-0',
+      'relative mx-2 px-6 list-none outline-none line-through before:content-[""] before:w-4 before:h-4 before:top-0.5 before:left-0 before:cursor-pointer before:block before:bg-cover before:absolute before:border before:border-primary before:rounded before:bg-primary before:bg-no-repeat after:content-[""] after:cursor-pointer after:border-primary-foreground after:border-solid after:absolute after:block after:top-[6px] after:w-[3px] after:left-[7px] after:right-[7px] after:h-[6px] after:rotate-45 after:border-r-2 after:border-b-2 after:border-l-0 after:border-t-0',
     listitemUnchecked:
       'relative mx-2 px-6 list-none outline-none before:content-[""] before:w-4 before:h-4 before:top-0.5 before:left-0 before:cursor-pointer before:block before:bg-cover before:absolute before:border before:border-primary before:rounded',
     nested: {
@@ -43,10 +43,10 @@ export const editorTheme: EditorThemeClasses = {
       "list-outside !list-disc",
     ],
   },
-  hashtag: "text-blue-600 bg-blue-100 rounded-md px-1",
+  hashtag: "text-foreground bg-muted rounded-md px-1",
   text: {
     bold: "font-bold",
-    code: "bg-gray-500/50 p-1 rounded-md",
+    code: "bg-muted p-1 rounded-md",
     italic: "italic",
     strikethrough: "line-through",
     subscript: "sub",
@@ -56,7 +56,7 @@ export const editorTheme: EditorThemeClasses = {
   },
   image: "relative inline-block user-select-none cursor-default editor-image",
   inlineImage: "relative inline-block user-select-none cursor-default inline-editor-image",
-  keyword: "text-purple-900 font-bold",
+  keyword: "text-foreground font-semibold",
   code: "EditorTheme__code",
   codeHighlight: {
     atrule: "EditorTheme__tokenAttr",
@@ -90,7 +90,7 @@ export const editorTheme: EditorThemeClasses = {
     url: "EditorTheme__tokenOperator",
     variable: "EditorTheme__tokenVariable",
   },
-  characterLimit: "!bg-destructive/50",
+  characterLimit: "!bg-border-strong",
   table: "EditorTheme__table w-fit overflow-scroll border-collapse",
   tableCell:
     'EditorTheme__tableCell w-24 relative border px-4 py-2 text-left [&[align=center]]:text-center [&[align=right]]:text-right"',
