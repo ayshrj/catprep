@@ -96,6 +96,13 @@ export default function QuestionDetailPage() {
     return paperSections.find(section => section.id === sectionId) ?? null;
   }, [paperSections, sectionId]);
 
+  const sectionImageBlocks = useMemo(() => {
+    if (!currentSection?.content?.length) return [];
+    return currentSection.content.filter(block => block.type === "image");
+  }, [currentSection]);
+  const sectionImageUrls = useMemo(() => currentSection?.images ?? [], [currentSection]);
+  const showSectionImages = sectionImageUrls.length > 0 && sectionImageBlocks.length === 0;
+
   const paperTitle = useMemo(() => {
     const topic = paper?.topic?.trim();
     if (topic) return topic;
@@ -481,6 +488,37 @@ export default function QuestionDetailPage() {
               </div>
             ) : question ? (
               <>
+                {sectionImageBlocks.length || showSectionImages ? (
+                  <Card className="game-panel">
+                    <CardHeader className="space-y-1">
+                      <CardTitle className="text-base">Section visuals</CardTitle>
+                      {currentSection ? (
+                        <p className="text-xs text-muted-foreground">
+                          {sectionHeading(currentSection)} / {currentSection.questionCount} Qs
+                        </p>
+                      ) : null}
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {sectionImageBlocks.length ? (
+                        <ContentBlocks blocks={sectionImageBlocks} />
+                      ) : (
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          {sectionImageUrls.map((image, index) => (
+                            <figure key={`${image}-${index}`} className="rounded-xl border border-border/60 p-2">
+                              <img
+                                src={image}
+                                alt="Section visual"
+                                loading="lazy"
+                                className="h-auto w-full rounded-lg"
+                              />
+                            </figure>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ) : null}
+
                 <Card className="game-panel">
                   <CardHeader className="space-y-2">
                     <CardTitle className="text-base">Question {question.index + 1}</CardTitle>
@@ -769,8 +807,22 @@ export default function QuestionDetailPage() {
                       )}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">No passage content for this section.</p>
+                    <p className="text-sm text-muted-foreground">No passage text for this section.</p>
                   )}
+                  {showSectionImages ? (
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Section visuals
+                      </p>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {sectionImageUrls.map((image, index) => (
+                          <figure key={`${image}-${index}`} className="rounded-xl border border-border/60 p-2">
+                            <img src={image} alt="Section visual" loading="lazy" className="h-auto w-full rounded-lg" />
+                          </figure>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </section>
               ) : paper ? (
                 <p className="text-sm text-muted-foreground">Section details unavailable.</p>
