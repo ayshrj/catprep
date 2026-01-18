@@ -389,9 +389,30 @@ export default function DashboardPage() {
 
                 <Separator className="bg-border/60" />
 
-                <div className="space-y-3">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                    <div className="relative flex-1">
+                <div className="space-y-3 rounded-2xl border border-border/60 bg-background/70 p-3 shadow-sm sm:p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Filters</div>
+                      <div className="text-xs text-muted-foreground">
+                        Search by game or skill, then narrow by section.
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={!showReset}
+                      onClick={() => {
+                        setSearchTerm("");
+                        setFilterSection(null);
+                      }}
+                    >
+                      Clear filters
+                    </Button>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+                    <div className="relative">
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         type="text"
@@ -405,8 +426,8 @@ export default function DashboardPage() {
                       value={filterSection ?? ALL}
                       onValueChange={val => setFilterSection(val === ALL ? null : val)}
                     >
-                      <SelectTrigger className="w-full md:hidden">
-                        <SelectValue placeholder="All Sections" />
+                      <SelectTrigger className="w-full md:min-w-[200px]">
+                        <SelectValue placeholder="All sections" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={ALL}>All Sections</SelectItem>
@@ -416,19 +437,6 @@ export default function DashboardPage() {
                         <SelectItem value="hybrid">Hybrid</SelectItem>
                       </SelectContent>
                     </Select>
-                    {showReset ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSearchTerm("");
-                          setFilterSection(null);
-                        }}
-                      >
-                        Clear filters
-                      </Button>
-                    ) : null}
                   </div>
 
                   <div className="hidden flex-wrap gap-2 md:flex">

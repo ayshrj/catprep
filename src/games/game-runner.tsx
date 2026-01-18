@@ -189,7 +189,7 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
   const reviewErrors = showLoading ? [] : evaluation.errors.filter(error => error.type !== "inProgress");
   const reviewCard =
     reviewErrors.length > 0 ? (
-      <Card className="shadow-sm">
+      <Card className="game-panel">
         <CardContent className="space-y-2 p-3 text-sm">
           <div className="flex items-center justify-between">
             <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">What went wrong</div>
@@ -208,31 +208,31 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
   const secondaryCard = endOfRound ? (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-2">
-        <Card className="shadow-sm">
+        <Card className="game-panel">
           <CardContent className="p-3 text-sm">
             <div className="text-muted-foreground">Time</div>
             <div className="text-lg font-semibold">{formatTime(elapsedSeconds)}</div>
           </CardContent>
         </Card>
-        <Card className="shadow-sm">
+        <Card className="game-panel">
           <CardContent className="p-3 text-sm">
             <div className="text-muted-foreground">Accuracy</div>
             <div className="text-lg font-semibold">{accuracy}%</div>
           </CardContent>
         </Card>
-        <Card className="shadow-sm">
+        <Card className="game-panel">
           <CardContent className="p-3 text-sm">
             <div className="text-muted-foreground">Score</div>
             <div className="text-lg font-semibold">{evaluation.scoreDelta}</div>
           </CardContent>
         </Card>
-        <Card className="shadow-sm">
+        <Card className="game-panel">
           <CardContent className="p-3 text-sm">
             <div className="text-muted-foreground">Streak</div>
             <div className="text-lg font-semibold">{stats.streakDays} days</div>
           </CardContent>
         </Card>
-        <Card className="shadow-sm">
+        <Card className="game-panel">
           <CardContent className="p-3 text-sm">
             <div className="text-muted-foreground">Best time</div>
             <div className="text-lg font-semibold">
@@ -240,7 +240,7 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
             </div>
           </CardContent>
         </Card>
-        <Card className="shadow-sm">
+        <Card className="game-panel">
           <CardContent className="p-3 text-sm">
             <div className="text-muted-foreground">Best score</div>
             <div className="text-lg font-semibold">{bestScoreLabel}</div>
@@ -269,19 +269,19 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
 
   const statsSheetContent = (
     <div className="grid gap-3 sm:grid-cols-2">
-      <Card className="shadow-sm">
+      <Card className="game-panel">
         <CardContent className="p-3 text-sm">
           <div className="text-muted-foreground">Attempts</div>
           <div className="text-lg font-semibold">{stats.attempts}</div>
         </CardContent>
       </Card>
-      <Card className="shadow-sm">
+      <Card className="game-panel">
         <CardContent className="p-3 text-sm">
           <div className="text-muted-foreground">Solves</div>
           <div className="text-lg font-semibold">{stats.solves}</div>
         </CardContent>
       </Card>
-      <Card className="shadow-sm">
+      <Card className="game-panel">
         <CardContent className="p-3 text-sm">
           <div className="text-muted-foreground">Best time</div>
           <div className="text-lg font-semibold">
@@ -289,19 +289,19 @@ const GameRunner: React.FC<{ gameId: string }> = ({ gameId }) => {
           </div>
         </CardContent>
       </Card>
-      <Card className="shadow-sm">
+      <Card className="game-panel">
         <CardContent className="p-3 text-sm">
           <div className="text-muted-foreground">Streak</div>
           <div className="text-lg font-semibold">{stats.streakDays} days</div>
         </CardContent>
       </Card>
-      <Card className="shadow-sm">
+      <Card className="game-panel">
         <CardContent className="p-3 text-sm">
           <div className="text-muted-foreground">Best score</div>
           <div className="text-lg font-semibold">{bestScoreLabel}</div>
         </CardContent>
       </Card>
-      <Card className="shadow-sm">
+      <Card className="game-panel">
         <CardContent className="p-3 text-sm">
           <div className="text-muted-foreground">Average score</div>
           <div className="text-lg font-semibold">{stats.attempts ? averageScore : "--"}</div>

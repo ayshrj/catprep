@@ -1,6 +1,17 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, ExternalLink, Info, Loader2, Play, Square, Timer } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ExternalLink,
+  Info,
+  Layers,
+  ListChecks,
+  Loader2,
+  Play,
+  Square,
+  Timer,
+} from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -85,6 +96,7 @@ export default function QuestionDetailPage() {
   const [titaStatus, setTitaStatus] = useState<"idle" | "correct" | "incorrect" | "unavailable">("idle");
   const [selectedChoiceIndex, setSelectedChoiceIndex] = useState<number | null>(null);
   const [mcqStatus, setMcqStatus] = useState<"idle" | "correct" | "incorrect" | "unavailable">("idle");
+  const [answerOpen, setAnswerOpen] = useState(false);
 
   const practiceStorageKey = useMemo(() => {
     if (!paperId || !sectionId) return null;
@@ -176,6 +188,7 @@ export default function QuestionDetailPage() {
     setSelectedChoiceIndex(null);
     setMcqStatus("idle");
     setHasChecked(false);
+    setAnswerOpen(false);
   }, [questionId]);
 
   useEffect(() => {
@@ -366,37 +379,46 @@ export default function QuestionDetailPage() {
   );
 
   const manualAnswerNode = needsManualAnswer ? (
-    <div className="flex flex-wrap items-center gap-2">
-      <Input
-        value={titaAnswer}
-        onChange={event => {
-          setTitaAnswer(event.target.value);
-          setTitaStatus("idle");
-        }}
-        onKeyDown={event => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            handleTitaCheck();
-          }
-        }}
-        placeholder="Your answer"
-        className="w-44 sm:w-52"
-        disabled={checkLocked}
-      />
-      <Button
-        type="button"
-        variant="secondary"
-        size="sm"
-        onClick={handleTitaCheck}
-        disabled={!titaAnswer.trim() || checkLocked}
-      >
-        Check
-      </Button>
-      {titaStatus === "correct" ? <span className="text-xs font-semibold text-emerald-600">Correct</span> : null}
-      {titaStatus === "incorrect" ? <span className="text-xs font-semibold text-rose-600">Incorrect</span> : null}
-      {titaStatus === "unavailable" ? (
-        <span className="text-xs text-muted-foreground">Answer not available.</span>
-      ) : null}
+    <div className="rounded-xl border border-border/60 bg-muted/30 p-3">
+      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Type your answer</div>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <Input
+          value={titaAnswer}
+          onChange={event => {
+            setTitaAnswer(event.target.value);
+            setTitaStatus("idle");
+          }}
+          onKeyDown={event => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              handleTitaCheck();
+            }
+          }}
+          placeholder="Your answer"
+          className="w-44 sm:w-52"
+          disabled={checkLocked}
+        />
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={handleTitaCheck}
+          disabled={!titaAnswer.trim() || checkLocked}
+        >
+          Check answer
+        </Button>
+        {titaStatus === "correct" ? (
+          <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+            Correct
+          </span>
+        ) : null}
+        {titaStatus === "incorrect" ? (
+          <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-xs font-semibold text-rose-700">Incorrect</span>
+        ) : null}
+        {titaStatus === "unavailable" ? (
+          <span className="text-xs text-muted-foreground">Answer not available.</span>
+        ) : null}
+      </div>
     </div>
   ) : null;
 
@@ -428,54 +450,117 @@ export default function QuestionDetailPage() {
       />
 
       <AppContent className={APP_CONTENT_HEIGHT}>
-        <div className="h-full min-h-0 overflow-y-auto py-4 sm:py-6">
+        <div className="h-full min-h-0 overflow-y-auto py-3 sm:py-4">
           <div className="space-y-6 pb-6">
-            <div className="flex flex-wrap items-center gap-3">
-              <Button asChild variant="outline" size="sm">
-                <Link href="/papers">Back to papers</Link>
-              </Button>
-              {paperSections.length > 1 ? (
-                <div className="min-w-[200px]">
-                  <Select value={sectionId ?? ""} onValueChange={handleSectionChange}>
-                    <SelectTrigger size="sm" disabled={sectionSwitching}>
-                      <SelectValue placeholder="Select section" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {paperSections.map((section, index) => (
-                        <SelectItem key={section.id} value={section.id}>
-                          {sectionHeading(section)} / {section.questionCount} Qs
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            <section className="game-panel relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-muted/40 via-background to-background" />
+              <div className="relative game-panel-padded space-y-4">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span className="game-chip">Past papers</span>
+                      <span>{paperTitle}</span>
+                      {paper?.exam ? <span className="game-chip">{paper.exam}</span> : null}
+                      {paper?.year ? <span className="game-chip">{paper.year}</span> : null}
+                      {paper?.slot ? <span className="game-chip">Slot {paper.slot}</span> : null}
+                      {paper?.paperSection ? (
+                        <span className="game-chip">{CAT_PAPER_SECTION_LABELS[paper.paperSection]}</span>
+                      ) : null}
+                      {practiceMode ? <span className="game-chip">Practice</span> : <span>Review</span>}
+                    </div>
+                    <div className="space-y-1">
+                      <h1 className="text-xl font-semibold tracking-tight">
+                        Question {question ? question.index + 1 : "--"}
+                      </h1>
+                      <p className="text-sm text-muted-foreground">
+                        {currentSection ? sectionHeading(currentSection) : "Loading section"}{" "}
+                        {currentSection ? `• ${currentSection.questionCount} questions` : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="grid w-full gap-2 sm:grid-cols-3 lg:w-auto">
+                    <div className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 shadow-sm">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <ListChecks className="h-3.5 w-3.5" />
+                        Progress
+                      </div>
+                      <div className="text-lg font-semibold">
+                        {currentIndex >= 0 && questionList.length ? `${currentIndex + 1}/${questionList.length}` : "--"}
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 shadow-sm">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Layers className="h-3.5 w-3.5" />
+                        Section Qs
+                      </div>
+                      <div className="text-lg font-semibold">
+                        {currentSection ? currentSection.questionCount.toLocaleString() : "--"}
+                      </div>
+                    </div>
+                    <div className="rounded-2xl border border-border/60 bg-background/70 px-3 py-2 shadow-sm">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Timer className="h-3.5 w-3.5" />
+                        Timer
+                      </div>
+                      <div className="text-lg font-semibold">{practiceActive ? formatTime(timerSeconds) : "Ready"}</div>
+                    </div>
+                  </div>
                 </div>
-              ) : null}
-              <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => setInfoOpen(true)}>
-                <Info className="h-4 w-4" />
-                Info
-              </Button>
-              {practiceMode ? (
-                <Button asChild variant="secondary" size="sm" className="gap-2">
-                  <Link href={`/papers/${paperId}/sections/${sectionId}/questions/${questionId}`}>
-                    <Square className="h-4 w-4" />
-                    Exit practice
-                  </Link>
-                </Button>
-              ) : (
-                <Button asChild variant="secondary" size="sm" className="gap-2">
-                  <Link href={`/papers/${paperId}/sections/${sectionId}/questions/${questionId}${practiceQuery}`}>
-                    <Play className="h-4 w-4" />
-                    Practice mode
-                  </Link>
-                </Button>
-              )}
-              {practiceActive ? (
-                <div className="flex items-center gap-2 rounded-full border border-border/60 bg-background/70 px-3 py-1 text-xs text-muted-foreground">
-                  <Timer className="h-3.5 w-3.5" />
-                  {formatTime(timerSeconds)}
+              </div>
+            </section>
+
+            <Card className="game-panel">
+              <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button asChild variant="outline" size="sm">
+                    <Link href="/papers">Back to papers</Link>
+                  </Button>
+                  {paperSections.length > 1 ? (
+                    <div className="w-full sm:w-[240px]">
+                      <Select value={sectionId ?? ""} onValueChange={handleSectionChange}>
+                        <SelectTrigger size="sm" disabled={sectionSwitching} className="w-full">
+                          <SelectValue placeholder="Select section" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {paperSections.map(section => (
+                            <SelectItem key={section.id} value={section.id}>
+                              {sectionHeading(section)} / {section.questionCount} Qs
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : null}
+                  <Button type="button" variant="outline" size="sm" className="gap-2" onClick={() => setInfoOpen(true)}>
+                    <Info className="h-4 w-4" />
+                    Info
+                  </Button>
                 </div>
-              ) : null}
-            </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  {practiceMode ? (
+                    <Button asChild variant="secondary" size="sm" className="gap-2">
+                      <Link href={`/papers/${paperId}/sections/${sectionId}/questions/${questionId}`}>
+                        <Square className="h-4 w-4" />
+                        Exit practice
+                      </Link>
+                    </Button>
+                  ) : (
+                    <Button asChild variant="secondary" size="sm" className="gap-2">
+                      <Link href={`/papers/${paperId}/sections/${sectionId}/questions/${questionId}${practiceQuery}`}>
+                        <Play className="h-4 w-4" />
+                        Practice mode
+                      </Link>
+                    </Button>
+                  )}
+                  {practiceActive ? (
+                    <div className="flex items-center gap-2 rounded-full border border-border/60 bg-background/70 px-3 py-1 text-xs text-muted-foreground">
+                      <Timer className="h-3.5 w-3.5" />
+                      {formatTime(timerSeconds)}
+                    </div>
+                  ) : null}
+                </div>
+              </CardContent>
+            </Card>
 
             {loading ? (
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -546,36 +631,50 @@ export default function QuestionDetailPage() {
                     {question.choices.length ? (
                       <div className="space-y-3">
                         <div className="space-y-2">
-                          {normalizedChoices.map((choice, index) => (
-                            <Button
-                              key={`choice-${index}`}
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedChoiceIndex(index);
-                                setMcqStatus("idle");
-                              }}
-                              className={`h-auto w-full justify-start text-left whitespace-normal py-2 ${
-                                selectedChoiceIndex === index
-                                  ? mcqStatus === "correct"
-                                    ? "border-emerald-400 bg-emerald-50 text-emerald-700"
-                                    : mcqStatus === "incorrect"
-                                      ? "border-rose-400 bg-rose-50 text-rose-700"
-                                      : "border-primary/50 bg-primary/5"
-                                  : ""
-                              }`}
-                            >
-                              <span className="text-xs font-semibold text-muted-foreground">
-                                {CHOICE_LABELS[index] ?? ""}
-                              </span>
-                              <span className="flex-1">
-                                <MarkdownRenderer>{choice}</MarkdownRenderer>
-                              </span>
-                            </Button>
-                          ))}
+                          {normalizedChoices.map((choice, index) => {
+                            const isSelected = selectedChoiceIndex === index;
+                            const isCorrect = isSelected && mcqStatus === "correct";
+                            const isIncorrect = isSelected && mcqStatus === "incorrect";
+                            const stateStyles = isCorrect
+                              ? "border-emerald-400 bg-emerald-50/80 text-emerald-700"
+                              : isIncorrect
+                                ? "border-rose-400 bg-rose-50/80 text-rose-700"
+                                : isSelected
+                                  ? "border-primary/40 bg-primary/5"
+                                  : "border-border/60 bg-background/70 hover:border-foreground/30 hover:bg-muted/40";
+                            const labelStyles = isCorrect
+                              ? "border-emerald-400 bg-emerald-100 text-emerald-700"
+                              : isIncorrect
+                                ? "border-rose-400 bg-rose-100 text-rose-700"
+                                : isSelected
+                                  ? "border-primary/40 bg-primary/10 text-primary"
+                                  : "border-border/60 text-muted-foreground";
+
+                            return (
+                              <button
+                                key={`choice-${index}`}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedChoiceIndex(index);
+                                  setMcqStatus("idle");
+                                }}
+                                disabled={checkLocked}
+                                aria-pressed={isSelected}
+                                className={`flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left text-sm transition ${stateStyles} ${checkLocked ? "cursor-not-allowed opacity-70" : ""}`}
+                              >
+                                <span
+                                  className={`mt-0.5 flex h-7 w-7 items-center justify-center rounded-full border text-xs font-semibold ${labelStyles}`}
+                                >
+                                  {CHOICE_LABELS[index] ?? ""}
+                                </span>
+                                <span className="flex-1 text-sm">
+                                  <MarkdownRenderer>{choice}</MarkdownRenderer>
+                                </span>
+                              </button>
+                            );
+                          })}
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
                           <Button
                             type="button"
                             variant="secondary"
@@ -583,23 +682,27 @@ export default function QuestionDetailPage() {
                             onClick={handleChoiceCheck}
                             disabled={selectedChoiceIndex === null || checkLocked}
                           >
-                            Check
+                            Check answer
                           </Button>
+                          {selectedChoiceIndex === null ? <span>Select an option to check.</span> : null}
                           {mcqStatus === "correct" ? (
-                            <span className="text-xs font-semibold text-emerald-600">Correct</span>
+                            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                              Correct
+                            </span>
                           ) : null}
                           {mcqStatus === "incorrect" ? (
-                            <span className="text-xs font-semibold text-rose-600">Incorrect</span>
+                            <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-xs font-semibold text-rose-700">
+                              Incorrect
+                            </span>
                           ) : null}
-                          {mcqStatus === "unavailable" ? (
-                            <span className="text-xs text-muted-foreground">Answer not available.</span>
-                          ) : null}
+                          {mcqStatus === "unavailable" ? <span>Answer not available.</span> : null}
+                          {checkLocked ? <span>Locked in practice mode.</span> : null}
                         </div>
                         {manualAnswerNode}
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        <div className="rounded-lg border border-dashed border-border/60 p-3 text-xs text-muted-foreground">
+                        <div className="rounded-xl border border-border/60 bg-muted/30 p-3 text-xs text-muted-foreground">
                           TITA question - type your answer to check.
                         </div>
                         {manualAnswerNode}
@@ -622,22 +725,22 @@ export default function QuestionDetailPage() {
                 </Card>
 
                 {canRevealAnswer ? (
-                  <Collapsible>
+                  <Collapsible open={answerOpen} onOpenChange={setAnswerOpen}>
                     <Card className="game-panel">
-                      <CardHeader className="flex flex-row items-center justify-between">
+                      <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <CardTitle className="text-base">Answer & Explanation</CardTitle>
                           <p className="text-xs text-muted-foreground">Reveal only when you are ready.</p>
                         </div>
                         <CollapsibleTrigger asChild>
                           <Button type="button" variant="outline" size="sm">
-                            Toggle
+                            {answerOpen ? "Hide answer" : "Reveal answer"}
                           </Button>
                         </CollapsibleTrigger>
                       </CardHeader>
                       <CollapsibleContent>
                         <CardContent className="space-y-4">
-                          <div className="rounded-lg border border-border/60 bg-muted/40 p-3 text-sm">
+                          <div className="rounded-xl border border-border/60 bg-muted/40 p-3 text-sm">
                             <span className="text-xs uppercase text-muted-foreground">Correct answer</span>
                             <div className="mt-1 font-semibold">
                               <MarkdownRenderer>{normalizedAnswerLine}</MarkdownRenderer>

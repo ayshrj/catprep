@@ -26,8 +26,8 @@ import { useOpenRouterModels } from "@/hooks/use-openrouter-models";
 const GameRunner = dynamic(() => import("@/games/game-runner"), {
   ssr: false,
   loading: () => (
-    <div className="flex min-h-[40vh] items-center justify-center px-6">
-      <div className="w-full max-w-4xl space-y-3">
+    <div className="flex min-h-[40vh] items-center justify-center px-3 sm:px-6">
+      <div className="w-full max-w-7xl space-y-3">
         <Skeleton className="h-6 w-40" />
         <Skeleton className="h-[32vh] w-full rounded-2xl" />
         <Skeleton className="h-10 w-full" />
