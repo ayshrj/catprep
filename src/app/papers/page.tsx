@@ -1,7 +1,7 @@
 "use client";
 
-import { Bookmark, Filter, Loader2, RefreshCw, Search } from "lucide-react";
-import Link from "next/link";
+import { Bookmark, Filter, Loader2, Play, RefreshCw, Search } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -15,7 +15,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Toggle } from "@/components/ui/toggle";
 import { CAT_PAPER_SECTION_LABELS } from "@/constants/cat-paper-filters";
 import { useAuthAndTheme } from "@/hooks/use-auth-and-theme";
-import { fetchFavorites, fetchPaperFilters, fetchPapers, setFavorite } from "@/lib/cat-papers-service";
+import {
+  fetchFavorites,
+  fetchPaper,
+  fetchPaperFilters,
+  fetchPapers,
+  fetchQuestions,
+  setFavorite,
+} from "@/lib/cat-papers-service";
 import type { CatPaperFilters, CatPaperMetaDoc, CatPaperSummary } from "@/types/cat-paper-firestore";
 
 const INITIAL_FILTERS: CatPaperFilters = {
@@ -34,6 +41,7 @@ function formatTitle(paper: CatPaperSummary) {
 
 export default function PapersPage() {
   const { handleLogout, handleThemeToggle } = useAuthAndTheme();
+  const router = useRouter();
   const [filters, setFilters] = useState<CatPaperFilters>(INITIAL_FILTERS);
   const [draftFilters, setDraftFilters] = useState<CatPaperFilters>(INITIAL_FILTERS);
   const [meta, setMeta] = useState<CatPaperMetaDoc | null>(null);
@@ -44,6 +52,7 @@ export default function PapersPage() {
   const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [practiceLoadingPaperId, setPracticeLoadingPaperId] = useState<string | null>(null);
 
   const loadFilters = useCallback(async () => {
     try {
@@ -135,6 +144,50 @@ export default function PapersPage() {
       }
     },
     [setFavorite]
+  );
+
+  const startPractice = useCallback(
+    async (paperId: string, sectionId: string) => {
+      try {
+        const data = await fetchQuestions(paperId, sectionId, { limit: 1 });
+        const firstQuestion = data.questions[0];
+        if (!firstQuestion) {
+          toast.error("No questions found in this section.");
+          return;
+        }
+        router.push(`/papers/${paperId}/sections/${sectionId}/questions/${firstQuestion.id}?practice=1`);
+      } catch (err) {
+        console.error(err);
+        toast.error("Unable to start practice right now.");
+      }
+    },
+    [router, fetchQuestions]
+  );
+
+  const handlePractice = useCallback(
+    async (paper: CatPaperSummary) => {
+      if (practiceLoadingPaperId) return;
+      setPracticeLoadingPaperId(paper.id);
+      try {
+        const data = await fetchPaper(paper.id);
+        if (!data.sections.length) {
+          toast.error("No sections found for this paper.");
+          return;
+        }
+        const firstSection = data.sections[0];
+        if (!firstSection?.id) {
+          toast.error("No section found for this paper.");
+          return;
+        }
+        await startPractice(paper.id, firstSection.id);
+      } catch (err) {
+        console.error(err);
+        toast.error("Unable to load sections right now.");
+      } finally {
+        setPracticeLoadingPaperId(null);
+      }
+    },
+    [practiceLoadingPaperId, startPractice, fetchPaper]
   );
 
   return (
@@ -348,8 +401,19 @@ export default function PapersPage() {
                         <div className="text-xs text-muted-foreground">
                           {paper.sectionsCount} sections / {paper.questionsCount} questions
                         </div>
-                        <Button asChild variant="secondary">
-                          <Link href={`/papers/${paper.id}`}>Open paper</Link>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          onClick={() => handlePractice(paper)}
+                          disabled={practiceLoadingPaperId === paper.id}
+                          className="gap-2"
+                        >
+                          {practiceLoadingPaperId === paper.id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Play className="h-4 w-4" />
+                          )}
+                          Practice
                         </Button>
                       </CardContent>
                     </Card>
