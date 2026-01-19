@@ -560,6 +560,10 @@
   height: var(--chart-h);
 }
 
+.chartArea :global(.recharts-tooltip-wrapper) {
+  z-index: 2;
+}
+
 .chartSvg {
   position: absolute;
   inset: 0;
@@ -609,6 +613,11 @@
   box-shadow: var(--shadow-1);
   transform: translate(-50%, -100%);
   pointer-events: none;
+}
+
+.tooltipRecharts {
+  position: relative;
+  transform: none;
 }
 
 .kpiGrid {
