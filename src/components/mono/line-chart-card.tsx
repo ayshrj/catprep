@@ -53,8 +53,11 @@ const buildChartData = (series: number[], labels?: string[]): ChartPoint[] => {
   });
 };
 
-const CustomTooltip = ({ active, payload }: TooltipProps<ValueType, NameType>) => {
-  const dataPoint = payload?.[0]?.payload as ChartPoint | undefined;
+const CustomTooltip = (props: TooltipProps<ValueType, NameType>) => {
+  const { active, payload } = props as TooltipProps<ValueType, NameType> & {
+    payload?: Array<{ payload?: ChartPoint }>;
+  };
+  const dataPoint = payload?.[0]?.payload;
   const tooltip = dataPoint?.tooltip;
 
   if (!active || !tooltip) return null;
