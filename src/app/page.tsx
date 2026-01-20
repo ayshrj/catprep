@@ -41,6 +41,14 @@ const getDateKey = (date: Date) => `${date.getFullYear()}-${padDate(date.getMont
 
 const getTodayKey = () => getDateKey(new Date());
 
+const DATE_LOCALE = "en-GB";
+const WEEKDAY_FORMATTER = new Intl.DateTimeFormat(DATE_LOCALE, { weekday: "short" });
+const HEATMAP_LABEL_FORMATTER = new Intl.DateTimeFormat(DATE_LOCALE, {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+});
+
 type DaySummary = {
   key: string;
   label: string;
@@ -59,7 +67,7 @@ const buildRecentDays = (count: number, completionMap: Map<string, number>, tota
     const key = getDateKey(day);
     const completions = completionMap.get(key) ?? 0;
     const rate = totalHabits ? Math.round((completions / totalHabits) * 100) : 0;
-    const label = day.toLocaleDateString(undefined, { weekday: "short" });
+    const label = WEEKDAY_FORMATTER.format(day);
     days.push({ key, label, date: day, completions, rate });
   }
 
@@ -263,7 +271,7 @@ export default function Page() {
         const intensity = totalHabits ? Math.min(4, Math.round((day.completions / totalHabits) * 4)) : 0;
         return {
           id: day.key,
-          label: day.date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }),
+          label: HEATMAP_LABEL_FORMATTER.format(day.date),
           intensity: intensity as 0 | 1 | 2 | 3 | 4,
           missing,
           selected: day.key === todayKey,
