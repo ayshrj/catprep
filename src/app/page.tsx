@@ -8,6 +8,7 @@ import {
   NotebookPen,
   Pencil,
   Sparkles,
+  Timer,
   Trash2,
   Trophy,
 } from "lucide-react";
@@ -104,6 +105,13 @@ export default function Page() {
       description: "Practice drills, track streaks, and sharpen speed.",
       href: "/games",
       icon: Trophy,
+      tone: "bg-muted text-foreground",
+    },
+    {
+      title: "Timer",
+      description: "Run focused sprints with a distraction-free stopwatch.",
+      href: "/timer",
+      icon: Timer,
       tone: "bg-muted text-foreground",
     },
     {
@@ -529,6 +537,8 @@ export default function Page() {
                 window.location.href = "/games";
               } else if (next === "papers") {
                 window.location.href = "/papers";
+              } else if (next === "timer") {
+                window.location.href = "/timer";
               }
             }}
             onLogout={handleLogout}

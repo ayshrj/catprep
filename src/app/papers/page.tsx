@@ -209,6 +209,8 @@ export default function PapersPage() {
                 window.location.href = "/games";
               } else if (next === "papers") {
                 window.location.href = "/papers";
+              } else if (next === "timer") {
+                window.location.href = "/timer";
               }
             }}
             onLogout={handleLogout}

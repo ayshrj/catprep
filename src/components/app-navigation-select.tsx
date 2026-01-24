@@ -4,7 +4,7 @@ import { useCallback } from "react";
 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-type NavValue = "chat" | "notes" | "saved" | "games" | "papers";
+type NavValue = "chat" | "notes" | "saved" | "games" | "papers" | "timer";
 
 export function AppNavigationSelect({
   value,
@@ -19,7 +19,14 @@ export function AppNavigationSelect({
 }) {
   const handleChange = useCallback(
     (next: string) => {
-      if (next === "chat" || next === "notes" || next === "saved" || next === "games" || next === "papers") {
+      if (
+        next === "chat" ||
+        next === "notes" ||
+        next === "saved" ||
+        next === "games" ||
+        next === "papers" ||
+        next === "timer"
+      ) {
         onChange(next);
       }
     },
@@ -31,7 +38,7 @@ export function AppNavigationSelect({
       <SelectTrigger
         size={size}
         className={className}
-        aria-label="Navigate between Chat, Notes, Rough notes, Games, and Papers"
+        aria-label="Navigate between Chat, Notes, Rough notes, Games, Papers, and Timer"
       >
         <SelectValue placeholder="Pages" />
       </SelectTrigger>
@@ -41,6 +48,7 @@ export function AppNavigationSelect({
         <SelectItem value="saved">Rough notes</SelectItem>
         <SelectItem value="games">Games</SelectItem>
         <SelectItem value="papers">Papers</SelectItem>
+        <SelectItem value="timer">Timer</SelectItem>
       </SelectContent>
     </Select>
   );

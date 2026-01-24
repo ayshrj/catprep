@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-type NavValue = "chat" | "notes" | "saved" | "games" | "papers";
+type NavValue = "chat" | "notes" | "saved" | "games" | "papers" | "timer";
 
 function ThemeToggleButton() {
   const { theme, setTheme } = useTheme();
@@ -61,6 +61,7 @@ export function AppNavbarActions({
       <DropdownMenuItem onClick={() => onChange("saved")}>Rough notes</DropdownMenuItem>
       <DropdownMenuItem onClick={() => onChange("games")}>Games</DropdownMenuItem>
       <DropdownMenuItem onClick={() => onChange("papers")}>Papers</DropdownMenuItem>
+      <DropdownMenuItem onClick={() => onChange("timer")}>Timer</DropdownMenuItem>
       {menuExtras ? (
         <>
           <DropdownMenuSeparator />
