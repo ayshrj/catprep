@@ -6,15 +6,15 @@ import { buildRegex, MarkdownRenderer, stripMath } from "@/components/markdown-r
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import { CAT_KB_PARTS } from "@/lib/cat";
+import { SHORTCUT_PARTS, SHORTCUT_TITLE } from "@/lib/shortcuts";
 
-export const Notes = () => {
+export const Shortcuts = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLElement>(null);
-  const flatSections = useMemo(() => CAT_KB_PARTS.flatMap(part => part.sections), []);
+  const flatSections = useMemo(() => SHORTCUT_PARTS.flatMap(part => part.sections), []);
 
   const countMatches = useCallback((query: string, content: string) => {
     if (!query.trim()) return 0;
@@ -164,8 +164,8 @@ export const Notes = () => {
       <div className="sticky top-0 z-20 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="flex items-center justify-between gap-3 px-3 py-3 sm:px-4">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-foreground">CAT Knowledge Base</p>
-            <p className="text-xs text-muted-foreground">Jump to a section or search inside the playbook.</p>
+            <p className="text-sm font-semibold text-foreground">CAT Shortcuts</p>
+            <p className="text-xs text-muted-foreground">{SHORTCUT_TITLE}</p>
           </div>
           <Button variant="outline" size="sm" onClick={() => setIsSearchOpen(open => !open)}>
             {isSearchOpen ? "Close search" : "Find"}
@@ -178,7 +178,7 @@ export const Notes = () => {
               <Input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Find in playbook..."
+                placeholder="Find in shortcuts..."
                 value={searchQuery}
                 onChange={e => {
                   setSearchQuery(e.target.value);
@@ -243,7 +243,7 @@ export const Notes = () => {
         >
           <ScrollArea className="h-full">
             <div className="space-y-4 p-4">
-              {CAT_KB_PARTS.map(part => (
+              {SHORTCUT_PARTS.map(part => (
                 <div key={part.id} className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{part.title}</p>
                   <div className="space-y-1">
@@ -266,7 +266,7 @@ export const Notes = () => {
 
         <section ref={contentRef} className="min-h-0 flex-1 overflow-y-auto p-4">
           <div className="space-y-6">
-            {CAT_KB_PARTS.map(part => (
+            {SHORTCUT_PARTS.map(part => (
               <div key={part.id} className="space-y-4">
                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   <span>{part.title}</span>

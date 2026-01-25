@@ -122,6 +122,13 @@ export default function Page() {
       tone: "bg-muted text-foreground",
     },
     {
+      title: "Shortcuts",
+      description: "Master quick methods and exam-time speed hacks.",
+      href: "/shortcuts",
+      icon: Pencil,
+      tone: "bg-muted text-foreground",
+    },
+    {
       title: "Papers",
       description: "Browse CAT & XAT past papers with solutions.",
       href: "/papers",
