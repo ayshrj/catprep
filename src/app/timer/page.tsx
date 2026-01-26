@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { APP_CONTENT_HEIGHT, AppContent } from "@/components/app-content";
 import { AppNavbar } from "@/components/app-navbar";
-import { AppNavbarActions } from "@/components/app-navbar-actions";
+import { AppNavbarActionsRoute } from "@/components/app-navbar-actions-route";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -195,28 +195,7 @@ export default function TimerPage() {
       <AppNavbar
         title="Cat99"
         subtitle="Timer"
-        trailing={
-          <AppNavbarActions
-            value="timer"
-            onChange={next => {
-              if (next === "chat") {
-                window.location.href = "/chat";
-              } else if (next === "notes") {
-                window.location.href = "/notes";
-              } else if (next === "saved") {
-                window.location.href = "/rough-notes";
-              } else if (next === "games") {
-                window.location.href = "/games";
-              } else if (next === "papers") {
-                window.location.href = "/papers";
-              } else if (next === "timer") {
-                window.location.href = "/timer";
-              }
-            }}
-            onLogout={handleLogout}
-            onThemeToggle={handleThemeToggle}
-          />
-        }
+        trailing={<AppNavbarActionsRoute value="timer" onLogout={handleLogout} onThemeToggle={handleThemeToggle} />}
       />
 
       <AppContent className={APP_CONTENT_HEIGHT}>

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 
 import { APP_CONTENT_HEIGHT, AppContent } from "@/components/app-content";
 import { AppNavbar } from "@/components/app-navbar";
-import { AppNavbarActions } from "@/components/app-navbar-actions";
+import { AppNavbarActionsRoute } from "@/components/app-navbar-actions-route";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -61,15 +61,18 @@ export default function PapersPage() {
     } catch (err) {
       console.error(err);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchPaperFilters]);
 
   const loadFavorites = useCallback(async () => {
     try {
       const ids = await fetchFavorites();
       setFavorites(new Set(ids));
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       // Ignore unauthenticated users.
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchFavorites]);
 
   const loadPapers = useCallback(
@@ -100,6 +103,7 @@ export default function PapersPage() {
         setLoadingMore(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [favorites, favoritesOnly, filters, nextCursor, fetchPapers]
   );
 
@@ -139,10 +143,12 @@ export default function PapersPage() {
           }
           return copy;
         });
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
         toast.error("Sign in to bookmark papers.");
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [setFavorite]
   );
 
@@ -161,6 +167,7 @@ export default function PapersPage() {
         toast.error("Unable to start practice right now.");
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [router, fetchQuestions]
   );
 
@@ -187,6 +194,7 @@ export default function PapersPage() {
         setPracticeLoadingPaperId(null);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [practiceLoadingPaperId, startPractice, fetchPaper]
   );
 
@@ -195,28 +203,7 @@ export default function PapersPage() {
       <AppNavbar
         title="Cat99"
         subtitle="Past Papers"
-        trailing={
-          <AppNavbarActions
-            value="papers"
-            onChange={next => {
-              if (next === "chat") {
-                window.location.href = "/chat";
-              } else if (next === "notes") {
-                window.location.href = "/notes";
-              } else if (next === "saved") {
-                window.location.href = "/rough-notes";
-              } else if (next === "games") {
-                window.location.href = "/games";
-              } else if (next === "papers") {
-                window.location.href = "/papers";
-              } else if (next === "timer") {
-                window.location.href = "/timer";
-              }
-            }}
-            onLogout={handleLogout}
-            onThemeToggle={handleThemeToggle}
-          />
-        }
+        trailing={<AppNavbarActionsRoute value="papers" onLogout={handleLogout} onThemeToggle={handleThemeToggle} />}
       />
 
       <AppContent className={APP_CONTENT_HEIGHT}>

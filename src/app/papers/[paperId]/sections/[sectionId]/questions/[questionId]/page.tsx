@@ -19,7 +19,7 @@ import { toast } from "sonner";
 
 import { APP_CONTENT_HEIGHT, AppContent } from "@/components/app-content";
 import { AppNavbar } from "@/components/app-navbar";
-import { AppNavbarActions } from "@/components/app-navbar-actions";
+import { AppNavbarActionsRoute } from "@/components/app-navbar-actions-route";
 import { ContentBlocks } from "@/components/papers/content-blocks";
 import {
   AlertDialog,
@@ -141,6 +141,7 @@ export default function QuestionDetailPage() {
     } finally {
       setLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paperId, sectionId, questionId, fetchQuestion]);
 
   const loadQuestionList = useCallback(async () => {
@@ -154,6 +155,7 @@ export default function QuestionDetailPage() {
     } finally {
       setLoadingNeighbors(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paperId, sectionId, fetchQuestions]);
 
   const loadPaper = useCallback(async () => {
@@ -169,6 +171,7 @@ export default function QuestionDetailPage() {
       console.error(err);
       setPaperError("Unable to load paper details.");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paperId, fetchPaper]);
 
   useEffect(() => {
@@ -376,6 +379,7 @@ export default function QuestionDetailPage() {
         setSectionSwitching(false);
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [paperId, practiceMode, practiceQuery, router, sectionId, fetchQuestions]
   );
 
@@ -437,28 +441,7 @@ export default function QuestionDetailPage() {
       <AppNavbar
         title="Cat99"
         subtitle="Question detail"
-        trailing={
-          <AppNavbarActions
-            value="papers"
-            onChange={next => {
-              if (next === "chat") {
-                window.location.href = "/chat";
-              } else if (next === "notes") {
-                window.location.href = "/notes";
-              } else if (next === "saved") {
-                window.location.href = "/rough-notes";
-              } else if (next === "games") {
-                window.location.href = "/games";
-              } else if (next === "papers") {
-                window.location.href = "/papers";
-              } else if (next === "timer") {
-                window.location.href = "/timer";
-              }
-            }}
-            onLogout={handleLogout}
-            onThemeToggle={handleThemeToggle}
-          />
-        }
+        trailing={<AppNavbarActionsRoute value="papers" onLogout={handleLogout} onThemeToggle={handleThemeToggle} />}
       />
 
       <AppContent className={APP_CONTENT_HEIGHT}>
@@ -601,6 +584,7 @@ export default function QuestionDetailPage() {
                         <div className="grid gap-3 sm:grid-cols-2">
                           {sectionImageUrls.map((image, index) => (
                             <figure key={`${image}-${index}`} className="rounded-xl border border-border/60 p-2">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={image}
                                 alt="Section visual"
@@ -628,6 +612,7 @@ export default function QuestionDetailPage() {
                       <div className="grid gap-3 sm:grid-cols-2">
                         {question.images.map((image, index) => (
                           <figure key={`${image}-${index}`} className="rounded-xl border border-border/60 p-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={image}
                               alt="Question visual"
@@ -777,6 +762,7 @@ export default function QuestionDetailPage() {
                                       key={`${image}-${index}`}
                                       className="rounded-xl border border-border/60 p-2"
                                     >
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
                                       <img
                                         src={image}
                                         alt="Explanation visual"
@@ -931,6 +917,7 @@ export default function QuestionDetailPage() {
                       <div className="grid gap-3 sm:grid-cols-2">
                         {sectionImageUrls.map((image, index) => (
                           <figure key={`${image}-${index}`} className="rounded-xl border border-border/60 p-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={image} alt="Section visual" loading="lazy" className="h-auto w-full rounded-lg" />
                           </figure>
                         ))}

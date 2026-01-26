@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 
 import { APP_CONTENT_HEIGHT, AppContent } from "@/components/app-content";
 import { AppNavbar } from "@/components/app-navbar";
-import { AppNavbarActions } from "@/components/app-navbar-actions";
+import { AppNavbarActionsRoute } from "@/components/app-navbar-actions-route";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Notes } from "@/components/notes";
 import { Button } from "@/components/ui/button";
@@ -81,28 +81,7 @@ export default function NotesPage() {
             </Sheet>
           </div>
         }
-        trailing={
-          <AppNavbarActions
-            value="notes"
-            onChange={next => {
-              if (next === "chat") {
-                window.location.href = "/chat";
-              } else if (next === "notes") {
-                window.location.href = "/notes";
-              } else if (next === "saved") {
-                window.location.href = "/rough-notes";
-              } else if (next === "games") {
-                window.location.href = "/games";
-              } else if (next === "papers") {
-                window.location.href = "/papers";
-              } else if (next === "timer") {
-                window.location.href = "/timer";
-              }
-            }}
-            onLogout={handleLogout}
-            onThemeToggle={handleThemeToggle}
-          />
-        }
+        trailing={<AppNavbarActionsRoute value="notes" onLogout={handleLogout} onThemeToggle={handleThemeToggle} />}
       />
 
       <AppContent className={APP_CONTENT_HEIGHT}>

@@ -9,7 +9,7 @@ import { toast } from "sonner";
 
 import { APP_CONTENT_HEIGHT, AppContent } from "@/components/app-content";
 import { AppNavbar } from "@/components/app-navbar";
-import { AppNavbarActions } from "@/components/app-navbar-actions";
+import { AppNavbarActionsRoute } from "@/components/app-navbar-actions-route";
 import { AppSidebar } from "@/components/app-sidebar";
 import { MARKDOWN_TRANSFORMERS } from "@/components/editor/markdown-transformers";
 import { FullFeaturedEditor } from "@/components/full-featured-editor";
@@ -421,23 +421,8 @@ export default function NotesPage() {
           </div>
         }
         trailing={
-          <AppNavbarActions
+          <AppNavbarActionsRoute
             value="saved"
-            onChange={next => {
-              if (next === "chat") {
-                window.location.href = "/chat";
-              } else if (next === "notes") {
-                window.location.href = "/notes";
-              } else if (next === "saved") {
-                window.location.href = "/rough-notes";
-              } else if (next === "games") {
-                window.location.href = "/games";
-              } else if (next === "papers") {
-                window.location.href = "/papers";
-              } else if (next === "timer") {
-                window.location.href = "/timer";
-              }
-            }}
             menuExtras={
               <>
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>

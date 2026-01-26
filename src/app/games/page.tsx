@@ -7,7 +7,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 import { APP_CONTENT_HEIGHT, AppContent } from "@/components/app-content";
 import { AppNavbar } from "@/components/app-navbar";
-import { AppNavbarActions } from "@/components/app-navbar-actions";
+import { AppNavbarActionsRoute } from "@/components/app-navbar-actions-route";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -189,6 +189,7 @@ export default function DashboardPage() {
     const map = new Map<string, (typeof practiceBalance.entries)[number]>();
     practiceBalance.entries.forEach(entry => map.set(entry.id, entry));
     return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [practiceBalance.entries]);
 
   const totalGames = allGames.length;
@@ -206,28 +207,7 @@ export default function DashboardPage() {
       <AppNavbar
         title="Cat99"
         subtitle="Games"
-        trailing={
-          <AppNavbarActions
-            value="games"
-            onChange={next => {
-              if (next === "chat") {
-                window.location.href = "/chat";
-              } else if (next === "notes") {
-                window.location.href = "/notes";
-              } else if (next === "saved") {
-                window.location.href = "/rough-notes";
-              } else if (next === "games") {
-                window.location.href = "/games";
-              } else if (next === "papers") {
-                window.location.href = "/papers";
-              } else if (next === "timer") {
-                window.location.href = "/timer";
-              }
-            }}
-            onLogout={handleLogout}
-            onThemeToggle={handleThemeToggle}
-          />
-        }
+        trailing={<AppNavbarActionsRoute value="games" onLogout={handleLogout} onThemeToggle={handleThemeToggle} />}
       />
 
       <AppContent className={APP_CONTENT_HEIGHT}>

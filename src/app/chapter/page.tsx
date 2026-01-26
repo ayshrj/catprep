@@ -7,14 +7,14 @@ import { APP_CONTENT_HEIGHT, AppContent } from "@/components/app-content";
 import { AppNavbar } from "@/components/app-navbar";
 import { AppNavbarActionsRoute } from "@/components/app-navbar-actions-route";
 import { AppSidebar } from "@/components/app-sidebar";
-import { Shortcuts } from "@/components/shortcuts";
+import { Pnc } from "@/components/pnc";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { useAuthAndTheme } from "@/hooks/use-auth-and-theme";
-import { SHORTCUT_PARTS } from "@/lib/shortcuts";
+import { PNC_PARTS } from "@/lib/pnc";
 
-export default function ShortcutsPage() {
+export default function ChapterPage() {
   const [chaptersOpen, setChaptersOpen] = useState(false);
   const { handleLogout, handleThemeToggle } = useAuthAndTheme();
 
@@ -35,7 +35,7 @@ export default function ShortcutsPage() {
     <div className="flex h-dvh flex-col overflow-hidden bg-background">
       <AppNavbar
         title="Cat99"
-        subtitle="Shortcuts"
+        subtitle="Chapter"
         leading={
           <div className="md:hidden">
             <Sheet open={chaptersOpen} onOpenChange={setChaptersOpen}>
@@ -55,7 +55,7 @@ export default function ShortcutsPage() {
                 >
                   <ScrollArea className="h-full">
                     <div className="space-y-4 p-4">
-                      {SHORTCUT_PARTS.map(part => (
+                      {PNC_PARTS.map(part => (
                         <div key={part.id} className="space-y-2">
                           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                             {part.title}
@@ -81,12 +81,12 @@ export default function ShortcutsPage() {
             </Sheet>
           </div>
         }
-        trailing={<AppNavbarActionsRoute value="notes" onLogout={handleLogout} onThemeToggle={handleThemeToggle} />}
+        trailing={<AppNavbarActionsRoute value="chapter" onLogout={handleLogout} onThemeToggle={handleThemeToggle} />}
       />
 
       <AppContent className={APP_CONTENT_HEIGHT}>
         <div className="h-full min-h-0 py-3 sm:py-4">
-          <Shortcuts />
+          <Pnc />
         </div>
       </AppContent>
     </div>

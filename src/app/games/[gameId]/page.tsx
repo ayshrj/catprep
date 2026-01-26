@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { AppNavbar } from "@/components/app-navbar";
-import { AppNavbarActions } from "@/components/app-navbar-actions";
+import { AppNavbarActionsRoute } from "@/components/app-navbar-actions-route";
 import { Button } from "@/components/ui/button";
 import {
   CommandDialog,
@@ -71,6 +71,7 @@ export default function GamePage() {
 
   const modelLabel = hasKey ? (openRouterModel ? openRouterModel : "Select model") : "Add key in Settings";
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const inlineModelControls = showModelPicker ? (
     <>
       <Button
@@ -96,6 +97,7 @@ export default function GamePage() {
     </>
   ) : null;
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const menuExtras = showModelPicker ? (
     <>
       <DropdownMenuLabel>Model</DropdownMenuLabel>
@@ -114,30 +116,7 @@ export default function GamePage() {
       <AppNavbar
         title="Cat99"
         subtitle="Games"
-        trailing={
-          <AppNavbarActions
-            value="games"
-            onChange={next => {
-              if (next === "chat") {
-                window.location.href = "/chat";
-              } else if (next === "notes") {
-                window.location.href = "/notes";
-              } else if (next === "saved") {
-                window.location.href = "/rough-notes";
-              } else if (next === "games") {
-                window.location.href = "/games";
-              } else if (next === "papers") {
-                window.location.href = "/papers";
-              } else if (next === "timer") {
-                window.location.href = "/timer";
-              }
-            }}
-            inlineExtras={inlineModelControls}
-            menuExtras={menuExtras}
-            onLogout={handleLogout}
-            onThemeToggle={handleThemeToggle}
-          />
-        }
+        trailing={<AppNavbarActionsRoute value="games" onLogout={handleLogout} onThemeToggle={handleThemeToggle} />}
       />
 
       <GameRunner gameId={gameId} />

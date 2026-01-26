@@ -263,11 +263,11 @@ export function HomeClient() {
 
   const initialMode = searchParams.get("view") === "notes" ? ("notes" as const) : ("chat" as const);
   const [homeMode, setHomeMode] = useState<"chat" | "notes">(initialMode);
-  const [navigationValue, setNavigationValue] = useState<"chat" | "notes" | "saved" | "games" | "papers" | "timer">(
-    initialMode
-  );
+  const [navigationValue, setNavigationValue] = useState<
+    "chat" | "notes" | "chapter" | "saved" | "games" | "papers" | "timer"
+  >(initialMode);
   const handleNavigationChange = useCallback(
-    (target: "chat" | "notes" | "saved" | "games" | "papers" | "timer") => {
+    (target: "chat" | "notes" | "chapter" | "saved" | "games" | "papers" | "timer") => {
       setNavigationValue(target);
       if (target === "chat") {
         const params = new URLSearchParams(searchParams.toString());
@@ -277,6 +277,8 @@ export function HomeClient() {
         setHomeMode("chat");
       } else if (target === "notes") {
         router.push("/notes");
+      } else if (target === "chapter") {
+        router.push("/chapter");
       } else if (target === "saved") {
         router.push("/rough-notes");
       } else if (target === "games") {
