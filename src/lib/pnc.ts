@@ -74,22 +74,22 @@ If total objects \`n\`, where \`p\` are identical of one kind, \`q\` identical o
 
 ### 4.2 Combinations with repetition allowed
 - Number of ways to select \`r\` items from \`n\` types (repetition allowed):
-- $(n + r - 1)Cr$
+- $^{n+r-1}C_{r}$
 
 ---
 
 ## 5) Properties / Identities of $^{n}C_{r}$ (Section 4 “Things to Remember”, p.65)
 
-- $^{n}C_{0} = nCn = 1$
-- $^{n}C_{r} = nC(n-r)$
-- If $^{n}C_{r} = nCk$ then \`r = k\` OR \`r = n-k\`
+- $^{n}C_{0} = ^{n}C_{n} = 1$
+- $^{n}C_{r} = ^{n}C_{n-r}$
+- If $^{n}C_{r} = ^{n}C_{k}$ then \`r = k\` OR \`r = n-k\`
 - Pascal identity:
-  - $^{n}C_{r} + nC(r-1) = (n+1)Cr$
-- $r · ^{n}C_{r} = n · (n-1)C(r-1)$
+  - $^{n}C_{r} + ^{n}C_{r-1} = ^{n+1}C_{r}$
+- $r · ^{n}C_{r} = n · ^{n-1}C_{r-1}$
 - Useful ratio:
-  - $nC(r+1) / ^{n}C_{r} = (n-r)/(r+1)$
+  - $^{n}C_{r+1} / ^{n}C_{r} = (n-r)/(r+1)$
 - Another identity:
-  - $^{n}C_{r} = (n/r) · (n-1)C(r-1)$
+  - $^{n}C_{r} = (n/r) · ^{n-1}C_{r-1}$
 - Maximum value:
   - If \`n\` is even → max at \`r = n/2\`
   - If \`n\` is odd → max at \`r = (n-1)/2\` and \`r = (n+1)/2\`
@@ -100,24 +100,24 @@ If total objects \`n\`, where \`p\` are identical of one kind, \`q\` identical o
 
 ### TPC-1: Always include \`p\` particular objects in selection
 - Ways to select \`r\` from \`n\` with \`p\` fixed included:
-- \`(n-p)C(r-p)\`
+- $^{n-p}C_{r-p}$
 
 **Example (p.26)**
 - Team of 11 from 16, two specific players must be included:
-- $(16-2)C(11-2) = ^{14}C_{9}$
+- $^{16-2}C_{11-2} = ^{14}C_{9}$
 
 ### TPC-2: Always exclude \`p\` particular objects in selection
 - Ways to select \`r\` from \`n\` excluding \`p\` fixed:
-- \`(n-p)Cr\`
+- $^{n-p}C_{r}$
 
 ### TPC-3: Select AND arrange \`r\` from \`n\` such that \`p\` particular are always included
-- Choose remaining: \`(n-p)C(r-p)\`
+- Choose remaining: $^{n-p}C_{r-p}$
 - Arrange all selected: \`r!\`
 - Total:
-- \`(n-p)C(r-p) × r!\`
+- $^{n-p}C_{r-p} × r!$
 
 ### TPC-4: Select AND arrange \`r\` from \`n\` such that \`p\` particular are always excluded
-- \`(n-p)Cr × r!\`
+- $^{n-p}C_{r} × r!$
 
 ### TPC-5: Arrange \`n\` distinct objects such that \`p\` particular objects stay together
 Treat the \`p\` as 1 block:
@@ -130,15 +130,15 @@ Treat the \`p\` as 1 block:
 ### TPC-6: Arrange \`n\` distinct objects such that \`p\` particular objects are always separated
 - Arrange the other \`(n-p)\` objects: \`(n-p)!\`
 - Gaps = \`(n-p+1)\`
-- Choose \`p\` gaps: \`(n-p+1)Cp\`
+- Choose \`p\` gaps: $^{n-p+1}C_{p}$
 - Arrange the \`p\` objects: \`p!\`
 - Total:
-- \`(n-p)! × (n-p+1)Cp × p!\`
+- $(n-p)! × ^{n-p+1}C_{p} × p!$
 
 ### TPC-7: Minimum/maximum constraints in selection
 Method:
-- “At least k” → sum: \`nCk + nC(k+1) + ... + nCn\`
-- “At most k” → sum: $^{n}C_{0} + ^{n}C_{1} + ... + nCk$
+- “At least k” → sum: $^{n}C_{k} + ^{n}C_{k+1} + ... + ^{n}C_{n}$
+- “At most k” → sum: $^{n}C_{0} + ^{n}C_{1} + ... + ^{n}C_{k}$
 (Use complements when faster.)
 
 ### TPC-10: Selection of one or more objects
@@ -255,7 +255,7 @@ Divide and distribute into **6 labeled** groups:
 
 ### 8.2 $n$ distinct objects into $r$ groups (each group at least one)
 (Inclusion–exclusion)
-- $r^n - rC1 (r-1)^n + rC2 (r-2)^n - ... + (-1)^{r-1} rC(r-1) (1)^n$
+- $r^n - \\binom{r}{1} (r-1)^n + \\binom{r}{2} (r-2)^n - ... + (-1)^{r-1} \\binom{r}{r-1} (1)^n$
 
 ---
 
@@ -277,10 +277,10 @@ Divide and distribute into **6 labeled** groups:
 
 ### 10.1 \`n\` identical objects into \`r\` distinct groups (empty allowed)
 (Stars and Bars)
-- \`(n + r - 1)C(r - 1)\`
+- $^{n + r - 1}C_{r - 1}$
 
 ### 10.2 \`n\` identical objects into \`r\` distinct groups (each ≥ 1)
-- \`(n - 1)C(r - 1)\`
+- $^{n - 1}C_{r - 1}$
 
 ### 10.3 Each group has min \`m\` and max $k$
 - Coefficient of $x^n$ in:
@@ -288,7 +288,7 @@ Divide and distribute into **6 labeled** groups:
 
 **Example (p.59)**
 - 5 identical books among 3 boys, each gets at least 1:
-- $(5-1)C(3-1) = ^{4}C_{2} = 6$
+- $^{5-1}C_{3-1} = ^{4}C_{2} = 6$
 
 ---
 
